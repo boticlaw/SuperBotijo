@@ -451,14 +451,15 @@ export default function MemoryPage() {
               <RefreshCw size={24} style={{ animation: "spin 1s linear infinite" }} />
             </div>
           ) : graphData && graphData.entities.length > 0 ? (
-            <div style={{ height: "100%", width: "100%" }}>
+            <div style={{ flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
               <KnowledgeGraphComponent data={graphData} />
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)" }}>
               <div style={{ textAlign: "center" }}>
                 <Network size={64} style={{ opacity: 0.3, marginBottom: "16px" }} />
-                <p>No entities found in MEMORY.md</p>
+                <p>No entities found in memory</p>
+                <p style={{ fontSize: "12px", marginTop: "8px" }}>Run the agent to populate memory</p>
               </div>
             </div>
           )

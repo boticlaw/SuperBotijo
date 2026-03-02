@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   FileText,
   Search,
@@ -239,8 +240,9 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-4 md:mb-8 flex items-start justify-between">
+    <ErrorBoundary>
+      <div className="p-4 md:p-8">
+        <div className="mb-4 md:mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ 
             color: 'var(--text-primary)',
@@ -616,6 +618,7 @@ export default function ActivityPage() {
           — End of activity log —
         </div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

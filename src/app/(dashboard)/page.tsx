@@ -7,6 +7,7 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import { Notepad } from "@/components/Notepad";
 import { MoodWidget } from "@/components/MoodWidget";
 import { SuggestionsPanel } from "@/components/SuggestionsPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   Activity,
   CheckCircle,
@@ -65,8 +66,9 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
+    <ErrorBoundary>
+      <div className="p-4 md:p-8">
+        {/* Header */}
       <div className="mb-4 md:mb-6">
         <div className="flex items-center gap-3 mb-1">
           <img 
@@ -340,6 +342,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

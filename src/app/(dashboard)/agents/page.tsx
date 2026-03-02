@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AgentOrganigrama } from "@/components/AgentOrganigrama";
 import { CommunicationGraphComponent } from "@/components/CommunicationGraph";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { CommunicationGraph, MessageType } from "@/lib/communication-aggregator";
 
 interface Agent {
@@ -130,8 +131,9 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
+    <ErrorBoundary>
+      <div className="p-4 md:p-8">
+        <div className="mb-6">
         <h1
           className="text-3xl font-bold mb-2"
           style={{
@@ -161,8 +163,10 @@ export default function AgentsPage() {
             style={{
               color: activeTab === id ? "var(--accent)" : "var(--text-secondary)",
               borderBottom: activeTab === id ? "2px solid var(--accent)" : "2px solid transparent",
+              borderTop: "none",
+              borderLeft: "none",
+              borderRight: "none",
               background: "none",
-              border: "none",
               cursor: "pointer",
               paddingBottom: "0.5rem",
             }}
@@ -470,6 +474,7 @@ export default function AgentsPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

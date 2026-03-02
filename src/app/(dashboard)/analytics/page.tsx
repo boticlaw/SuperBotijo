@@ -8,6 +8,7 @@ import { SuccessRateGauge } from "@/components/charts/SuccessRateGauge";
 import { TopTasksList } from "@/components/TopTasksList";
 import { EfficiencyGauge } from "@/components/EfficiencyGauge";
 import { TokenFlowSankey, TaskFlowSankey, TimeFlowSankey } from "@/components/sankey/SankeyDiagrams";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -126,8 +127,9 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="p-4 md:p-8" style={{ backgroundColor: "var(--background)", minHeight: "100vh" }}>
-      <div className="mb-4 md:mb-6">
+    <ErrorBoundary>
+      <div className="p-4 md:p-8" style={{ backgroundColor: "var(--background)", minHeight: "100vh" }}>
+        <div className="mb-4 md:mb-6">
         <h1
           className="text-2xl md:text-3xl font-bold mb-2"
           style={{ color: "var(--text-primary)", fontFamily: "var(--font-heading)" }}
@@ -655,6 +657,7 @@ export default function AnalyticsPage() {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
