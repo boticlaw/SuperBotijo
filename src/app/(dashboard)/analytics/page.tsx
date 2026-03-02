@@ -9,7 +9,7 @@ import { TopTasksList } from "@/components/TopTasksList";
 import { EfficiencyGauge } from "@/components/EfficiencyGauge";
 import { TokenFlowSankey, TaskFlowSankey, TimeFlowSankey } from "@/components/sankey/SankeyDiagrams";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MODEL_PRICING, getModelName } from "@/lib/pricing";
 
@@ -52,6 +52,9 @@ export default function AnalyticsPage() {
   const [costData, setCostData] = useState<CostData | null>(null);
   const [costLoading, setCostLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<"7d" | "30d" | "90d">("30d");
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [savingBudget, setSavingBudget] = useState(false);
 
   const [flowType, setFlowType] = useState<FlowType>("token");
   const [period, setPeriod] = useState<Period>("week");
@@ -83,6 +86,31 @@ export default function AnalyticsPage() {
       setCostLoading(false);
     }
   }, [timeframe]);
+
+  const saveBudget = useCallback(async () => {
+    const newBudget = parseFloat(budgetInput);
+    if (isNaN(newBudget) || newBudget <= 0) return;
+
+    setSavingBudget(true);
+    try {
+      const res = await fetch("/api/costs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ budget: newBudget }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (costData) {
+          setCostData({ ...costData, budget: data.budget });
+        }
+        setEditingBudget(false);
+      }
+    } catch (error) {
+      console.error("Failed to save budget:", error);
+    } finally {
+      setSavingBudget(false);
+    }
+  }, [budgetInput, costData]);
 
   useEffect(() => {
     fetchCostData();
@@ -457,9 +485,23 @@ export default function AnalyticsPage() {
                 <div className="p-6 rounded-xl" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Budget</span>
-                    {(costData.thisMonth / costData.budget) * 100 > 80 && (
-                      <AlertTriangle className="w-4 h-4" style={{ color: "var(--error)" }} />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {(costData.thisMonth / costData.budget) * 100 > 80 && (
+                        <AlertTriangle className="w-4 h-4" style={{ color: "var(--error)" }} />
+                      )}
+                      {!editingBudget && (
+                        <button
+                          onClick={() => {
+                            setBudgetInput(costData.budget.toString());
+                            setEditingBudget(true);
+                          }}
+                          className="p-1 rounded hover:bg-white/10 transition-colors"
+                          title="Edit budget"
+                        >
+                          <Pencil className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-3xl font-bold" style={{ color: (costData.thisMonth / costData.budget) * 100 < 60 ? "var(--success)" : (costData.thisMonth / costData.budget) * 100 < 85 ? "var(--warning)" : "var(--error)" }}>
                     {((costData.thisMonth / costData.budget) * 100).toFixed(0)}%
@@ -470,9 +512,50 @@ export default function AnalyticsPage() {
                       style={{ width: `${Math.min((costData.thisMonth / costData.budget) * 100, 100)}%`, backgroundColor: (costData.thisMonth / costData.budget) * 100 < 60 ? "var(--success)" : (costData.thisMonth / costData.budget) * 100 < 85 ? "var(--warning)" : "var(--error)" }}
                     />
                   </div>
-                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                    ${costData.thisMonth.toFixed(2)} / ${costData.budget.toFixed(2)}
-                  </p>
+                  {editingBudget ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>$</span>
+                      <input
+                        type="number"
+                        value={budgetInput}
+                        onChange={(e) => setBudgetInput(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm rounded"
+                        style={{
+                          backgroundColor: "var(--card-elevated)",
+                          border: "1px solid var(--accent)",
+                          color: "var(--text-primary)",
+                        }}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveBudget();
+                          if (e.key === "Escape") setEditingBudget(false);
+                        }}
+                      />
+                      <button
+                        onClick={saveBudget}
+                        disabled={savingBudget}
+                        className="p-1 rounded hover:bg-green-500/20 transition-colors"
+                        title="Save"
+                      >
+                        {savingBudget ? (
+                          <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--success)" }} />
+                        ) : (
+                          <Check className="w-3 h-3" style={{ color: "var(--success)" }} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setEditingBudget(false)}
+                        className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                        title="Cancel"
+                      >
+                        <X className="w-3 h-3" style={{ color: "var(--error)" }} />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                      ${costData.thisMonth.toFixed(2)} / ${costData.budget.toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </div>
 

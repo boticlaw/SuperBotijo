@@ -9,29 +9,55 @@ import {
   getHourlyCost,
 } from "@/lib/usage-queries";
 import path from "path";
+import fs from "fs";
 
 const DB_PATH = path.join(process.cwd(), "data", "usage-tracking.db");
-const DEFAULT_BUDGET = 100.0; // Default budget in USD
+const BUDGET_PATH = path.join(process.cwd(), "data", "budget-settings.json");
+const DEFAULT_BUDGET = 100.0;
+
+interface BudgetSettings {
+  budget: number;
+  alertThreshold: number;
+}
+
+function getBudgetSettings(): BudgetSettings {
+  try {
+    if (fs.existsSync(BUDGET_PATH)) {
+      const data = fs.readFileSync(BUDGET_PATH, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch {
+    console.error("Failed to read budget settings, using defaults");
+  }
+  return { budget: DEFAULT_BUDGET, alertThreshold: 80 };
+}
+
+function saveBudgetSettings(settings: BudgetSettings): void {
+  const dir = path.dirname(BUDGET_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(BUDGET_PATH, JSON.stringify(settings, null, 2));
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const timeframe = searchParams.get("timeframe") || "30d";
-
-  // Parse timeframe to days
   const days = parseInt(timeframe.replace(/\D/g, ""), 10) || 30;
+  const budgetSettings = getBudgetSettings();
 
   try {
     const db = getDatabase(DB_PATH);
 
     if (!db) {
-      // Database doesn't exist yet - return zeros
       return NextResponse.json({
         today: 0,
         yesterday: 0,
         thisMonth: 0,
         lastMonth: 0,
         projected: 0,
-        budget: DEFAULT_BUDGET,
+        budget: budgetSettings.budget,
+        alertThreshold: budgetSettings.alertThreshold,
         byAgent: [],
         byModel: [],
         daily: [],
@@ -40,7 +66,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get all the data
     const summary = getCostSummary(db);
     const byAgent = getCostByAgent(db, days);
     const byModel = getCostByModel(db, days);
@@ -51,7 +76,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ...summary,
-      budget: DEFAULT_BUDGET,
+      budget: budgetSettings.budget,
+      alertThreshold: budgetSettings.alertThreshold,
       byAgent,
       byModel,
       daily,
@@ -66,19 +92,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST endpoint to update budget
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { budget, alerts } = body;
+    const { budget, alertThreshold } = body;
 
-    // In production, save to database
-    // For now, just return success
-    
+    if (typeof budget !== "number" || budget <= 0) {
+      return NextResponse.json(
+        { error: "Budget must be a positive number" },
+        { status: 400 }
+      );
+    }
+
+    const currentSettings = getBudgetSettings();
+    const newSettings: BudgetSettings = {
+      budget: Math.round(budget * 100) / 100,
+      alertThreshold: typeof alertThreshold === "number" ? alertThreshold : currentSettings.alertThreshold,
+    };
+
+    saveBudgetSettings(newSettings);
+
     return NextResponse.json({
       success: true,
-      budget,
-      alerts,
+      ...newSettings,
     });
   } catch (error) {
     console.error("Error updating budget:", error);
