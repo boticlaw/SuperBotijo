@@ -19,7 +19,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const configPath = (process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json";
+    const configPath = (process.env.OPENCLAW_DIR || "/home/daniel/.openclaw") + "/openclaw.json";
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     const agent = config.agents.list.find((a: AgentConfig) => a.id === id);

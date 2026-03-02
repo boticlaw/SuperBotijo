@@ -35,7 +35,7 @@ function loadAdditionalServices(): { systemd: string[]; pm2: string[] } {
   const configLocations = [
     join(process.cwd(), 'allowed-services.json'),
     join(__dirname, '..', '..', '..', 'allowed-services.json'),
-    '/root/.openclaw/workspace/superbotijo/allowed-services.json'
+    '/home/daniel/.openclaw/workspace/superbotijo/allowed-services.json'
   ];
   
   for (const configFile of configLocations) {

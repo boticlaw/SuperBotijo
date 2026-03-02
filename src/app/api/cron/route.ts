@@ -12,7 +12,7 @@ interface GatewayConfig {
 
 function getGatewayConfig(): GatewayConfig {
   try {
-    const configRaw = readFileSync((process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json", "utf-8");
+    const configRaw = readFileSync((process.env.OPENCLAW_DIR || "/home/daniel/.openclaw") + "/openclaw.json", "utf-8");
     const config = JSON.parse(configRaw);
     return {
       token: config.gateway?.auth?.token || "",
