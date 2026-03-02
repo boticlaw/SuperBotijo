@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings, RefreshCw, Server, FileJson } from "lucide-react";
+import { Settings, RefreshCw, Server, FileJson, DollarSign } from "lucide-react";
 import { SystemInfo } from "@/components/SystemInfo";
 import { IntegrationStatus } from "@/components/IntegrationStatus";
 import { QuickActions } from "@/components/QuickActions";
 import { ConfigEditor } from "@/components/ConfigEditor";
+import { PricingEditor } from "@/components/PricingEditor";
 
 interface SystemData {
   agent: {
@@ -41,11 +42,12 @@ export default function SettingsPage() {
   const [systemData, setSystemData] = useState<SystemData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"system" | "config">("system");
+  const [activeTab, setActiveTab] = useState<"system" | "config" | "pricing">("system");
 
   const tabs = [
     { id: "system" as const, label: "System", icon: Server },
     { id: "config" as const, label: "Config", icon: FileJson },
+    { id: "pricing" as const, label: "Pricing", icon: DollarSign },
   ];
 
   const fetchSystemData = async () => {
@@ -153,6 +155,8 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "config" && <ConfigEditor />}
+
+      {activeTab === "pricing" && <PricingEditor />}
 
       {/* Footer Info */}
       <div 

@@ -51,22 +51,34 @@ SuperBotijo is a real-time dashboard for OpenClaw AI agent instances. It reads d
 src/
 ├── app/
 │   ├── (dashboard)/     # Protected dashboard pages
+│   │   └── settings/    # Settings page with System, Config, Pricing tabs
 │   ├── api/             # API routes (all require auth except /api/auth/*, /api/health)
+│   │   ├── pricing/     # Model pricing configuration (GET/PUT/DELETE)
+│   │   ├── costs/       # Usage costs and budget management
+│   │   └── ...          # Other API endpoints
 │   ├── login/           # Login page
 │   └── office/          # 3D office (unprotected)
 ├── components/
 │   ├── SuperBotijo/     # OS-style UI shell (topbar, dock, status bar)
 │   ├── Office3D/        # React Three Fiber 3D components
 │   ├── charts/          # Recharts wrappers
-│   └── *.tsx            # Feature components
+│   ├── ConfigEditor.tsx # Editor for openclaw.json configuration
+│   ├── PricingEditor.tsx# Editor for model pricing overrides
+│   └── *.tsx            # Other feature components
 ├── config/
 │   └── branding.ts      # Branding constants (reads from env vars)
 ├── hooks/               # Custom React hooks
 ├── i18n/                # Internationalization (en, es)
-├── lib/                 # Utilities (pricing, queries, activity logger, etc.)
+├── lib/
+│   ├── pricing.ts       # Model pricing calculation and configuration
+│   ├── usage-collector.ts # Usage data collection
+│   └── ...              # Other utilities
 └── middleware.ts        # Auth guard for all routes
 
 data/                    # JSON data files (gitignored)
+├── model-pricing.json   # User-configured model price overrides
+├── budget-settings.json # Monthly budget configuration
+└── usage-tracking.db    # SQLite database for usage history
 scripts/                 # Setup and data collection scripts
 public/models/           # GLB avatar models
 ```
@@ -302,6 +314,63 @@ Read environment variables via `process.env.VAR_NAME` or in `src/config/branding
 2. Export as named export
 3. Define props interface above the component
 4. Import via `@/components/ComponentName`
+
+### Adding a new AI model for pricing
+
+1. Add model entry to `MODEL_PRICING` array in `src/lib/pricing.ts`
+2. Include: `id`, `name`, `alias` (optional), `inputPricePerMillion`, `outputPricePerMillion`, `contextWindow`
+3. Add cache pricing fields if model supports caching: `cacheReadPricePerMillion`, `cacheWritePricePerMillion`
+4. The model will automatically appear in Settings > Pricing tab
+
+---
+
+## Model Pricing System
+
+SuperBotijo supports **runtime configuration of model prices** via the Settings UI.
+
+### How It Works
+
+1. **Default prices** are defined in `src/lib/pricing.ts` as `MODEL_PRICING` constant
+2. **User overrides** are stored in `data/model-pricing.json` (gitignored)
+3. **Merged pricing** combines defaults with overrides at runtime (override wins by `id`)
+4. **Cost calculations** use merged pricing, not hardcoded values
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/pricing.ts` | Default prices, merge logic, cost calculation |
+| `src/app/api/pricing/route.ts` | CRUD API for price overrides |
+| `src/components/PricingEditor.tsx` | Settings UI for editing prices |
+| `data/model-pricing.json` | Runtime price overrides (auto-created) |
+
+### Key Functions in `pricing.ts`
+
+```typescript
+// Get user-configured overrides (from JSON file)
+getPricingOverrides(): PricingOverride[]
+
+// Get merged pricing (defaults + overrides)
+getMergedPricing(): ModelPricingEntry[]
+
+// Calculate cost using merged pricing
+calculateCost(modelId, inputTokens, outputTokens, cacheRead?, cacheWrite?): number
+```
+
+### Adding Price Overrides Programmatically
+
+```typescript
+// PUT /api/pricing
+{
+  "overrides": [
+    {
+      "id": "anthropic/claude-opus-4-6",
+      "inputPricePerMillion": 12.00,
+      "outputPricePerMillion": 60.00
+    }
+  ]
+}
+```
 
 ---
 

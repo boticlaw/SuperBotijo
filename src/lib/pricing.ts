@@ -1,8 +1,13 @@
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+
 /**
  * OpenClaw Model Pricing
  * Based on OpenRouter and Anthropic pricing as of Feb 2026
  * All prices in USD per million tokens
  */
+
+const PRICING_PATH = join(process.cwd(), "data", "model-pricing.json");
 
 export interface ModelPricing {
   id: string;
@@ -13,6 +18,19 @@ export interface ModelPricing {
   contextWindow: number;
   cacheReadPricePerMillion?: number;
   cacheWritePricePerMillion?: number;
+}
+
+export interface PricingOverride {
+  id: string;
+  inputPricePerMillion: number;
+  outputPricePerMillion: number;
+  cacheReadPricePerMillion?: number;
+  cacheWritePricePerMillion?: number;
+}
+
+export interface ModelPricingEntry extends ModelPricing {
+  isCustomized: boolean;
+  defaults?: Partial<ModelPricing>;
 }
 
 export const MODEL_PRICING: ModelPricing[] = [
@@ -84,6 +102,69 @@ export const MODEL_PRICING: ModelPricing[] = [
 ];
 
 /**
+ * Read pricing overrides from data/model-pricing.json
+ * @returns Array of pricing overrides, or empty array if file doesn't exist or is invalid
+ */
+export function getPricingOverrides(): PricingOverride[] {
+  try {
+    if (!existsSync(PRICING_PATH)) {
+      return [];
+    }
+    const content = readFileSync(PRICING_PATH, "utf-8");
+    const overrides = JSON.parse(content);
+    if (!Array.isArray(overrides)) {
+      console.warn("model-pricing.json is not an array, ignoring overrides");
+      return [];
+    }
+    const validOverrides = overrides.filter((o): o is PricingOverride => {
+      if (!o || typeof o.id !== "string") return false;
+      if (typeof o.inputPricePerMillion !== "number" || o.inputPricePerMillion < 0) return false;
+      if (typeof o.outputPricePerMillion !== "number" || o.outputPricePerMillion < 0) return false;
+      if (o.cacheReadPricePerMillion !== undefined && (typeof o.cacheReadPricePerMillion !== "number" || o.cacheReadPricePerMillion < 0)) return false;
+      if (o.cacheWritePricePerMillion !== undefined && (typeof o.cacheWritePricePerMillion !== "number" || o.cacheWritePricePerMillion < 0)) return false;
+      return true;
+    });
+    return validOverrides;
+  } catch (error) {
+    console.warn("Failed to read pricing overrides:", error);
+    return [];
+  }
+}
+
+/**
+ * Merge default pricing with overrides
+ * @returns Array of merged pricing entries with isCustomized flags
+ */
+export function getMergedPricing(): ModelPricingEntry[] {
+  const overrides = getPricingOverrides();
+  const overrideMap = new Map<string, PricingOverride>();
+  for (const o of overrides) {
+    overrideMap.set(o.id, o);
+  }
+
+  return MODEL_PRICING.map((defaultPricing): ModelPricingEntry => {
+    const override = overrideMap.get(defaultPricing.id);
+    if (!override) {
+      return { ...defaultPricing, isCustomized: false };
+    }
+    return {
+      ...defaultPricing,
+      inputPricePerMillion: override.inputPricePerMillion,
+      outputPricePerMillion: override.outputPricePerMillion,
+      cacheReadPricePerMillion: override.cacheReadPricePerMillion ?? defaultPricing.cacheReadPricePerMillion,
+      cacheWritePricePerMillion: override.cacheWritePricePerMillion ?? defaultPricing.cacheWritePricePerMillion,
+      isCustomized: true,
+      defaults: {
+        inputPricePerMillion: defaultPricing.inputPricePerMillion,
+        outputPricePerMillion: defaultPricing.outputPricePerMillion,
+        cacheReadPricePerMillion: defaultPricing.cacheReadPricePerMillion,
+        cacheWritePricePerMillion: defaultPricing.cacheWritePricePerMillion,
+      },
+    };
+  });
+}
+
+/**
  * Calculate cost for a given model and token usage
  */
 export function calculateCost(
@@ -93,7 +174,8 @@ export function calculateCost(
   cacheReadTokens?: number,
   cacheWriteTokens?: number
 ): number {
-  const pricing = MODEL_PRICING.find(
+  const mergedPricing = getMergedPricing();
+  const pricing = mergedPricing.find(
     (p) => p.id === modelId || p.alias === modelId
   );
 
@@ -120,7 +202,8 @@ export function calculateCost(
  * Get human-readable model name
  */
 export function getModelName(modelId: string): string {
-  const pricing = MODEL_PRICING.find(
+  const mergedPricing = getMergedPricing();
+  const pricing = mergedPricing.find(
     (p) => p.id === modelId || p.alias === modelId
   );
   return pricing?.name || modelId;
