@@ -178,7 +178,7 @@ export async function GET() {
   }
   
   try {
-    const openclawDir = process.env.OPENCLAW_DIR || "/root/.openclaw";
+    const openclawDir = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
     const configPath = join(openclawDir, "openclaw.json");
     
     if (!existsSync(configPath)) {

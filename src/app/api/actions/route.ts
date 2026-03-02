@@ -10,7 +10,7 @@ import { logActivity } from '@/lib/activities-db';
 
 const execAsync = promisify(exec);
 
-const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/root/.openclaw/workspace';
+const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/home/daniel/.openclaw/workspace';
 
 interface ActionResult {
   action: string;

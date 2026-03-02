@@ -39,7 +39,7 @@ interface SkillsConfig {
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'configured-skills.json');
 const DEFAULT_SYSTEM_PATH = '/usr/lib/node_modules/openclaw/skills';
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/root/.openclaw';
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 const DEFAULT_WORKSPACE_PATH = path.join(OPENCLAW_DIR, 'workspace/skills');
 
 /**
@@ -176,7 +176,7 @@ export function parseSkill(skillPath: string, skillName: string, agents: string[
  */
 function buildAgentSkillMap(): Map<string, string[]> {
   const map = new Map<string, string[]>();
-  const openclawDir = process.env.OPENCLAW_DIR || '/root/.openclaw';
+  const openclawDir = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 
   // Agent workspaces: workspace, workspace-infra, workspace-social, etc.
   // Read from openclaw.json if possible

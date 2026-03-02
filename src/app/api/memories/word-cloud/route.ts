@@ -4,7 +4,7 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
 
 export interface WordFrequency {

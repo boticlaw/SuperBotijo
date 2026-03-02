@@ -10,7 +10,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 const execAsync = promisify(exec);
-const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/root/.openclaw/workspace';
+const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/home/daniel/.openclaw/workspace';
 
 interface RepoStatus {
   name: string;

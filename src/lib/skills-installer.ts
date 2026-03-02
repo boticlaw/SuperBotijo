@@ -47,7 +47,7 @@ export interface EligibilityCheck {
 }
 
 // Skills directory
-const SKILLS_PATH = process.env.OPENCLAW_SKILLS_PATH || '/root/.openclaw/skills';
+const SKILLS_PATH = process.env.OPENCLAW_SKILLS_PATH || '/home/daniel/.openclaw/skills';
 
 /**
  * Check if a skill can be installed

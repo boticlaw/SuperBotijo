@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { parseMemoryFiles, type KnowledgeGraph } from "./memory-parser";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
 const MEMORY_DIR = path.join(WORKSPACE, "memory");
 

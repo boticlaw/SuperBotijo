@@ -4,7 +4,7 @@ import { join, dirname } from "path";
 
 export const dynamic = "force-dynamic";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 
 export interface HeartbeatStatus {
   enabled: boolean;

@@ -12,7 +12,7 @@ export async function GET(
     const sessionKey = decodeURIComponent(key);
     
     // Construct path to session JSONL file
-    const workspaceRoot = process.env.WORKSPACE_ROOT || "/root/.openclaw/workspace";
+    const workspaceRoot = process.env.WORKSPACE_ROOT || "/home/daniel/.openclaw/workspace";
     const sessionPath = join(workspaceRoot, "sessions", sessionKey, "session.jsonl");
     
     if (!existsSync(sessionPath)) {

@@ -17,7 +17,7 @@ interface GatewayConfig {
 }
 
 function getGatewayConfig(): GatewayConfig {
-  const openclawDir = process.env.OPENCLAW_DIR || "/root/.openclaw";
+  const openclawDir = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
   try {
     const configRaw = readFileSync(`${openclawDir}/openclaw.json`, "utf-8");
     const config = JSON.parse(configRaw);
