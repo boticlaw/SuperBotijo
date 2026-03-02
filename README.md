@@ -8,53 +8,78 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ---
 
+## Quick Links
+
+| Resource | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Complete technical documentation |
+| [AGENTS.md](./AGENTS.md) | AI coding agent instructions |
+| [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) | Cost tracking guide |
+
+---
+
 ## Features
 
-### Core Monitoring
-- **📊 Dashboard** — Activity overview, agent status, weather widget, and quick stats
-- **🤖 Agents Dashboard** — All agents with sessions, tokens, model, and activity status
-- **🖥️ System Monitor** — Real-time VPS metrics (CPU, RAM, Disk, Network) + PM2/Docker/services
-- **⏰ Cron Manager** — Visual cron manager with weekly timeline, run history, and manual triggers
-- **📋 Activity Feed** — Real-time log of agent actions with heatmap and charts
+### 📊 Core Monitoring
 
-### Data Management
-- **🧠 Memory Browser** — Explore, search, and edit agent memory files with tabs:
-  - Editor (markdown with preview)
-  - Knowledge Graph (interactive concept visualization)
-  - Word Cloud (frequent terms in memories)
-- **📁 File Browser** — Navigate workspace files with:
-  - Preview and in-browser editing
-  - **3D View** — Interactive 3D file tree visualization
-- **🔎 Global Search** — Full-text search across memory and workspace files
-- **💾 Sessions** — All OpenClaw sessions with token usage and context tracking
+| Feature | Description |
+|---------|-------------|
+| **Dashboard** | Activity overview, agent status, weather widget, quick stats |
+| **Agents** | Multi-agent overview with cards, hierarchy, and communication graph |
+| **Sessions** | Session history with transcript viewer and model switching |
+| **Activity** | Real-time activity log with heatmap, filters, and CSV export |
+| **System Monitor** | CPU, RAM, Disk, Network metrics + PM2/Docker/systemd services |
 
-### Analytics & Insights
-- **💰 Analytics** — Cost tracking with tabs:
-  - Overview (charts, metrics)
-  - Flows (Sankey diagrams for tokens/tasks/time)
-  - Costs (daily trends, breakdown by agent/model)
-- **📈 Reports** — Shareable activity reports with export to PNG
-- **🎯 Smart Suggestions** — AI-powered optimization tips based on usage patterns
+### 📁 Data Management
 
-### Agent Intelligence
-- **👥 Sub-Agents** — Real-time sub-agent monitoring with spawn/completion timeline
-- **📡 Communication Graph** — Network visualization of messages between agents
-- **🔄 Workflows** — Visual multi-agent workflow designer with drag & drop
-- **🧪 Model Playground** — Compare responses from multiple models side-by-side
+| Feature | Description |
+|---------|-------------|
+| **Memory Browser** | Edit MEMORY.md with live preview, knowledge graph, word cloud |
+| **File Browser** | Navigate workspaces with 2D/3D visualization |
+| **Global Search** | Full-text search across memory and workspace files |
+| **Git Dashboard** | Repository status, branch info, quick actions |
 
-### 3D Visualization
-- **🏢 Office 3D** — Interactive 3D office with:
-  - Multi-floor building (4 floors + rooftop)
-  - Animated avatars per agent
-  - Day/night lighting
-  - Click interactions (file cabinet → Memory, coffee → Mood, etc.)
-  - Ambient audio (optional)
+### 📈 Analytics & Insights
 
-### Tools & System
-- **📺 Terminal** — Read-only terminal for safe status commands
-- **⚙️ Skills Manager** — View and toggle installed skills
-- **🔔 Notifications** — Real-time notification center with unread badge
-- **🔐 Auth** — Password-protected with rate limiting and secure cookie
+| Feature | Description |
+|---------|-------------|
+| **Analytics** | Daily trends, Sankey diagrams, cost breakdown by agent/model |
+| **Reports** | Generate weekly/monthly reports with PDF export and sharing |
+| **Smart Suggestions** | AI-powered optimization tips based on usage patterns |
+
+### 🤖 Agent Intelligence
+
+| Feature | Description |
+|---------|-------------|
+| **Sub-Agents** | Real-time monitoring with spawn/completion timeline |
+| **Workflows** | Visual multi-agent workflow designer with drag & drop |
+| **Model Playground** | Compare responses from multiple models side-by-side |
+| **Communication Graph** | Network visualization of messages between agents |
+
+### ⏰ Scheduling
+
+| Feature | Description |
+|---------|-------------|
+| **Cron Manager** | OpenClaw + system cron jobs with weekly timeline |
+| **Heartbeat** | Configure HEARTBEAT.md and active hours |
+| **Calendar** | Weekly view of scheduled tasks |
+
+### 🏢 3D Visualization
+
+| Feature | Description |
+|---------|-------------|
+| **Office 3D** | Multi-floor building with animated avatars |
+| **Day/Night** | Automatic lighting based on time of day |
+| **Interactions** | Click objects to navigate (file cabinet → Memory, coffee → Mood) |
+
+### 🛠 Tools
+
+| Feature | Description |
+|---------|-------------|
+| **Terminal** | Browser-based terminal with safe command allowlist |
+| **Skills Manager** | View, enable/disable, and install skills from ClawHub |
+| **Notifications** | Outbox log of all messages sent (Telegram, Discord, etc.) |
+| **Settings** | System info, integration status, config editor |
 
 ---
 
@@ -64,13 +89,13 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ![Dashboard](./docs/screenshots/dashboard.jpg)
 
-**Sessions** — all OpenClaw sessions with token usage and context tracking
-
-![Sessions](./docs/screenshots/sessions.jpg)
-
 **Analytics** — daily cost trends, Sankey diagrams, and breakdown per agent
 
 ![Analytics](./docs/screenshots/costs.jpg)
+
+**Sessions** — all OpenClaw sessions with token usage and context tracking
+
+![Sessions](./docs/screenshots/sessions.jpg)
 
 **System Monitor** — real-time CPU, RAM, Disk, and Network metrics
 
@@ -84,28 +109,57 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ## Requirements
 
-- **Node.js** 18+ (tested with v22)
-- **[OpenClaw](https://openclaw.ai)** installed and running on the same host
-- **PM2** or **systemd** (recommended for production)
-- **Caddy** or another reverse proxy (for HTTPS in production)
+| Requirement | Version |
+|-------------|---------|
+| Node.js | 18+ (tested with v22) |
+| OpenClaw | Installed on the same host |
+| PM2 or systemd | Recommended for production |
+| Reverse proxy | Caddy or nginx (for HTTPS) |
 
 ---
 
-## How it works
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Browser (React 19)                       │
+├─────────────────────────────────────────────────────────────┤
+│                    Next.js 16 App Router                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  21 Pages   │  │ ~90 APIs    │  │    Auth Middleware   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│                      Data Sources                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   OpenClaw  │  │   SQLite    │  │     JSON Files      │  │
+│  │  (CLI/FS)   │  │  (2 DBs)    │  │      (data/)        │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete technical documentation.**
+
+---
+
+## How It Works
 
 SuperBotijo reads directly from your OpenClaw installation:
 
 ```
 /root/.openclaw/              ← OPENCLAW_DIR (configurable)
 ├── openclaw.json             ← agents list, channels, models config
-├── workspace/                ← main agent workspace (MEMORY.md, SOUL.md, etc.)
+├── workspace/                ← main agent workspace
+│   ├── MEMORY.md             ← agent memory
+│   ├── SOUL.md               ← agent personality
+│   ├── IDENTITY.md           ← agent identity
+│   └── sessions/             ← session history (.jsonl files)
 ├── workspace-studio/         ← sub-agent workspaces
 ├── workspace-infra/
 ├── ...
 └── workspace/superbotijo/    ← SuperBotijo lives here
 ```
 
-The app uses `OPENCLAW_DIR` to locate `openclaw.json` and all workspaces. **No manual agent configuration needed** — agents are auto-discovered from `openclaw.json`.
+The app uses `OPENCLAW_DIR` to locate `openclaw.json` and all workspaces. **No manual agent configuration needed** — agents are auto-discovered.
 
 ---
 
@@ -130,32 +184,19 @@ Edit `.env.local`:
 
 ```env
 # --- Auth (required) ---
-# Strong password to log in to the dashboard
 ADMIN_PASSWORD=your-secure-password-here
-
-# Random secret used to sign the auth cookie
-# Generate with: openssl rand -base64 32
 AUTH_SECRET=your-random-32-char-secret-here
 
-# --- OpenClaw paths (optional — defaults work for standard installs) ---
+# --- OpenClaw paths (optional) ---
 # OPENCLAW_DIR=/root/.openclaw
 
-# --- Branding (customize for your instance) ---
+# --- Branding (customize) ---
 NEXT_PUBLIC_AGENT_NAME=SuperBotijo
 NEXT_PUBLIC_AGENT_EMOJI=🤖
-NEXT_PUBLIC_AGENT_DESCRIPTION=Your AI co-pilot, powered by OpenClaw
-NEXT_PUBLIC_AGENT_LOCATION=             # e.g. "Madrid, Spain"
-NEXT_PUBLIC_BIRTH_DATE=                 # ISO date, e.g. "2026-01-01"
-NEXT_PUBLIC_AGENT_AVATAR=               # path to image in /public, e.g. "/avatar.jpg"
-
-NEXT_PUBLIC_OWNER_USERNAME=your-username
-NEXT_PUBLIC_OWNER_EMAIL=your-email@example.com
-NEXT_PUBLIC_TWITTER_HANDLE=@username
-NEXT_PUBLIC_COMPANY_NAME=MISSION CONTROL, INC.
-NEXT_PUBLIC_APP_TITLE=SuperBotijo
+NEXT_PUBLIC_AGENT_DESCRIPTION=Your AI co-pilot
+NEXT_PUBLIC_AGENT_LOCATION=Madrid, Spain
+NEXT_PUBLIC_BIRTH_DATE=2026-01-01
 ```
-
-> **Tip:** `OPENCLAW_DIR` defaults to `/root/.openclaw`. If your OpenClaw is installed elsewhere, set this variable.
 
 ### 3. Initialize data files
 
@@ -170,26 +211,16 @@ cp data/tasks.example.json data/tasks.json
 ### 4. Generate secrets
 
 ```bash
-# Auth secret
-openssl rand -base64 32
-
-# Password (or use a password manager)
-openssl rand -base64 18
+openssl rand -base64 32   # AUTH_SECRET
+openssl rand -base64 18   # ADMIN_PASSWORD
 ```
 
 ### 5. Run
 
 ```bash
-# Development
-npm run dev
-# → http://localhost:3000
-
-# Production build
-npm run build
-npm start
+npm run dev    # Development → http://localhost:3000
+npm run build && npm start  # Production
 ```
-
-Login at `http://localhost:3000` with the `ADMIN_PASSWORD` you set.
 
 ---
 
@@ -199,17 +230,15 @@ Login at `http://localhost:3000` with the `ADMIN_PASSWORD` you set.
 
 ```bash
 npm run build
-
 pm2 start npm --name "superbotijo" -- start
 pm2 save
-pm2 startup   # enable auto-restart on reboot
+pm2 startup
 ```
 
 ### systemd
 
-Create `/etc/systemd/system/superbotijo.service`:
-
 ```ini
+# /etc/systemd/system/superbotijo.service
 [Unit]
 Description=SuperBotijo — OpenClaw Dashboard
 After=network.target
@@ -233,184 +262,20 @@ sudo systemctl enable superbotijo
 sudo systemctl start superbotijo
 ```
 
-### Reverse proxy — Caddy (HTTPS)
+### Reverse Proxy (Caddy)
 
-```caddy
+```caddyfile
 superbotijo.yourdomain.com {
     reverse_proxy localhost:3000
 }
-```
-
-> When behind HTTPS, `secure: true` is set automatically on the auth cookie.
-
----
-
-## Configuration
-
-### Agent branding
-
-All personal data stays in `.env.local` (gitignored). The `src/config/branding.ts` file reads from env vars — **never edit it directly** with your personal data.
-
-### Agent discovery
-
-Agents are auto-discovered from `openclaw.json` at startup. The `/api/agents` endpoint reads:
-
-```json
-{
-  "agents": {
-    "list": [
-      { "id": "main", "name": "...", "workspace": "...", "model": {...} },
-      { "id": "studio", "name": "...", "workspace": "..." }
-    ]
-  }
-}
-```
-
-Each agent can define its own visual appearance in `openclaw.json`:
-
-```json
-{
-  "id": "studio",
-  "name": "My Studio Agent",
-  "ui": {
-    "emoji": "🎬",
-    "color": "#E91E63"
-  }
-}
-```
-
-### Office 3D — agent positions
-
-The 3D office has default positions for up to 6 agents. To customize positions, names, and colors for your own agents, edit `src/components/Office3D/agentsConfig.ts`:
-
-```ts
-export const AGENTS: AgentConfig[] = [
-  {
-    id: "main",       // must match workspace ID
-    name: "...",      // display name (can also come from API)
-    emoji: "🤖",
-    position: [0, 0, 0],
-    color: "#FFCC00",
-    role: "Main Agent",
-  },
-  // add your sub-agents here
-];
-```
-
-### 3D Avatar models
-
-To add custom 3D avatars (Ready Player Me GLB format), place them in `public/models/`:
-
-```
-public/models/
-├── main.glb        ← main agent avatar
-├── studio.glb      ← workspace-studio agent
-└── infra.glb       ← workspace-infra agent
-```
-
-Filename must match the agent `id`. If no file is found, a colored sphere is shown as fallback.  
-See `public/models/README.md` for full instructions.
-
-### Cost tracking
-
-Usage is collected from OpenClaw's SQLite databases via a script:
-
-```bash
-# Collect once
-npx tsx scripts/collect-usage.ts
-
-# Auto-collect every hour (adds a cron job)
-./scripts/setup-cron.sh
-```
-
-See [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) for details.
-
----
-
-## Project Structure
-
-```
-superbotijo/
-├── src/
-│   ├── app/
-│   │   ├── (dashboard)/      # Dashboard pages (protected)
-│   │   ├── api/              # API routes
-│   │   ├── login/            # Login page
-│   │   └── office/           # 3D office (unprotected route)
-│   ├── components/
-│   │   ├── SuperBotijo/      # OS-style UI shell (dock, status bar)
-│   │   ├── Office3D/         # React Three Fiber 3D office
-│   │   ├── charts/           # Recharts wrappers
-│   │   ├── sankey/           # Sankey diagram components
-│   │   ├── workflow/         # Workflow designer
-│   │   └── files-3d/         # 3D file tree
-│   ├── config/
-│   │   └── branding.ts       # Branding constants (reads from env vars)
-│   └── lib/                  # Utilities (pricing, queries, activity logger...)
-├── data/                     # JSON data files (gitignored — use .example versions)
-├── docs/                     # Extended documentation
-├── public/
-│   └── models/               # GLB avatar models (add your own)
-├── scripts/                  # Setup and data collection scripts
-├── .env.example              # Environment variable template
-└── middleware.ts             # Auth guard for all routes
-```
-
----
-
-## Security
-
-- All routes (including all `/api/*`) require authentication — handled by `src/middleware.ts`
-- `/api/auth/login` and `/api/health` are the only public endpoints
-- Login is rate-limited: **5 failed attempts → 15-minute lockout** per IP
-- Auth cookie is `httpOnly`, `sameSite: lax`, and `secure` in production
-- Terminal API uses a strict command allowlist — `env`, `curl`, `wget`, `node`, `python` are blocked
-- **Never commit `.env.local`** — it contains your credentials
-
-Generate fresh secrets:
-
-```bash
-openssl rand -base64 32   # AUTH_SECRET
-openssl rand -base64 18   # ADMIN_PASSWORD
-```
-
----
-
-## Troubleshooting
-
-**"Gateway not reachable" / agent data missing**
-
-```bash
-openclaw status
-openclaw gateway start   # if not running
-```
-
-**"Database not found" (cost tracking)**
-
-```bash
-npx tsx scripts/collect-usage.ts
-```
-
-**Build errors after pulling updates**
-
-```bash
-rm -rf .next node_modules
-npm install
-npm run build
-```
-
-**Scripts not executable**
-
-```bash
-chmod +x scripts/*.sh
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer | Tech |
-|---|---|
+| Layer | Technology |
+|-------|------------|
 | Framework | Next.js 16 (App Router) |
 | UI | React 19 + Tailwind CSS v4 |
 | 3D | React Three Fiber + Drei + Rapier |
@@ -422,27 +287,195 @@ chmod +x scripts/*.sh
 
 ---
 
-## Acknowledgments
+## Project Structure
 
-This project is a fork and extended version of **[TenecitOS](https://github.com/carlosazaustre/tenecitOS)** by [Carlos Azaustre](https://github.com/carlosazaustre). 
+```
+superbotijo/
+├── src/
+│   ├── app/
+│   │   ├── (dashboard)/     # 21 dashboard pages
+│   │   ├── api/             # ~90 API endpoints
+│   │   ├── login/           # Login page
+│   │   └── office/          # 3D office (public)
+│   ├── components/          # ~100 React components
+│   │   ├── SuperBotijo/     # OS-style UI shell
+│   │   ├── Office3D/        # 3D office scene
+│   │   ├── charts/          # Recharts wrappers
+│   │   ├── sankey/          # Sankey diagrams
+│   │   ├── workflow/        # Workflow designer
+│   │   └── files-3d/        # 3D file tree
+│   ├── hooks/               # 6 custom hooks
+│   ├── lib/                 # 20 utility modules
+│   ├── config/              # Branding config
+│   ├── i18n/                # Internationalization
+│   └── middleware.ts        # Auth guard
+├── data/                    # JSON data files
+├── scripts/                 # Setup scripts
+├── public/models/           # GLB avatar models
+└── docs/                    # Documentation
+```
 
-Big thanks to Carlos for creating the original project and providing a solid foundation for building OpenClaw dashboards!
+---
 
-### What's New in SuperBotijo
+## Pages Reference
 
-SuperBotijo extends TenecitOS with:
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Dashboard | Overview, stats, activity feed |
+| `/agents` | Agents | Multi-agent system overview |
+| `/sessions` | Sessions | Session history & transcripts |
+| `/analytics` | Analytics | Charts, costs, Sankey diagrams |
+| `/activity` | Activity | Activity log with filters |
+| `/memory` | Memory | Knowledge base editor |
+| `/files` | Files | File browser (2D/3D) |
+| `/system` | System | Hardware & services monitor |
+| `/cron` | Cron | Job scheduler |
+| `/subagents` | Subagents | Sub-agent monitoring |
+| `/workflows` | Workflows | Visual workflow designer |
+| `/playground` | Playground | Model comparison |
+| `/reports` | Reports | Generated reports |
+| `/skills` | Skills | Skills manager |
+| `/notifications` | Notifications | Outbox log |
+| `/terminal` | Terminal | Browser terminal |
+| `/settings` | Settings | Configuration |
+| `/git` | Git | Repository dashboard |
+| `/logs` | Logs | Real-time log streaming |
+| `/calendar` | Calendar | Weekly view |
+| `/about` | About | Agent profile |
+| `/office` | Office 3D | 3D visualization |
 
-- **Knowledge Graph** — Interactive concept visualization from memories
-- **Word Cloud** — Frequent terms visualization
-- **3D File Tree** — Navigate files in 3D space
-- **Sankey Diagrams** — Flow visualization for tokens, tasks, and time
-- **Communication Graph** — Network visualization of agent messages
-- **Workflow Designer** — Visual multi-agent orchestration
-- **Model Playground** — Compare multiple models side-by-side
-- **Smart Suggestions** — AI-powered optimization tips
-- **Shareable Reports** — Export and share activity reports
-- **Multi-floor 3D Office** — 4-floor building with rooftop
-- **Consolidated Navigation** — Tab-based UI to reduce menu clutter
+---
+
+## API Overview
+
+### Categories
+
+| Category | Endpoints | Description |
+|----------|-----------|-------------|
+| Auth | 2 | Login, logout |
+| Agents | 12 | CRUD, status, metrics, mood |
+| Sessions | 3 | List, transcript, model change |
+| Files | 9 | CRUD, upload, download, tree |
+| Activities | 5 | CRUD, stats, stream, approve |
+| Analytics | 4 | Data, token/task/time flows |
+| Costs | 3 | Summary, efficiency, top tasks |
+| Cron | 9 | CRUD, runs, system jobs |
+| Skills | 7 | CRUD, toggle, ClawHub |
+| Workflows | 5 | CRUD, execute |
+| System | 6 | Info, monitor, services |
+| Other | 20+ | Weather, git, logs, etc. |
+
+**See [ARCHITECTURE.md](./ARCHITECTURE.md#api-reference) for complete API documentation.**
+
+---
+
+## Security
+
+| Feature | Implementation |
+|---------|----------------|
+| **Auth** | Password-protected with httpOnly cookie |
+| **Rate Limiting** | 5 attempts → 15-min lockout per IP |
+| **Route Protection** | All routes protected by middleware |
+| **Terminal** | Strict command allowlist |
+| **File Access** | Path sanitization, protected files |
+
+**Public routes only:**
+- `/login`
+- `/api/auth/*`
+- `/api/health`
+- `/reports/[token]` (token-based)
+
+---
+
+## Configuration
+
+### Agent Branding
+
+All personal data in `.env.local` (gitignored). See `src/config/branding.ts`.
+
+### Agent Discovery
+
+Agents auto-discovered from `openclaw.json`:
+
+```json
+{
+  "agents": {
+    "list": [
+      { "id": "main", "name": "...", "workspace": "..." },
+      { "id": "studio", "name": "...", "workspace": "...", "ui": { "emoji": "🎬", "color": "#E91E63" } }
+    ]
+  }
+}
+```
+
+### Office 3D — Agent Positions
+
+Edit `src/components/Office3D/agentsConfig.ts`:
+
+```typescript
+export const AGENTS: AgentConfig[] = [
+  { id: "main", name: "Main", emoji: "🤖", position: [0, 0, 0], color: "#FFCC00", role: "Primary" },
+  // add more agents
+];
+```
+
+### Custom Avatars
+
+Place GLB files in `public/models/`:
+
+```
+public/models/
+├── main.glb      ← matches agent id
+├── studio.glb
+└── infra.glb
+```
+
+---
+
+## Cost Tracking
+
+```bash
+# Collect once
+npx tsx scripts/collect-usage.ts
+
+# Setup hourly cron
+./scripts/setup-cron.sh
+```
+
+See [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) for details.
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Gateway not reachable" | `openclaw gateway start` |
+| "Database not found" | `npx tsx scripts/collect-usage.ts` |
+| Build errors | `rm -rf .next node_modules && npm install && npm run build` |
+| Scripts not executable | `chmod +x scripts/*.sh` |
+
+---
+
+## What's New in SuperBotijo
+
+Compared to the original TenecitOS:
+
+| Feature | Description |
+|---------|-------------|
+| Knowledge Graph | Interactive concept visualization |
+| Word Cloud | Frequent terms from memories |
+| 3D File Tree | Navigate files in 3D space |
+| Sankey Diagrams | Token/task/time flow visualization |
+| Communication Graph | Agent message network |
+| Workflow Designer | Visual multi-agent orchestration |
+| Model Playground | Side-by-side model comparison |
+| Smart Suggestions | AI-powered optimization tips |
+| Shareable Reports | Export and share reports |
+| Multi-floor Office | 4-floor building + rooftop |
+| Git Dashboard | Repository management |
+| Log Streaming | Real-time log viewer |
+| i18n | English + Spanish support |
 
 ---
 
@@ -450,11 +483,11 @@ SuperBotijo extends TenecitOS with:
 
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. **Keep personal data out of commits** — use `.env.local` and `data/` (both gitignored)
-4. Write clear commit messages
+3. **Keep personal data out of commits** — use `.env.local` and `data/`
+4. Run `npm run lint && npx tsc --noEmit` before committing
 5. Open a PR
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ---
 
@@ -466,8 +499,8 @@ MIT — see [LICENSE](./LICENSE)
 
 ## Links
 
-- [TenecitOS](https://github.com/carlosazaustre/tenecitOS) — Original project this is based on
-- [OpenClaw](https://openclaw.ai) — the AI agent runtime this dashboard is built for
+- [TenecitOS](https://github.com/carlosazaustre/tenecitOS) — Original project
+- [OpenClaw](https://openclaw.ai) — AI agent runtime
 - [OpenClaw Docs](https://docs.openclaw.ai)
 - [Discord Community](https://discord.com/invite/clawd)
-- [GitHub Issues](../../issues) — bug reports and feature requests
+- [GitHub Issues](../../issues)

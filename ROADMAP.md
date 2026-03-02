@@ -576,35 +576,79 @@
 | 11. Advanced Viz | ✅ | 100% |
 | 12. Collaboration | ✅ | 90% (solo Team Dashboard pendiente) |
 | 13. UI/UX Improvements | ✅ | 100% |
+| 14. Mission Control Features | ⏳ | 0% (51 items planned) |
 
-**Overall: 100% completado**
+**Overall: 93% completado (Fase 14 pendiente)**
+
+---
+
+## Fase 14: Mission Control Features 🎯
+> Ideas extraídas del análisis de builderz-labs/mission-control - Marzo 2026
+>
+> **Referencia:** Dashboard de orquestación de agentes con 26 paneles, SQLite, RBAC, webhooks, y más.
+>
+> **Resumen:**
+> - **Tier 1 (Core):** 6 features - Kanban, Quality Gates, Heartbeat, Standup, Webhooks, GitHub Sync
+> - **Tier 2 (Integrations):** 4 features - Alerts, GitHub, Direct CLI, Claude Scanner
+> - **Tier 3 (Infrastructure):** 4 items - SQLite WAL, Scheduler, Rate Limiting, Audit Log
+> - **Tier 4 (Enhanced):** 7 items - Claude Scanner, Multi-gateway, EventBus, Comments, Settings, Claude Sessions
+> - **Tier 5 (Future):** 3 items - RBAC, Pipelines, Super Admin
+> - **Tier 6 (Polish):** 7 items - Command Palette, Search, Templates, Costs, Replay, Health
+> - **Tier 7 (UI Components):** 20 items - E2E, CLI, Quick Start, Notifications, Accessibility, i18n, Tutorials, Help, Profile, 2FA, Maintenance, Snapshots, Audit, Webhooks, Labels, Batch, Activity Maps, Keyboard Nav, Undo/Redo, Bookmarks, Workspace Templates, Custom Themes, API Versioning, Rate Limits, Feature Flags, Changelog, Session Management, Debug Panel, Shortcuts Modal, Onboarding, Empty States, Accessibility Menu, Notification Sounds, API Health, Quick Actions, Drag & Drop, Tooltips, Toasts, Confirm Dialogs, Modals, Table Pagination, Command Palette, Widget Library, Form Validation, Data Fetching, Error Boundaries, Loading States, Animations, Theme Provider, Notification Badge, Status Indicator, Filter Bar, Sortable Table, Date Range Picker, Search Bar, Sidebar Nav, Tab System, Breadcrumb, Avatar, Badge, Card
+> - **Total:** 51 new features identified
 
 ---
 
 ## Próximos Pasos (Future Work)
 
-### Tier 1: Polish
-1. **Team Dashboard** - Multi-user support
+### Tier 1: Start Here (Phase 14)
+1. **Kanban Board** - Sistema de gestión de tareas con drag & drop
+2. **Quality Gates** - Aprobaciones obligatorias
+3. **Agent Heartbeat** - Detección de agentes offline
+4. **Daily Standup** - Reportes automát de estado
+5. **Webhooks Outbound** - Notificaciones a servicios externos
 
-### Tier 2: Experimental
-1. **AI Agents personalizables** - Configurar comportamiento de cada agente
-2. **Plugins system** - Extensions de terceros
+### Tier 2: Then Continue
+1. **GitHub Issues Sync** - Sincronizar issues como tasks
+2. **Direct CLI Connection** - Conectar CLIs sin gateway
+3. **SQLite WAL Mode** - Migrar de JSON a SQLite
+4. **Background Scheduler** - Jobs en background
+
+### Tier 3: Future
+1. **RBAC** - Sistema de roles multi-usuario
+2. **Pipeline Orchestration** - Workflows con templates
+3. **Super Admin / Multi-tenant** - Provisioning de múltiples tenants
+4. **Plugins system** - Extensions de terceros
+5. **AI Agents personalizables** - Configurar comportamiento de cada agente
 
 ---
 
 *Creado: 2026-02-07*
-*Última actualización: 2026-02-28*
+*Última actualización: 2026-03-02*
 
-**NUEVO en 2026-02-28:**
-- Gateway Connection Status en TopBar (Issue #1)
-- Model Selector en Session Cards (Issue #2)
-- Approval Cards en Activity Feed (Issue #3)
-- Fleet Sidebar con Filtros (Issue #50)
-- Runtime Event Bridge Pattern (Issue #51)
-- Transcript Viewer para Sessions (Issue #52)
-- WebSocket Proxy para Real-time (Issue #53)
-- Workflow Operations Layer (Issue #54)
-- Agent Create Modal Mejorado (Issue #55)
-- Skills System Rediseñado (Issue #56)
-- Inspect Panels para Agentes (Issue #57)
-- Color System Semántico (Issue #58)
+**NUEVO en 2026-03-02:**
+> Ideas extraídas del análisis de builderz-labs/mission-control - Marzo 2026
+>
+> **Referencia:** Dashboard de orquestación de agentes con 26 paneles, SQLite, RBAC, webhooks, y más.
+>
+> **Resumen de nuevas features identificadas:**
+> - Tier 1 - 6 core features (Kanban, Quality Gates, Heartbeat, Standup, Webhooks, GitHub Sync, Direct CLI)
+> - Tier 2 - 4 integrations (Webhooks, Alerts, GitHub, Direct CLI)
+> - Tier 3 - 4 infrastructure items (SQLite WAL, Scheduler, Rate Limiting, Audit Log)
+> - Tier 4 - 7 enhanced features (Claude Scanner, Multi-gateway, EventBus, Comments, Settings, Claude Sessions)
+> - Tier 5 - 3 future items (RBAC, Pipelines, Multi-tenant)
+> - Tier 6 - 7 polish items (Command Palette, Search, Templates, Costs, Replay, Health)
+> - Tier 7 - 20 UI components (E2E, CLI Dashboard, Quick Start, Notifications, Accessibility, i18n, Tutorials, Help, Profile, 2FA, Maintenance, Snapshots, Audit Trail, Webhooks, Labels, Batch Ops, Activity Maps, Keyboard Nav, Undo/Redo, Bookmarks, Workspace Templates, Custom Themes, API Versioning, Rate Limits, Feature Flags, Changelog, Session Management, Debug Panel, Shortcuts Modal, Onboarding, Empty States, Accessibility Menu, Notification Sounds, API Health, Quick Actions, Drag & Drop, Tooltips, Toasts, Confirm Dialogs, Modals, Table Pagination, Command Palette, Widget Library
+ Form Validation, Data Fetching, Error Boundaries, Loading States, Animations, Theme Provider
+ Notification Badge
+ Status Indicator, Filter Bar
+ Sortable Table
+ Date Range Picker
+ Search Bar
+ Sidebar Nav
+ Tab System
+ Breadcrumb
+ Avatar, Badge, Card)
+> - **Total: 51 new features identified**
+>
+> **Ver detalle completo:** Ver secciones 14.1 - 14.7 en este documento
