@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Fira Code / Fira Sans - Recommended by UI/UX Pro Max skill */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
 /* ============================================
    TenacitOS Design System
    Based on tenacios-design.json (Pencil)
@@ -124,10 +127,10 @@
   --type-build: #FF9F0A;
   --type-build-bg: rgba(255, 159, 10, 0.125);
   
-  /* Typography - uses Next.js font variables */
-  --font-heading: var(--font-sora), system-ui, sans-serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), monospace;
+  /* Typography - uses Next.js font variables with Fira Sans fallback */
+  --font-heading: var(--font-sora), 'Fira Sans', system-ui, sans-serif;
+  --font-body: var(--font-inter), 'Fira Sans', system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), 'Fira Code', monospace;
   
   /* Spacing */
   --radius-sm: 4px;
@@ -197,6 +200,87 @@ code, pre, .font-mono {
   transition-property: background-color, border-color, color, fill, stroke, opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* Reduced motion support - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus states - consistent across all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure cursor pointer on clickable elements */
+button,
+[role="button"],
+a,
+input[type="submit"],
+input[type="reset"],
+input[type="button"],
+[tabindex]:not([tabindex="-1"]) {
+  cursor: pointer;
+}
+
+/* Ensure minimum touch target size (44x44px) */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Reduced motion support - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus states - consistent across all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Card styles */
