@@ -1,6 +1,6 @@
 /**
  * Sessions API
- * GET /api/sessions          → list all sessions (from openclaw sessions list --json)
+ * GET /api/sessions          → list all sessions (from openclaw sessions --json)
  * GET /api/sessions?id=xxx   → get messages from a specific session (reads JSONL)
  */
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,7 +8,7 @@ import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/root/.openclaw';
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 
 interface RawSession {
   key: string;
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
 
 async function listSessions(): Promise<NextResponse> {
   try {
-    const output = execSync('openclaw sessions list --json 2>/dev/null', {
+    const output = execSync('openclaw sessions --json 2>/dev/null', {
       timeout: 10000,
       encoding: 'utf-8',
     });

@@ -44,7 +44,7 @@ function parseSubagentKey(key: string): { parentId: string; subagentId: string }
 
 export async function GET() {
   try {
-    const output = execSync('openclaw sessions list --json 2>/dev/null', {
+    const output = execSync('openclaw sessions --json 2>/dev/null', {
       timeout: 10000,
       encoding: 'utf-8',
     });
