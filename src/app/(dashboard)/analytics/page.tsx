@@ -11,7 +11,13 @@ import { TokenFlowSankey, TaskFlowSankey, TimeFlowSankey } from "@/components/sa
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { MODEL_PRICING, getModelName } from "@/lib/pricing";
+import { MODEL_PRICING, normalizeModelId } from "@/lib/pricing-types";
+
+// Helper to get model name (client-side)
+function getModelName(modelId: string): string {
+  const pricing = MODEL_PRICING.find((p) => p.id === modelId || p.alias === modelId);
+  return pricing?.name || modelId;
+}
 
 interface AnalyticsData {
   byDay: { date: string; count: number }[];

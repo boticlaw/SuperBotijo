@@ -1,3 +1,4 @@
+import "server-only";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
