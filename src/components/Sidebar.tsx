@@ -33,6 +33,8 @@ import {
   LayoutGrid,
   Target,
   BookOpen,
+  Rocket,
+  Briefcase,
 } from "lucide-react";
 import { getAgentDisplayName } from "@/config/branding";
 
@@ -41,10 +43,19 @@ const navGroups = [
     title: "Main",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/mission", label: "Mission", icon: Target },
       { href: "/agents", label: "Agents", icon: Users },
       { href: "/subagents", label: "Sub-Agents", icon: Bot },
       { href: "/office", label: "🎮 Office", icon: Gamepad2, highlight: true },
+    ],
+  },
+  {
+    title: "Mission Control",
+    items: [
+      { href: "/mission", label: "Mission", icon: Target },
+      { href: "/kanban", label: "Kanban", icon: LayoutGrid },
+      { href: "/projects", label: "Projects", icon: Briefcase },
+      { href: "/journal", label: "Journal", icon: BookOpen },
+      { href: "/autonomy", label: "Autonomy", icon: Rocket },
     ],
   },
   {
@@ -56,7 +67,6 @@ const navGroups = [
       { href: "/activity", label: "Activity", icon: Activity },
       { href: "/calendar", label: "Calendar", icon: Calendar },
       { href: "/notifications", label: "Notifications", icon: Bell },
-      { href: "/journal", label: "Journal", icon: BookOpen },
     ],
   },
   {
@@ -69,7 +79,6 @@ const navGroups = [
   {
     title: "Tools",
     items: [
-      { href: "/kanban", label: "Kanban", icon: LayoutGrid },
       { href: "/workflows", label: "Workflows", icon: Workflow },
       { href: "/playground", label: "Playground", icon: Beaker },
       { href: "/terminal", label: "Terminal", icon: SquareTerminal },

@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { OperationsJournalEntry, CreateJournalEntryInput, UpdateJournalEntryInput } from "@/lib/mission-types";
 import { JournalTimeline, JournalEditorModal, JournalFilters } from "@/components/journal";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, Target,
+  LayoutGrid,
+  Briefcase,
+  Rocket } from "lucide-react";
 
 interface JournalResponse {
   entries: OperationsJournalEntry[];
@@ -204,6 +208,61 @@ export default function JournalPage() {
         entry={editingEntry}
         isSaving={isSaving}
       />
+
+      {/* Quick Links to Mission Control */}
+      <div
+        className="mt-6 rounded-xl p-4"
+        style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+      >
+        <h3
+          className="mb-3 text-sm font-semibold"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Mission Control
+        </h3>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <Link
+            href="/mission"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <Target className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Mission
+            </span>
+          </Link>
+          <Link
+            href="/kanban"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <LayoutGrid className="h-4 w-4" style={{ color: "var(--info)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Kanban
+            </span>
+          </Link>
+          <Link
+            href="/projects"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <Briefcase className="h-4 w-4" style={{ color: "var(--success)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Projects
+            </span>
+          </Link>
+          <Link
+            href="/autonomy"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <Rocket className="h-4 w-4" style={{ color: "var(--warning)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Autonomy
+            </span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
