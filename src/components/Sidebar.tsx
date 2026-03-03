@@ -31,6 +31,7 @@ import {
   Calendar,
   Bell,
   LayoutGrid,
+  Target,
 } from "lucide-react";
 import { getAgentDisplayName } from "@/config/branding";
 
@@ -39,6 +40,7 @@ const navGroups = [
     title: "Main",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/mission", label: "Mission", icon: Target },
       { href: "/agents", label: "Agents", icon: Users },
       { href: "/subagents", label: "Sub-Agents", icon: Bot },
       { href: "/office", label: "🎮 Office", icon: Gamepad2, highlight: true },

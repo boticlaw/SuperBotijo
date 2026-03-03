@@ -7,6 +7,19 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { logActivity } from "@/lib/activities-db";
+import type {
+  Project,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ListProjectsFilters,
+  ProjectStatus,
+  AgentIdentity,
+  CreateAgentIdentityInput,
+  UpdateAgentIdentityInput,
+  OperationsJournalEntry,
+  CreateJournalEntryInput,
+  ListJournalEntriesFilters,
+} from "@/lib/mission-types";
 
 const DB_PATH = path.join(process.cwd(), "data", "kanban.db");
 
@@ -141,6 +154,41 @@ function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_kanban_tasks_order ON kanban_tasks("order");
     CREATE INDEX IF NOT EXISTS idx_kanban_tasks_assignee ON kanban_tasks(assignee);
     CREATE INDEX IF NOT EXISTS idx_kanban_columns_order ON kanban_columns("order");
+
+    -- Mission Control Tables (idempotent migration)
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      mission_alignment TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      milestones TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS agent_identities (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      personality TEXT,
+      avatar TEXT,
+      mission TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS operations_journal (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      narrative TEXT NOT NULL,
+      highlights TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+    CREATE INDEX IF NOT EXISTS idx_operations_journal_date ON operations_journal(date);
   `);
 
   // Seed default columns if empty
@@ -721,6 +769,377 @@ function parseColumnRow(row: Record<string, unknown>): KanbanColumn {
 }
 
 // ============================================================================
+// Project CRUD Operations
+// ============================================================================
+
+/**
+ * Create a new project
+ * @param input - Project creation data
+ * @returns The created project
+ */
+export function createProject(input: CreateProjectInput): Project {
+  const db = getDb();
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const status = input.status ?? "active";
+  const milestones = input.milestones ?? [];
+
+  db.prepare(`
+    INSERT INTO projects (id, name, description, mission_alignment, status, milestones, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    input.name,
+    input.description ?? null,
+    input.missionAlignment ?? null,
+    status,
+    JSON.stringify(milestones),
+    now,
+    now
+  );
+
+  return {
+    id,
+    name: input.name,
+    description: input.description ?? null,
+    missionAlignment: input.missionAlignment ?? null,
+    status: status as ProjectStatus,
+    milestones,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Get a project by ID
+ * @param id - Project UUID
+ * @returns The project or null if not found
+ */
+export function getProject(id: string): Project | null {
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM projects WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  return row ? parseProjectRow(row) : null;
+}
+
+/**
+ * Update a project
+ * @param id - Project UUID
+ * @param updates - Fields to update
+ * @returns The updated project or null if not found
+ */
+export function updateProject(id: string, updates: UpdateProjectInput): Project | null {
+  const db = getDb();
+  const existing = getProject(id);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const fields: string[] = [];
+  const values: unknown[] = [];
+
+  if (updates.name !== undefined) {
+    fields.push("name = ?");
+    values.push(updates.name);
+  }
+  if (updates.description !== undefined) {
+    fields.push("description = ?");
+    values.push(updates.description);
+  }
+  if (updates.missionAlignment !== undefined) {
+    fields.push("mission_alignment = ?");
+    values.push(updates.missionAlignment);
+  }
+  if (updates.status !== undefined) {
+    fields.push("status = ?");
+    values.push(updates.status);
+  }
+  if (updates.milestones !== undefined) {
+    fields.push("milestones = ?");
+    values.push(JSON.stringify(updates.milestones));
+  }
+
+  if (fields.length === 0) return existing;
+
+  fields.push("updated_at = ?");
+  values.push(now);
+  values.push(id);
+
+  db.prepare(`UPDATE projects SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+
+  return getProject(id);
+}
+
+/**
+ * Delete a project
+ * @param id - Project UUID
+ * @returns True if deleted, false if not found
+ */
+export function deleteProject(id: string): boolean {
+  const db = getDb();
+  const result = db.prepare("DELETE FROM projects WHERE id = ?").run(id);
+  return result.changes > 0;
+}
+
+/**
+ * List projects with optional filters
+ * @param filters - Optional filters for status
+ * @returns Array of projects ordered by creation date (newest first)
+ */
+export function listProjects(filters?: ListProjectsFilters): Project[] {
+  const db = getDb();
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters?.status) {
+    conditions.push("status = ?");
+    params.push(filters.status);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const rows = db.prepare(`SELECT * FROM projects ${where} ORDER BY created_at DESC`).all(...params) as Record<string, unknown>[];
+
+  return rows.map(parseProjectRow);
+}
+
+function parseProjectRow(row: Record<string, unknown>): Project {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: row.description as string | null,
+    missionAlignment: row.mission_alignment as string | null,
+    status: row.status as ProjectStatus,
+    milestones: row.milestones ? JSON.parse(row.milestones as string) : [],
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+// ============================================================================
+// Agent Identity CRUD Operations
+// ============================================================================
+
+/**
+ * Create a new agent identity
+ * @param input - Agent identity creation data
+ * @returns The created agent identity
+ */
+export function createAgentIdentity(input: CreateAgentIdentityInput): AgentIdentity {
+  const db = getDb();
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO agent_identities (id, name, role, personality, avatar, mission, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    input.id,
+    input.name,
+    input.role,
+    input.personality ?? null,
+    input.avatar ?? null,
+    input.mission ?? null,
+    now,
+    now
+  );
+
+  return {
+    id: input.id,
+    name: input.name,
+    role: input.role,
+    personality: input.personality ?? null,
+    avatar: input.avatar ?? null,
+    mission: input.mission ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Get an agent identity by ID
+ * @param id - Agent identifier
+ * @returns The agent identity or null if not found
+ */
+export function getAgentIdentity(id: string): AgentIdentity | null {
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM agent_identities WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  return row ? parseAgentIdentityRow(row) : null;
+}
+
+/**
+ * Update an agent identity
+ * @param id - Agent identifier
+ * @param updates - Fields to update
+ * @returns The updated agent identity or null if not found
+ */
+export function updateAgentIdentity(id: string, updates: UpdateAgentIdentityInput): AgentIdentity | null {
+  const db = getDb();
+  const existing = getAgentIdentity(id);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const fields: string[] = [];
+  const values: unknown[] = [];
+
+  if (updates.name !== undefined) {
+    fields.push("name = ?");
+    values.push(updates.name);
+  }
+  if (updates.role !== undefined) {
+    fields.push("role = ?");
+    values.push(updates.role);
+  }
+  if (updates.personality !== undefined) {
+    fields.push("personality = ?");
+    values.push(updates.personality);
+  }
+  if (updates.avatar !== undefined) {
+    fields.push("avatar = ?");
+    values.push(updates.avatar);
+  }
+  if (updates.mission !== undefined) {
+    fields.push("mission = ?");
+    values.push(updates.mission);
+  }
+
+  if (fields.length === 0) return existing;
+
+  fields.push("updated_at = ?");
+  values.push(now);
+  values.push(id);
+
+  db.prepare(`UPDATE agent_identities SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+
+  return getAgentIdentity(id);
+}
+
+/**
+ * Delete an agent identity
+ * @param id - Agent identifier
+ * @returns True if deleted, false if not found
+ */
+export function deleteAgentIdentity(id: string): boolean {
+  const db = getDb();
+  const result = db.prepare("DELETE FROM agent_identities WHERE id = ?").run(id);
+  return result.changes > 0;
+}
+
+/**
+ * List all agent identities
+ * @returns Array of agent identities ordered by creation date
+ */
+export function listAgentIdentities(): AgentIdentity[] {
+  const db = getDb();
+  const rows = db.prepare("SELECT * FROM agent_identities ORDER BY created_at ASC").all() as Record<string, unknown>[];
+  return rows.map(parseAgentIdentityRow);
+}
+
+function parseAgentIdentityRow(row: Record<string, unknown>): AgentIdentity {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    role: row.role as string,
+    personality: row.personality as string | null,
+    avatar: row.avatar as string | null,
+    mission: row.mission as string | null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
+
+// ============================================================================
+// Operations Journal CRUD Operations
+// ============================================================================
+
+/**
+ * Create a new journal entry
+ * @param input - Journal entry creation data
+ * @returns The created journal entry
+ */
+export function createJournalEntry(input: CreateJournalEntryInput): OperationsJournalEntry {
+  const db = getDb();
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const highlights = input.highlights ?? [];
+
+  db.prepare(`
+    INSERT INTO operations_journal (id, date, narrative, highlights, created_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    id,
+    input.date,
+    input.narrative,
+    JSON.stringify(highlights),
+    now
+  );
+
+  return {
+    id,
+    date: input.date,
+    narrative: input.narrative,
+    highlights,
+    createdAt: now,
+  };
+}
+
+/**
+ * Get a journal entry by ID
+ * @param id - Entry UUID
+ * @returns The journal entry or null if not found
+ */
+export function getJournalEntry(id: string): OperationsJournalEntry | null {
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM operations_journal WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  return row ? parseJournalEntryRow(row) : null;
+}
+
+/**
+ * List journal entries with optional date range filter
+ * @param filters - Optional filters for date range
+ * @returns Array of journal entries ordered by date (newest first)
+ */
+export function listJournalEntries(filters?: ListJournalEntriesFilters): OperationsJournalEntry[] {
+  const db = getDb();
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters?.startDate) {
+    conditions.push("date >= ?");
+    params.push(filters.startDate);
+  }
+
+  if (filters?.endDate) {
+    conditions.push("date <= ?");
+    params.push(filters.endDate);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const rows = db.prepare(`SELECT * FROM operations_journal ${where} ORDER BY date DESC`).all(...params) as Record<string, unknown>[];
+
+  return rows.map(parseJournalEntryRow);
+}
+
+/**
+ * Delete a journal entry
+ * @param id - Entry UUID
+ * @returns True if deleted, false if not found
+ */
+export function deleteJournalEntry(id: string): boolean {
+  const db = getDb();
+  const result = db.prepare("DELETE FROM operations_journal WHERE id = ?").run(id);
+  return result.changes > 0;
+}
+
+function parseJournalEntryRow(row: Record<string, unknown>): OperationsJournalEntry {
+  return {
+    id: row.id as string,
+    date: row.date as string,
+    narrative: row.narrative as string,
+    highlights: row.highlights ? JSON.parse(row.highlights as string) : [],
+    createdAt: row.created_at as string,
+  };
+}
+
+// ============================================================================
 // Testing Utilities
 // ============================================================================
 
@@ -732,6 +1151,9 @@ export function clearAllDataForTesting(): void {
   const db = getDb();
   db.exec("DELETE FROM kanban_tasks");
   db.exec("DELETE FROM kanban_columns");
+  db.exec("DELETE FROM projects");
+  db.exec("DELETE FROM agent_identities");
+  db.exec("DELETE FROM operations_journal");
   
   // Re-seed default columns
   const defaultColumns = [
