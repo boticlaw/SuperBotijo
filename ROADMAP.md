@@ -576,10 +576,23 @@
 | 11. Advanced Viz | ✅ | 100% |
 | 12. Collaboration | ✅ | 90% (solo Team Dashboard pendiente) |
 | 13. UI/UX Improvements | ✅ | 100% |
-| 14. Mission Control Layer | ⏳ | 0% (38 tareas en 7 sub-fases) |
+| 14. Mission Control Layer | 🚧 | 57% (4/7 features completadas) |
 | 15. Future Work | 🔮 | Planned |
 
-**Overall: 93% completado (Fase 14 pendiente - 15-20 horas estimadas)**
+**Overall: 96% completado (Fase 14 al 57% - 4/7 features completadas)**
+
+---
+
+### Commits de Fase 14 (2026-03-03)
+
+| Commit | Feature | Descripción |
+|--------|---------|-------------|
+| `1f2b0ff` | Kanban Board | Sistema de gestión de tareas con drag & drop |
+| `4cc3433` | Mission Control Foundation | Types + DB + Mission API + UI |
+| `25b1b98` | Projects System | Projects API + Task linking + UI |
+| `8f54cb6` | Heartbeat Autonomy | Autonomous task execution + audit |
+| `f814f63` | Fix: use client | Agregado "use client" a forbidden/not-found |
+| `726cf1e` | Fix: allowedDevOrigins | Cross-origin request handling |
 
 ---
 
@@ -593,25 +606,27 @@
 > - **UI:** Página dedicada `/mission` (no Settings tab)
 > - **Heartbeat:** Modo suggest + auto-execute con flag configurable
 
-### 14.1 Foundation - Types & Schema ⏳
+### 14.1 Foundation - Types & Schema ✅
 > Base de datos y tipos TypeScript
 
-- [ ] Extender `kanban.db` con tablas: `projects`, `agent_identities`, `operations_journal`
-- [ ] Types: `Mission`, `Project`, `AgentIdentity`, `OperationsJournalEntry`
-- [ ] Migration script para DB existente
-- **Archivos:** `src/lib/kanban-db.ts`, `src/types/mission-control.ts`
+- [x] Extender `kanban.db` con tablas: `projects`, `agent_identities`, `operations_journal`
+- [x] Types: `Mission`, `Project`, `AgentIdentity`, `OperationsJournalEntry`
+- [x] Migration script para DB existente
+- **Archivos:** `src/lib/kanban-db.ts`, `src/lib/mission-types.ts`
 - **Esfuerzo:** 2-3 horas
+- **Commit:** `4cc3433`
 
-### 14.2 Mission Statement System ⏳
+### 14.2 Mission Statement System ✅
 > La "fuente de verdad" que alinea a todos los agentes
 
-- [ ] API: `GET/PUT /api/mission` - Mission Statement CRUD
-- [ ] Storage: `data/mission.json` con campos: statement, goals, values, lastUpdated
-- [ ] UI: Página `/mission` con editor de misión
-- [ ] UI: Mission display en dashboard home
-- [ ] UI: Mission card en HeartbeatStatus
+- [x] API: `GET/PUT /api/mission` - Mission Statement CRUD
+- [x] Storage: `data/mission.json` con campos: statement, goals, values, lastUpdated
+- [x] UI: Página `/mission` con editor de misión
+- [x] UI: Mission display en dashboard home
+- [ ] UI: Mission card en HeartbeatStatus (deferred)
 - **Archivos:** `src/app/api/mission/route.ts`, `src/app/(dashboard)/mission/page.tsx`, `src/components/MissionCard.tsx`
 - **Esfuerzo:** 3-4 horas
+- **Commit:** `4cc3433`
 
 ### 14.3 Reverse Prompting Engine ⏳
 > "¿Qué debo hacer hoy basado en mi misión?"
@@ -624,23 +639,25 @@
 - **Archivos:** `src/app/api/mission/prompt/route.ts`, `src/components/ReversePromptPanel.tsx`, `src/lib/suggestions-engine.ts`
 - **Esfuerzo:** 4-5 horas
 
-### 14.4 Projects System ⏳
+### 14.4 Projects System ✅
 > Proyectos como entidad de primer orden con milestones
 
-- [ ] API: CRUD completo `/api/projects`
-- [ ] DB: Projects table con campos: id, name, description, status, milestones, createdAt
-- [ ] Link: Tasks → Projects (campo `projectId` en kanban tasks)
-- [ ] UI: Página `/projects` con lista de proyectos
-- [ ] UI: Project detail view con tasks vinculadas
-- [ ] UI: Project selector en Mission page
-- [ ] Kanban: Filtro por proyecto
-- **Archivos:** `src/app/api/projects/route.ts`, `src/app/(dashboard)/projects/page.tsx`, `src/lib/kanban-db.ts`
+- [x] API: CRUD completo `/api/projects`
+- [x] DB: Projects table con campos: id, name, description, status, milestones, createdAt
+- [x] Link: Tasks → Projects (campo `projectId` en kanban tasks)
+- [x] UI: Project selector en TaskModal
+- [x] UI: Project filter en KanbanBoard
+- [x] UI: ProjectProgressCard con progress bars
+- [x] UI: OrphanTasksModal para reasignar tareas sin proyecto
+- [ ] UI: Página `/projects` dedicada (deferido)
+- **Archivos:** `src/app/api/projects/route.ts`, `src/app/api/projects/[id]/route.ts`, `src/components/kanban/ProjectProgressCard.tsx`, `src/components/kanban/OrphanTasksModal.tsx`
 - **Esfuerzo:** 4-5 horas
+- **Commit:** `25b1b98`
 
 ### 14.5 Agent Identities ⏳
 > Personalidad, roles y avatares para agentes
 
-- [ ] DB: `agent_identities` table con campos: agentId, name, role, personality, avatar, mission
+- [x] DB: `agent_identities` table (created in Phase 14.1)
 - [ ] API: `GET/PUT /api/agents/[id]/identity`
 - [ ] UI: Identity editor en AgentInspectPanel
 - [ ] Office 3D: Mostrar identidad en vez de solo model/estado
@@ -648,27 +665,31 @@
 - **Archivos:** `src/app/api/agents/[id]/identity/route.ts`, `src/components/AgentIdentityCard.tsx`
 - **Esfuerzo:** 3-4 horas
 
-### 14.6 Heartbeat Autonomy Mode ⏳
+### 14.6 Heartbeat Autonomy Mode ✅
 > Heartbeat consume tareas del Kanban autónomamente
 
-- [ ] API: Flag `--execute` en Heartbeat para modo autonomía
-- [ ] Lógica: Heartbeat lee tareas asignadas a "OpenClaw" del Kanban
-- [ ] Lógica: Suggest vs Auto-execute modes
-- [ ] UI: Toggle de autonomía en HeartbeatStatus
-- [ ] UI: Preview de tareas que se ejecutarán
-- [ ] Audit: Log de ejecuciones autónomas
-- **Archivos:** `src/app/api/heartbeat/route.ts`, `src/components/HeartbeatStatus.tsx`
+- [x] API: `GET/PUT /api/heartbeat/autonomy` - Settings (enabled, mode, agentName, maxTasks)
+- [x] API: `GET /api/heartbeat/tasks` - Pending tasks for agent (WHERE assignee = agentName)
+- [x] API: `GET /api/heartbeat/executions` - Audit log history
+- [x] DB: `autonomy_settings` + `autonomy_executions` tables
+- [x] Logic: Suggest vs Auto-execute modes
+- [x] UI: Toggle de autonomía en HeartbeatStatus
+- [x] UI: Preview de tareas pendientes
+- [x] UI: Executions history con status badges
+- [x] Audit: Log de ejecuciones autónomas con 30-day retention
+- **Archivos:** `src/lib/autonomy-db.ts`, `src/app/api/heartbeat/autonomy/route.ts`, `src/app/api/heartbeat/tasks/route.ts`, `src/app/api/heartbeat/executions/route.ts`, `src/components/HeartbeatStatus.tsx`
 - **Esfuerzo:** 3-4 horas
+- **Commit:** `8f54cb6`
 
 ### 14.7 Operations Journal ⏳
 > Diario narrativo de operaciones (no solo activity log)
 
-- [ ] DB: `operations_journal` table con campos: id, date, narrative, highlights, createdAt
-- [ ] API: CRUD `/api/journal`
-- [ ] Lógica: Auto-generar entrada diaria desde activities
+- [x] DB: `operations_journal` table (created in Phase 14.1)
+- [ ] API: `GET/POST/PUT/DELETE /api/journal`
+- [ ] Lógica: Auto-generar entrada diaria desde activities (optional)
 - [ ] UI: Página `/journal` con timeline narrativo
 - [ ] UI: Entry editor para añadir highlights manuales
-- **Archivos:** `src/app/api/journal/route.ts`, `src/app/(dashboard)/journal/page.tsx`
+- **Archivos:** `src/app/api/journal/route.ts`, `src/app/(dashboard)/journal/page.tsx`, `src/lib/kanban-db.ts`
 - **Esfuerzo:** 2-3 horas
 
 ---
