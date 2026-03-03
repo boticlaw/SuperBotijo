@@ -5,6 +5,7 @@ import { List, Grid3X3, Box, RefreshCw, AlertCircle, Loader2, Filter, X } from "
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { FileBrowser } from "@/components/FileBrowser";
 import { FileTree3D } from "@/components/files-3d/FileTree3D";
+import { useI18n } from "@/i18n/provider";
 import type { FileNode3D } from "@/app/api/files/tree-3d/route";
 
 interface Workspace {
@@ -28,6 +29,7 @@ const FILE_TYPES = [
 ];
 
 export default function FilesPage() {
+  const { t } = useI18n();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState("");
@@ -107,10 +109,10 @@ export default function FilesPage() {
             marginBottom: "4px",
           }}
         >
-          File Browser
+          {t("files.title")}
         </h1>
         <p style={{ fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-secondary)" }}>
-          Navega por los workspaces y archivos de los agentes
+          {t("files.subtitle")}
         </p>
       </div>
 
@@ -142,7 +144,7 @@ export default function FilesPage() {
               textTransform: "uppercase",
             }}
           >
-            Workspaces
+            {t("common.workspaces")}
           </p>
 
           {workspaces.map((workspace) => {

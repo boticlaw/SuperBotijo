@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useI18n } from "@/i18n/provider";
 import {
   Home,
   FolderOpen,
@@ -20,22 +21,28 @@ import {
   Server,
 } from "lucide-react";
 
-const dockItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/agents", label: "Agents", icon: Users },
-  { href: "/office", label: "Office", icon: Building2 },
-  { href: "/memory", label: "Memory", icon: Brain },
-  { href: "/files", label: "Files", icon: FolderOpen },
-  { href: "/analytics", label: "Analytics", icon: DollarSign },
-  { href: "/workflows", label: "Workflows", icon: Workflow },
-  { href: "/terminal", label: "Terminal", icon: SquareTerminal },
-  { href: "/system", label: "System", icon: Server },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+function DockItems() {
+  const { t } = useI18n();
+  
+  return [
+    { href: "/", labelKey: "dock.dashboard", icon: Home },
+    { href: "/agents", labelKey: "dock.agents", icon: Users },
+    { href: "/office", labelKey: "dock.office", icon: Building2 },
+    { href: "/memory", labelKey: "dock.memory", icon: Brain },
+    { href: "/files", labelKey: "dock.files", icon: FolderOpen },
+    { href: "/analytics", labelKey: "dock.analytics", icon: DollarSign },
+    { href: "/workflows", labelKey: "dock.workflows", icon: Workflow },
+    { href: "/terminal", labelKey: "dock.terminal", icon: SquareTerminal },
+    { href: "/system", labelKey: "dock.system", icon: Server },
+    { href: "/settings", labelKey: "dock.settings", icon: Settings },
+  ];
+}
 
 export function Dock() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
+  const dockItems = DockItems();
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -120,7 +127,7 @@ export function Dock() {
                 maxWidth: "52px",
               }}
             >
-              {item.label.split(" ")[0]}
+              {t(item.labelKey).split(" ")[0]}
             </span>
 
             <span
@@ -133,7 +140,7 @@ export function Dock() {
                 fontWeight: 500,
               }}
             >
-              {item.label}
+              {t(item.labelKey)}
             </span>
           </Link>
         );
@@ -143,8 +150,8 @@ export function Dock() {
         type="button"
         onClick={handleLogout}
         className="group relative"
-        aria-label="Logout"
-        title="Logout"
+        aria-label={t("dock.logout")}
+        title={t("dock.logout")}
         data-testid="logout-button"
         style={{
           marginTop: "auto",
@@ -179,7 +186,7 @@ export function Dock() {
             fontWeight: 500,
           }}
         >
-          Logout
+          {t("dock.logout")}
         </span>
       </button>
     </aside>

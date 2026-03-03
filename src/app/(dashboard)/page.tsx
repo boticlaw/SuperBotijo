@@ -9,6 +9,7 @@ import { MoodWidget } from "@/components/MoodWidget";
 import { SuggestionsPanel } from "@/components/SuggestionsPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MissionCard } from "@/components/MissionCard";
+import { useI18n } from "@/i18n/provider";
 import {
   Activity,
   CheckCircle,
@@ -50,6 +51,7 @@ interface Agent {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [stats, setStats] = useState<Stats>({ total: 0, today: 0, success: 0, error: 0, byType: {} });
   const [agents, setAgents] = useState<Agent[]>([]);
   const [mission, setMission] = useState<Mission | null>(null);
@@ -99,7 +101,7 @@ export default function DashboardPage() {
           </h1>
         </div>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          Overview of agent activity
+          {t("dashboard.overview")}
         </p>
       </div>
 
@@ -108,25 +110,25 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatsCard
-            title="Total Activities"
+            title={t("dashboard.totalActivities")}
             value={stats.total.toLocaleString()}
             icon={<Activity className="w-5 h-5" />}
             iconColor="var(--info)"
           />
           <StatsCard
-            title="Today"
+            title={t("dashboard.today")}
             value={stats.today.toLocaleString()}
             icon={<Zap className="w-5 h-5" />}
             iconColor="var(--accent)"
           />
           <StatsCard
-            title="Successful"
+            title={t("dashboard.successful")}
             value={stats.success.toLocaleString()}
             icon={<CheckCircle className="w-5 h-5" />}
             iconColor="var(--success)"
           />
           <StatsCard
-            title="Errors"
+            title={t("dashboard.errors")}
             value={stats.error.toLocaleString()}
             icon={<XCircle className="w-5 h-5" />}
             iconColor="var(--error)"
@@ -166,7 +168,7 @@ export default function DashboardPage() {
               }}
             >
               <Users className="inline-block w-5 h-5 mr-2 mb-1" />
-              Multi-Agent System
+              {t("dashboard.multiAgentSystem")}
             </h2>
           </div>
           <div className="flex gap-2">
@@ -179,14 +181,14 @@ export default function DashboardPage() {
               }}
             >
               <Gamepad2 className="inline-block w-4 h-4 mr-1 mb-0.5" />
-              Open Office
+              {t("dashboard.openOffice")}
             </Link>
             <Link
               href="/agents"
               className="text-sm font-medium"
               style={{ color: 'var(--accent)' }}
             >
-              View all →
+              {t("dashboard.viewAll")}
             </Link>
           </div>
         </div>
@@ -229,15 +231,15 @@ export default function DashboardPage() {
                   <Bot className="inline-block w-3 h-3 mr-1" />
                   {agent.model.split('/').pop()}
                 </div>
-                {agent.botToken && (
-                  <div 
-                    className="text-xs mt-1 flex items-center gap-1"
-                    style={{ color: '#0088cc' }}
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    Connected
-                  </div>
-                )}
+                  {agent.botToken && (
+                    <div 
+                      className="text-xs mt-1 flex items-center gap-1"
+                      style={{ color: '#0088cc' }}
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      {t("dashboard.connected")}
+                    </div>
+                  )}
               </div>
             ))}
           </div>
@@ -267,7 +269,7 @@ export default function DashboardPage() {
                   color: 'var(--text-primary)'
                 }}
               >
-                Recent Activity
+                {t("dashboard.recentActivity")}
               </h2>
             </div>
             <a
@@ -275,7 +277,7 @@ export default function DashboardPage() {
               className="text-sm font-medium"
               style={{ color: 'var(--accent)' }}
             >
-              View all →
+              {t("dashboard.viewAll")}
             </a>
           </div>
           <div className="p-0">
@@ -304,19 +306,19 @@ export default function DashboardPage() {
                   color: 'var(--text-primary)'
                 }}
               >
-                Quick Links
+                {t("dashboard.quickLinks")}
               </h2>
             </div>
           </div>
           <div className="p-4 grid grid-cols-2 gap-2">
             {[
-              { href: "/cron", icon: Calendar, label: "Cron Jobs", color: "#a78bfa" },
-              { href: "/workflows", icon: Zap, label: "Workflows", color: "var(--accent)" },
-              { href: "/system", icon: Server, label: "System", color: "var(--success)" },
-              { href: "/logs", icon: Terminal, label: "Live Logs", color: "#60a5fa" },
-              { href: "/memory", icon: Brain, label: "Memory", color: "#f59e0b" },
-              { href: "/skills", icon: Puzzle, label: "Skills", color: "#4ade80" },
-            ].map(({ href, icon: Icon, label, color }) => (
+              { href: "/cron", icon: Calendar, labelKey: "dashboard.cronJobs", color: "#a78bfa" },
+              { href: "/workflows", icon: Zap, labelKey: "dashboard.workflows", color: "var(--accent)" },
+              { href: "/system", icon: Server, labelKey: "dashboard.system", color: "var(--success)" },
+              { href: "/logs", icon: Terminal, labelKey: "dashboard.liveLogs", color: "#60a5fa" },
+              { href: "/memory", icon: Brain, labelKey: "dashboard.memory", color: "#f59e0b" },
+              { href: "/skills", icon: Puzzle, labelKey: "dashboard.skills", color: "#4ade80" },
+            ].map(({ href, icon: Icon, labelKey, color }) => (
               <Link
                 key={href}
                 href={href}
@@ -325,7 +327,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4" style={{ color }} />
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{label}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t(labelKey)}</span>
                 </div>
               </Link>
             ))}
@@ -346,7 +348,7 @@ export default function DashboardPage() {
                 className="text-sm font-semibold mb-3"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                💡 Smart Suggestions
+                {t("dashboard.smartSuggestions")}
               </h3>
               <SuggestionsPanel compact maxItems={3} />
             </div>

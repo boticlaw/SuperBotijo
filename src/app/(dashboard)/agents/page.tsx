@@ -19,6 +19,7 @@ import {
 import { AgentOrganigrama } from "@/components/AgentOrganigrama";
 import { CommunicationGraphComponent } from "@/components/CommunicationGraph";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useI18n } from "@/i18n/provider";
 import type { CommunicationGraph, MessageType } from "@/lib/communication-aggregator";
 
 interface Agent {
@@ -46,6 +47,7 @@ export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"cards" | "organigrama" | "communication">("cards");
+  const { t } = useI18n();
 
   const [commData, setCommData] = useState<CommunicationGraph | null>(null);
   const [commLoading, setCommLoading] = useState(false);
@@ -97,17 +99,17 @@ export default function AgentsPage() {
   }, [fetchCommData, activeTab]);
 
   const formatLastActivity = (timestamp?: string) => {
-    if (!timestamp) return "Never";
+    if (!timestamp) return t("agents.never");
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t("agents.justNow");
+    if (minutes < 60) return t("agents.minutesAgo", { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return t("agents.hoursAgo", { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    return t("agents.daysAgo", { count: days });
   };
 
   const handleCommEdgeClick = useCallback((edge: CommunicationGraph["edges"][0]) => {
@@ -123,7 +125,7 @@ export default function AgentsPage() {
       <div className="p-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-pulse text-lg" style={{ color: "var(--text-muted)" }}>
-            Loading agents...
+            {t("agents.loading")}
           </div>
         </div>
       </div>
@@ -143,19 +145,19 @@ export default function AgentsPage() {
           }}
         >
           <Users className="inline-block w-8 h-8 mr-2 mb-1" />
-          Agents
+          {t("agents.title")}
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-          Multi-agent system overview • {agents.length} agents configured
+          {t("agents.overview", { count: agents.length })}
         </p>
       </div>
 
       <div className="flex gap-2 mb-6 border-b" style={{ borderColor: "var(--border)" }}>
         {[
-          { id: "cards" as const, label: "Agent Cards", icon: LayoutGrid },
-          { id: "organigrama" as const, label: "Organigrama", icon: GitBranch },
-          { id: "communication" as const, label: "Communication", icon: Network },
-        ].map(({ id, label, icon: Icon }) => (
+          { id: "cards" as const, labelKey: "agents.cards", icon: LayoutGrid },
+          { id: "organigrama" as const, labelKey: "agents.organigrama", icon: GitBranch },
+          { id: "communication" as const, labelKey: "agents.communication", icon: Network },
+        ].map(({ id, labelKey, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -172,7 +174,7 @@ export default function AgentsPage() {
             }}
           >
             <Icon className="w-4 h-4" />
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -180,8 +182,8 @@ export default function AgentsPage() {
       {activeTab === "organigrama" && (
         <div className="rounded-xl" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}>
           <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
-            <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Agent Hierarchy</h2>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Visualization of agent communication allowances</p>
+            <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("agents.hierarchy")}</h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("agents.hierarchySubtitle")}</p>
           </div>
           <AgentOrganigrama agents={agents} />
         </div>
@@ -191,8 +193,8 @@ export default function AgentsPage() {
         <div className="rounded-xl overflow-hidden" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", minHeight: "500px" }}>
           <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <div>
-              <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Agent Communication Graph</h2>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>Real-time communication flow between agents</p>
+              <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("agents.communicationGraph")}</h2>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("agents.communicationSubtitle")}</p>
             </div>
             <button
               onClick={fetchCommData}
@@ -207,7 +209,7 @@ export default function AgentsPage() {
               }}
             >
               <RefreshCw size={14} className={commLoading ? "animate-spin" : ""} />
-              Refresh
+              {t("common.refresh")}
             </button>
           </div>
           <div style={{ height: "450px" }}>
@@ -215,7 +217,7 @@ export default function AgentsPage() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <Loader2 size={32} className="animate-spin mb-3" style={{ color: "var(--accent)" }} />
-                  <p style={{ color: "var(--text-muted)" }}>Loading communication graph...</p>
+                  <p style={{ color: "var(--text-muted)" }}>{t("agents.loading")}</p>
                 </div>
               </div>
             ) : commError ? (
@@ -233,7 +235,7 @@ export default function AgentsPage() {
                       cursor: "pointer",
                     }}
                   >
-                    Retry
+                    {t("common.retry")}
                   </button>
                 </div>
               </div>
@@ -248,9 +250,9 @@ export default function AgentsPage() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <Network size={64} style={{ opacity: 0.3, marginBottom: "16px", color: "var(--text-muted)" }} />
-                  <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>No communication data found</p>
+                  <p style={{ fontSize: "14px", color: "var(--text-muted)" }}>{t("agents.noCommData")}</p>
                   <p style={{ fontSize: "12px", marginTop: "8px", color: "var(--text-muted)" }}>
-                    Run some sessions with subagents to see the communication graph
+                    {t("agents.noCommDataHint")}
                   </p>
                 </div>
               </div>
@@ -321,7 +323,7 @@ export default function AgentsPage() {
                 </div>
 
                 {agent.botToken && (
-                  <div title="Telegram Bot Connected">
+                  <div title={t("agents.telegramConnected")}>
                     <MessageSquare
                       className="w-5 h-5"
                       style={{ color: "#0088cc" }}
@@ -338,7 +340,7 @@ export default function AgentsPage() {
                       className="text-xs font-medium mb-1"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Model
+                      {t("agents.model")}
                     </div>
                     <div
                       className="text-sm font-mono truncate"
@@ -359,7 +361,7 @@ export default function AgentsPage() {
                       className="text-xs font-medium mb-1"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Workspace
+                      {t("agents.workspace")}
                     </div>
                     <div
                       className="text-sm font-mono truncate"
@@ -382,7 +384,7 @@ export default function AgentsPage() {
                         className="text-xs font-medium mb-1"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        DM Policy
+                        {t("agents.dmPolicy")}
                       </div>
                       <div
                         className="text-sm font-medium"
@@ -405,7 +407,7 @@ export default function AgentsPage() {
                         className="text-xs font-medium mb-2"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        Can spawn subagents ({agent.allowAgents.length})
+                        {t("agents.canSpawn", { count: agent.allowAgents.length })}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {agent.allowAgentsDetails && agent.allowAgentsDetails.length > 0 ? (
@@ -454,7 +456,7 @@ export default function AgentsPage() {
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                      Last activity: {formatLastActivity(agent.lastActivity)}
+                      {t("agents.lastActivity")}: {formatLastActivity(agent.lastActivity)}
                     </span>
                   </div>
                   {agent.activeSessions > 0 && (
@@ -465,7 +467,7 @@ export default function AgentsPage() {
                         color: "var(--success)",
                       }}
                     >
-                      {agent.activeSessions} active
+                      {agent.activeSessions} {t("agents.active")}
                     </span>
                   )}
                 </div>

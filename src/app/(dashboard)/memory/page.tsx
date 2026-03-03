@@ -7,6 +7,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { KnowledgeGraphComponent } from "@/components/KnowledgeGraph";
 import { MemoryWordCloud } from "@/components/MemoryWordCloud";
+import { useI18n } from "@/i18n/provider";
 import type { KnowledgeGraph } from "@/lib/memory-parser";
 import type { WordFrequency } from "@/app/api/memories/word-cloud/route";
 
@@ -22,6 +23,7 @@ interface Workspace {
 }
 
 export default function MemoryPage() {
+  const { t } = useI18n();
   const [mainTab, setMainTab] = useState<MainTab>("editor");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
@@ -172,10 +174,10 @@ export default function MemoryPage() {
                 marginBottom: "4px",
               }}
             >
-              Memory
+              {t("memory.title")}
             </h1>
             <p style={{ fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--text-secondary)" }}>
-              Knowledge base del agente
+              {t("memory.subtitle")}
             </p>
           </div>
 

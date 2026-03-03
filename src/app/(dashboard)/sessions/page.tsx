@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ModelDropdown } from "@/components/ModelDropdown";
+import { useI18n } from "@/i18n/provider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -632,21 +633,22 @@ function SessionRow({
 
 type FilterType = "all" | "main" | "cron" | "subagent" | "direct";
 
-const FILTER_TABS: Array<{ id: FilterType; label: string; emoji: string }> = [
-  { id: "all", label: "All", emoji: "📋" },
-  { id: "main", label: "Main", emoji: "🫙" },
-  { id: "cron", label: "Cron", emoji: "🕐" },
-  { id: "subagent", label: "Sub-agents", emoji: "🤖" },
-  { id: "direct", label: "Chats", emoji: "💬" },
-];
-
 export default function SessionsPage() {
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+
+  const FILTER_TABS: Array<{ id: FilterType; labelKey: string; emoji: string }> = [
+    { id: "all", labelKey: "sessions.all", emoji: "📋" },
+    { id: "main", labelKey: "sessions.main", emoji: "🫙" },
+    { id: "cron", labelKey: "sessions.cron", emoji: "🕐" },
+    { id: "subagent", labelKey: "sessions.subagents", emoji: "🤖" },
+    { id: "direct", labelKey: "sessions.chats", emoji: "💬" },
+  ];
 
   const loadSessions = useCallback(async () => {
     try {
@@ -655,11 +657,11 @@ export default function SessionsPage() {
       const data = await res.json();
       setSessions(data.sessions || []);
     } catch {
-      setError("Failed to load sessions");
+      setError(t("sessions.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadSessions();
@@ -706,10 +708,10 @@ export default function SessionsPage() {
               marginBottom: "0.25rem",
             }}
           >
-            💬 Session History
+            {t("sessions.title")}
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-            All OpenClaw agent sessions — main, cron, sub-agents, and chats
+            {t("sessions.subtitle")}
           </p>
         </div>
 
@@ -724,32 +726,32 @@ export default function SessionsPage() {
         >
           {[
             {
-              label: "Total Sessions",
+              labelKey: "sessions.totalSessions",
               value: sessions.length,
               icon: MessageSquare,
               color: "var(--accent)",
             },
             {
-              label: "Total Tokens",
+              labelKey: "sessions.totalTokens",
               value: formatTokens(totalTokens),
               icon: Hash,
               color: "#60a5fa",
             },
             {
-              label: "Cron Runs",
+              labelKey: "sessions.cronRuns",
               value: counts.cron || 0,
               icon: Clock,
               color: "#a78bfa",
             },
             {
-              label: "Models Used",
+              labelKey: "sessions.modelsUsed",
               value: uniqueModels.length,
               icon: Bot,
               color: "#4ade80",
             },
-          ].map(({ label, value, icon: Icon, color }) => (
+          ].map(({ labelKey, value, icon: Icon, color }) => (
             <div
-              key={label}
+              key={labelKey}
               style={{
                 padding: "1rem",
                 borderRadius: "0.75rem",
@@ -785,7 +787,7 @@ export default function SessionsPage() {
                 >
                   {value}
                 </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{label}</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{t(labelKey)}</div>
               </div>
             </div>
           ))}
@@ -837,7 +839,7 @@ export default function SessionsPage() {
                     }}
                   >
                     <span>{tab.emoji}</span>
-                    <span>{tab.label}</span>
+                    <span>{t(tab.labelKey)}</span>
                     {count > 0 && (
                       <span
                         style={{

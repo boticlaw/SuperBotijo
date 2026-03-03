@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Terminal, Lock, AlertCircle } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 function LoginForm() {
   const [password, setPassword] = useState("");
@@ -10,6 +11,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +32,10 @@ function LoginForm() {
         router.push(from);
         router.refresh();
       } else {
-        setError("Contraseña incorrecta");
+        setError(t("login.incorrectPassword"));
       }
     } catch {
-      setError("Error de conexión");
+      setError(t("login.connectionError"));
     }
 
     setLoading(false);
@@ -70,7 +72,7 @@ function LoginForm() {
           className="text-sm"
           style={{ color: 'var(--text-secondary)' }}
         >
-          Introduce la contraseña para acceder
+          {t("login.subtitle")}
         </p>
       </div>
 
@@ -91,7 +93,7 @@ function LoginForm() {
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
             }}
-            placeholder="Contraseña"
+            placeholder={t("login.passwordPlaceholder")}
             required
           />
         </div>
@@ -118,7 +120,7 @@ function LoginForm() {
             color: 'white',
           }}
         >
-          {loading ? "Verificando..." : "Entrar"}
+          {loading ? t("login.verifying") : t("login.signIn")}
         </button>
       </form>
 
@@ -127,7 +129,7 @@ function LoginForm() {
         className="text-center text-xs mt-6"
         style={{ color: 'var(--text-muted)' }}
       >
-        SuperBotijo Agent Dashboard
+        {t("login.footer")}
       </p>
     </div>
   );

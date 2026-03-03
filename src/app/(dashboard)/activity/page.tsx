@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useI18n } from "@/i18n/provider";
 import {
   FileText,
   Search,
@@ -84,10 +85,10 @@ const statusConfig: Record<string, { icon: React.ComponentType<{ className?: str
 const allTypes = ["file", "search", "message", "command", "security", "build", "task", "cron", "memory", "approval"];
 
 const datePresets = [
-  { label: "Today", days: 0 },
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 30 days", days: 30 },
-  { label: "All time", days: -1 },
+  { labelKey: "activity.today", days: 0 },
+  { labelKey: "activity.last7days", days: 7 },
+  { labelKey: "activity.last30days", days: 30 },
+  { labelKey: "activity.allTime", days: -1 },
 ];
 
 function formatDuration(ms: number): string {
@@ -102,6 +103,7 @@ function formatTokens(tokens: number): string {
 }
 
 export default function ActivityPage() {
+  const { t } = useI18n();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -248,9 +250,9 @@ export default function ActivityPage() {
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-heading)'
           }}>
-            Activity Log
+            {t("activity.title")}
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Complete history of agent actions</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t("activity.subtitle")}</p>
         </div>
         <a
           href="/api/activities?format=csv&limit=10000"
@@ -264,7 +266,7 @@ export default function ActivityPage() {
           }}
         >
           <Download className="w-4 h-4" />
-          Export CSV
+          {t("common.exportCsv")}
         </a>
       </div>
 
@@ -285,7 +287,7 @@ export default function ActivityPage() {
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {datePresets.map((preset, index) => (
             <button
-              key={preset.label}
+              key={preset.labelKey}
               onClick={() => handlePresetClick(preset.days, index)}
               style={{
                 padding: '0.5rem 1rem',
@@ -299,7 +301,7 @@ export default function ActivityPage() {
                 cursor: 'pointer'
               }}
             >
-              {preset.label}
+              {t(preset.labelKey)}
             </button>
           ))}
 

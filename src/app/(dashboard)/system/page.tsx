@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { QueueStatus } from "@/components/QueueStatus";
+import { useI18n } from "@/i18n/provider";
 import { Cpu, HardDrive, MemoryStick, Activity, Network, Server, ShieldCheck, RotateCw, Wifi, Monitor, Play, Square, X, Loader2, Terminal, ArrowDown, ArrowUp } from "lucide-react";
 
 interface SystemdService {
@@ -71,6 +72,7 @@ export default function SystemMonitorPage() {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [logsModal, setLogsModal] = useState<LogsModal | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const fetchSystemData = async () => {
@@ -120,7 +122,7 @@ export default function SystemMonitorPage() {
       if (action === "logs") {
         setLogsModal({ name: svc.name, backend: svc.backend || "pm2", content: data.output, loading: false });
       } else {
-        showToast(`✅ ${svc.name}: ${action} successful`);
+        showToast(`✅ ${svc.name}: ${action} ${t("system.actionSuccessful")}`);
         // Refresh data after action
         setTimeout(async () => {
           const r = await fetch("/api/system/monitor");
@@ -128,7 +130,7 @@ export default function SystemMonitorPage() {
         }, 2000);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Action failed";
+      const msg = err instanceof Error ? err.message : t("system.actionFailed");
       if (action === "logs") {
         setLogsModal({ name: svc.name, backend: svc.backend || "pm2", content: `Error: ${msg}`, loading: false });
       } else {
@@ -144,7 +146,7 @@ export default function SystemMonitorPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "var(--accent)" }}></div>
-          <p style={{ color: "var(--text-secondary)" }}>Loading system data...</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t("system.loading")}</p>
         </div>
       </div>
     );
@@ -155,7 +157,7 @@ export default function SystemMonitorPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <Server className="w-16 h-16 mx-auto mb-4" style={{ color: "var(--text-muted)" }} />
-          <p style={{ color: "var(--text-secondary)" }}>Failed to load system data</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t("system.failed")}</p>
         </div>
       </div>
     );
@@ -189,14 +191,14 @@ export default function SystemMonitorPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--text-primary)" }}>
-            System Monitor
+            {t("system.title")}
           </h1>
-          <p style={{ color: "var(--text-secondary)" }}>Real-time monitoring of server resources and services</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t("system.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "var(--success)" }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "var(--success)" }} />
-            Live
+            {t("system.live")}
           </span>
           {lastUpdated && (
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>{lastUpdated.toLocaleTimeString()}</span>
@@ -206,7 +208,7 @@ export default function SystemMonitorPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b" style={{ borderColor: "var(--border)" }}>
-        {[{ id: "hardware", label: "Hardware", icon: Cpu }, { id: "services", label: "Services", icon: Server }].map((tab) => {
+        {[{ id: "hardware", labelKey: "system.hardware", icon: Cpu }, { id: "services", labelKey: "system.services", icon: Server }].map((tab) => {
           const Icon = tab.icon;
           const isActive = selectedTab === tab.id;
           return (
@@ -217,7 +219,7 @@ export default function SystemMonitorPage() {
               style={{ color: isActive ? "var(--accent)" : "var(--text-secondary)", borderBottom: isActive ? "2px solid var(--accent)" : "2px solid transparent" }}
             >
               <Icon className="w-4 h-4" />
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           );
         })}
@@ -235,8 +237,8 @@ export default function SystemMonitorPage() {
                   <Cpu className="w-5 h-5" style={{ color: cpuColor }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>CPU</h3>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{systemData.cpu.cores.length} cores</p>
+                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.cpu")}</h3>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("system.cores", { count: systemData.cpu.cores.length })}</p>
                 </div>
               </div>
               <span className="text-2xl font-bold" style={{ color: cpuColor }}>{systemData.cpu.usage}%</span>
@@ -245,7 +247,7 @@ export default function SystemMonitorPage() {
               <div className="h-full transition-all duration-500" style={{ width: `${systemData.cpu.usage}%`, backgroundColor: cpuColor }} />
             </div>
             <div className="flex justify-between text-sm" style={{ color: "var(--text-secondary)" }}>
-              <span>Load Average</span>
+              <span>{t("system.loadAverage")}</span>
               <span>{systemData.cpu.loadAvg[0].toFixed(2)} / {systemData.cpu.loadAvg[1].toFixed(2)} / {systemData.cpu.loadAvg[2].toFixed(2)}</span>
             </div>
           </div>
@@ -258,7 +260,7 @@ export default function SystemMonitorPage() {
                   <MemoryStick className="w-5 h-5" style={{ color: ramColor }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>RAM</h3>
+                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.ram")}</h3>
                   <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{systemData.ram.used.toFixed(1)}GB / {systemData.ram.total.toFixed(1)}GB</p>
                 </div>
               </div>
@@ -277,7 +279,7 @@ export default function SystemMonitorPage() {
                   <HardDrive className="w-5 h-5" style={{ color: diskColor }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Disk</h3>
+                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.disk")}</h3>
                   <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{systemData.disk.used.toFixed(1)}GB / {systemData.disk.total.toFixed(1)}GB</p>
                 </div>
               </div>
@@ -295,22 +297,22 @@ export default function SystemMonitorPage() {
                 <Network className="w-5 h-5" style={{ color: "var(--info, #3b82f6)" }} />
               </div>
               <div>
-                <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Network</h3>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Live I/O</p>
+                <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.network")}</h3>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("system.liveIO")}</p>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
                   <ArrowDown className="w-4 h-4" style={{ color: "var(--success)" }} />
-                  <span>RX (in)</span>
+                  <span>{t("system.rxIn")}</span>
                 </div>
                 <span className="font-mono text-sm" style={{ color: "var(--text-primary)" }}>{systemData.network.rx.toFixed(2)} MB/s</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
                   <ArrowUp className="w-4 h-4" style={{ color: "var(--accent)" }} />
-                  <span>TX (out)</span>
+                  <span>{t("system.txOut")}</span>
                 </div>
                 <span className="font-mono text-sm" style={{ color: "var(--text-primary)" }}>{systemData.network.tx.toFixed(2)} MB/s</span>
               </div>

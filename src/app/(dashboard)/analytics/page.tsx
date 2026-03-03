@@ -9,9 +9,10 @@ import { TopTasksList } from "@/components/TopTasksList";
 import { EfficiencyGauge } from "@/components/EfficiencyGauge";
 import { TokenFlowSankey, TaskFlowSankey, TimeFlowSankey } from "@/components/sankey/SankeyDiagrams";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useI18n } from "@/i18n/provider";
 import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { MODEL_PRICING, normalizeModelId } from "@/lib/pricing-types";
+import { MODEL_PRICING } from "@/lib/pricing-types";
 
 // Helper to get model name (client-side)
 function getModelName(modelId: string): string {
@@ -51,6 +52,7 @@ type FlowType = "token" | "task" | "time";
 type Period = "day" | "week" | "month";
 
 export default function AnalyticsPage() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);

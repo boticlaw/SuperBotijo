@@ -7,6 +7,7 @@ import { IntegrationStatus } from "@/components/IntegrationStatus";
 import { QuickActions } from "@/components/QuickActions";
 import { ConfigEditor } from "@/components/ConfigEditor";
 import { PricingEditor } from "@/components/PricingEditor";
+import { useI18n } from "@/i18n/provider";
 
 interface SystemData {
   agent: {
@@ -43,11 +44,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"system" | "config" | "pricing">("system");
+  const { t } = useI18n();
 
   const tabs = [
-    { id: "system" as const, label: "System", icon: Server },
-    { id: "config" as const, label: "Config", icon: FileJson },
-    { id: "pricing" as const, label: "Pricing", icon: DollarSign },
+    { id: "system" as const, labelKey: "settings.tabs.system", icon: Server },
+    { id: "config" as const, labelKey: "settings.tabs.config", icon: FileJson },
+    { id: "pricing" as const, labelKey: "settings.tabs.pricing", icon: DollarSign },
   ];
 
   const fetchSystemData = async () => {
@@ -84,10 +86,10 @@ export default function SettingsPage() {
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-heading)" }}
           >
             <Settings className="w-6 h-6 md:w-8 md:h-8" style={{ color: "var(--accent)" }} />
-            Settings
+            {t("settings.title")}
           </h1>
           <p className="text-sm md:text-base" style={{ color: "var(--text-secondary)" }}>
-            System status, integrations, and configuration
+            {t("settings.subtitle")}
           </p>
         </div>
 
@@ -102,14 +104,14 @@ export default function SettingsPage() {
           }}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          {t("common.refresh")}
         </button>
       </div>
 
       {/* Last Refresh Time */}
       {lastRefresh && activeTab === "system" && (
         <div className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
-          Last updated: {lastRefresh.toLocaleTimeString()}
+          {t("settings.lastUpdated")}: {lastRefresh.toLocaleTimeString()}
         </div>
       )}
 
@@ -126,7 +128,7 @@ export default function SettingsPage() {
             }}
           >
             <tab.icon className="w-4 h-4" />
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
