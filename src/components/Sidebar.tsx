@@ -30,6 +30,7 @@ import {
   GitBranch,
   Calendar,
   Bell,
+  LayoutGrid,
 } from "lucide-react";
 import { getAgentDisplayName } from "@/config/branding";
 
@@ -64,6 +65,7 @@ const navGroups = [
   {
     title: "Tools",
     items: [
+      { href: "/kanban", label: "Kanban", icon: LayoutGrid },
       { href: "/workflows", label: "Workflows", icon: Workflow },
       { href: "/playground", label: "Playground", icon: Beaker },
       { href: "/terminal", label: "Terminal", icon: SquareTerminal },

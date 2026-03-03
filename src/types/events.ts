@@ -10,7 +10,14 @@ export type EventType =
   | "notification:read"
   | "status:change"
   | "gateway:status"
-  | "model:change";
+  | "model:change"
+  | "kanban:task_created"
+  | "kanban:task_updated"
+  | "kanban:task_deleted"
+  | "kanban:task_moved"
+  | "kanban:column_created"
+  | "kanban:column_updated"
+  | "kanban:column_deleted";
 
 export interface BaseEvent {
   type: EventType;
@@ -104,6 +111,72 @@ export interface ModelChangeEvent extends BaseEvent {
   };
 }
 
+// ============================================================================
+// Kanban Events
+// ============================================================================
+
+export interface KanbanTaskCreatedEvent extends BaseEvent {
+  type: "kanban:task_created";
+  payload: {
+    taskId: string;
+    title: string;
+    status: string;
+    priority: string;
+  };
+}
+
+export interface KanbanTaskUpdatedEvent extends BaseEvent {
+  type: "kanban:task_updated";
+  payload: {
+    taskId: string;
+    title: string;
+    changes: Record<string, unknown>;
+  };
+}
+
+export interface KanbanTaskDeletedEvent extends BaseEvent {
+  type: "kanban:task_deleted";
+  payload: {
+    taskId: string;
+    title: string;
+  };
+}
+
+export interface KanbanTaskMovedEvent extends BaseEvent {
+  type: "kanban:task_moved";
+  payload: {
+    taskId: string;
+    title: string;
+    fromColumn: string;
+    toColumn: string;
+  };
+}
+
+export interface KanbanColumnCreatedEvent extends BaseEvent {
+  type: "kanban:column_created";
+  payload: {
+    columnId: string;
+    name: string;
+  };
+}
+
+export interface KanbanColumnUpdatedEvent extends BaseEvent {
+  type: "kanban:column_updated";
+  payload: {
+    columnId: string;
+    name: string;
+    changes: Record<string, unknown>;
+  };
+}
+
+export interface KanbanColumnDeletedEvent extends BaseEvent {
+  type: "kanban:column_deleted";
+  payload: {
+    columnId: string;
+    name: string;
+  };
+}
+
 export type RuntimeEvent =
   | ActivityUpdateEvent
   | ActivityCreateEvent
@@ -114,7 +187,14 @@ export type RuntimeEvent =
   | NotificationReadEvent
   | StatusChangeEvent
   | GatewayStatusEvent
-  | ModelChangeEvent;
+  | ModelChangeEvent
+  | KanbanTaskCreatedEvent
+  | KanbanTaskUpdatedEvent
+  | KanbanTaskDeletedEvent
+  | KanbanTaskMovedEvent
+  | KanbanColumnCreatedEvent
+  | KanbanColumnUpdatedEvent
+  | KanbanColumnDeletedEvent;
 
 export type EventHandler<T extends RuntimeEvent = RuntimeEvent> = (event: T) => void;
 

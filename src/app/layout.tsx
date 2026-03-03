@@ -3,6 +3,9 @@ import { Inter, Sora, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
+// Force dynamic rendering for all routes to prevent prerendering issues
+export const dynamic = "force-dynamic";
+
 const inter = Inter({ 
   subsets: ["latin"],
   variable: "--font-inter",

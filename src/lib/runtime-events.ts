@@ -176,3 +176,63 @@ export const emitModelChange = (sessionKey: string, oldModel: string, newModel: 
     payload: { sessionKey, oldModel, newModel },
   });
 };
+
+// ============================================================================
+// Kanban Event Emitters
+// ============================================================================
+
+export const emitKanbanTaskCreated = (taskId: string, title: string, status: string, priority: string) => {
+  eventBridge.emit({
+    type: "kanban:task_created",
+    timestamp: new Date().toISOString(),
+    payload: { taskId, title, status, priority },
+  });
+};
+
+export const emitKanbanTaskUpdated = (taskId: string, title: string, changes: Record<string, unknown>) => {
+  eventBridge.emit({
+    type: "kanban:task_updated",
+    timestamp: new Date().toISOString(),
+    payload: { taskId, title, changes },
+  });
+};
+
+export const emitKanbanTaskDeleted = (taskId: string, title: string) => {
+  eventBridge.emit({
+    type: "kanban:task_deleted",
+    timestamp: new Date().toISOString(),
+    payload: { taskId, title },
+  });
+};
+
+export const emitKanbanTaskMoved = (taskId: string, title: string, fromColumn: string, toColumn: string) => {
+  eventBridge.emit({
+    type: "kanban:task_moved",
+    timestamp: new Date().toISOString(),
+    payload: { taskId, title, fromColumn, toColumn },
+  });
+};
+
+export const emitKanbanColumnCreated = (columnId: string, name: string) => {
+  eventBridge.emit({
+    type: "kanban:column_created",
+    timestamp: new Date().toISOString(),
+    payload: { columnId, name },
+  });
+};
+
+export const emitKanbanColumnUpdated = (columnId: string, name: string, changes: Record<string, unknown>) => {
+  eventBridge.emit({
+    type: "kanban:column_updated",
+    timestamp: new Date().toISOString(),
+    payload: { columnId, name, changes },
+  });
+};
+
+export const emitKanbanColumnDeleted = (columnId: string, name: string) => {
+  eventBridge.emit({
+    type: "kanban:column_deleted",
+    timestamp: new Date().toISOString(),
+    payload: { columnId, name },
+  });
+};

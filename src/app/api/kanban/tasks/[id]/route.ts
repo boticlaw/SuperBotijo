@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getTask,
+  updateTask,
+  deleteTask,
+  type TaskPriority,
+  type UpdateTaskInput,
+} from "@/lib/kanban-db";
+import { emitKanbanTaskUpdated, emitKanbanTaskDeleted } from "@/lib/runtime-events";
+
+export const dynamic = "force-dynamic";
+
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+/**
+ * GET /api/kanban/tasks/[id]
+ * Get a single task by ID
+ */
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Task ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const task = getTask(id);
+
+    if (!task) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ task });
+  } catch (error) {
+    console.error("Failed to get task:", error);
+    return NextResponse.json(
+      { error: "Failed to get task" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/kanban/tasks/[id]
+ * Update a task
+ */
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Task ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const body: UpdateTaskInput = await request.json();
+
+    if (body.title !== undefined) {
+      if (typeof body.title !== "string" || body.title.length === 0) {
+        return NextResponse.json(
+          { error: "Title must be a non-empty string" },
+          { status: 400 }
+        );
+      }
+
+      if (body.title.length > 200) {
+        return NextResponse.json(
+          { error: "Title must be 200 characters or less" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const validPriorities: TaskPriority[] = ["low", "medium", "high", "critical"];
+    if (body.priority && !validPriorities.includes(body.priority)) {
+      return NextResponse.json(
+        { error: `Invalid priority. Must be one of: ${validPriorities.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    const task = updateTask(id, body);
+
+    if (!task) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
+    // Emit real-time event
+    const changes: Record<string, unknown> = {};
+    if (body.title !== undefined) changes.title = body.title;
+    if (body.description !== undefined) changes.description = body.description;
+    if (body.status !== undefined) changes.status = body.status;
+    if (body.priority !== undefined) changes.priority = body.priority;
+    if (body.assignee !== undefined) changes.assignee = body.assignee;
+    if (body.labels !== undefined) changes.labels = body.labels;
+
+    emitKanbanTaskUpdated(task.id, task.title, changes);
+
+    return NextResponse.json({ task });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update task";
+    console.error("Failed to update task:", error);
+
+    if (message.includes("Title must be")) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    return NextResponse.json(
+      { error: "Failed to update task" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/kanban/tasks/[id]
+ * Delete a task
+ */
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Task ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get task before deletion for event emission
+    const task = getTask(id);
+    const taskTitle = task?.title ?? "Unknown";
+
+    const deleted = deleteTask(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
+    // Emit real-time event
+    emitKanbanTaskDeleted(id, taskTitle);
+
+    return NextResponse.json({ success: true, deleted: id });
+  } catch (error) {
+    console.error("Failed to delete task:", error);
+    return NextResponse.json(
+      { error: "Failed to delete task" },
+      { status: 500 }
+    );
+  }
+}

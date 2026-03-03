@@ -576,79 +576,137 @@
 | 11. Advanced Viz | ✅ | 100% |
 | 12. Collaboration | ✅ | 90% (solo Team Dashboard pendiente) |
 | 13. UI/UX Improvements | ✅ | 100% |
-| 14. Mission Control Features | ⏳ | 0% (51 items planned) |
+| 14. Mission Control Layer | ⏳ | 0% (38 tareas en 7 sub-fases) |
+| 15. Future Work | 🔮 | Planned |
 
-**Overall: 93% completado (Fase 14 pendiente)**
-
----
-
-## Fase 14: Mission Control Features 🎯
-> Ideas extraídas del análisis de builderz-labs/mission-control - Marzo 2026
->
-> **Referencia:** Dashboard de orquestación de agentes con 26 paneles, SQLite, RBAC, webhooks, y más.
->
-> **Resumen:**
-> - **Tier 1 (Core):** 6 features - Kanban, Quality Gates, Heartbeat, Standup, Webhooks, GitHub Sync
-> - **Tier 2 (Integrations):** 4 features - Alerts, GitHub, Direct CLI, Claude Scanner
-> - **Tier 3 (Infrastructure):** 4 items - SQLite WAL, Scheduler, Rate Limiting, Audit Log
-> - **Tier 4 (Enhanced):** 7 items - Claude Scanner, Multi-gateway, EventBus, Comments, Settings, Claude Sessions
-> - **Tier 5 (Future):** 3 items - RBAC, Pipelines, Super Admin
-> - **Tier 6 (Polish):** 7 items - Command Palette, Search, Templates, Costs, Replay, Health
-> - **Tier 7 (UI Components):** 20 items - E2E, CLI, Quick Start, Notifications, Accessibility, i18n, Tutorials, Help, Profile, 2FA, Maintenance, Snapshots, Audit, Webhooks, Labels, Batch, Activity Maps, Keyboard Nav, Undo/Redo, Bookmarks, Workspace Templates, Custom Themes, API Versioning, Rate Limits, Feature Flags, Changelog, Session Management, Debug Panel, Shortcuts Modal, Onboarding, Empty States, Accessibility Menu, Notification Sounds, API Health, Quick Actions, Drag & Drop, Tooltips, Toasts, Confirm Dialogs, Modals, Table Pagination, Command Palette, Widget Library, Form Validation, Data Fetching, Error Boundaries, Loading States, Animations, Theme Provider, Notification Badge, Status Indicator, Filter Bar, Sortable Table, Date Range Picker, Search Bar, Sidebar Nav, Tab System, Breadcrumb, Avatar, Badge, Card
-> - **Total:** 51 new features identified
+**Overall: 93% completado (Fase 14 pendiente - 15-20 horas estimadas)**
 
 ---
 
-## Próximos Pasos (Future Work)
+## Fase 14: Mission Control Layer 🎯 ⏳
+> Transformar SuperBotijo de dashboard reactivo a orquestador autónomo alineado a misión
+>
+> **Inspiración:** `FUNCIO.md` - Panel maestro con Reverse Prompting, Projects, Agent Identities
+>
+> **Decisiones técnicas:**
+> - **Storage:** Extender `data/kanban.db` (no bases separadas)
+> - **UI:** Página dedicada `/mission` (no Settings tab)
+> - **Heartbeat:** Modo suggest + auto-execute con flag configurable
 
-### Tier 1: Start Here (Phase 14)
-1. **Kanban Board** - Sistema de gestión de tareas con drag & drop
-2. **Quality Gates** - Aprobaciones obligatorias
-3. **Agent Heartbeat** - Detección de agentes offline
-4. **Daily Standup** - Reportes automát de estado
-5. **Webhooks Outbound** - Notificaciones a servicios externos
+### 14.1 Foundation - Types & Schema ⏳
+> Base de datos y tipos TypeScript
 
-### Tier 2: Then Continue
-1. **GitHub Issues Sync** - Sincronizar issues como tasks
-2. **Direct CLI Connection** - Conectar CLIs sin gateway
-3. **SQLite WAL Mode** - Migrar de JSON a SQLite
-4. **Background Scheduler** - Jobs en background
+- [ ] Extender `kanban.db` con tablas: `projects`, `agent_identities`, `operations_journal`
+- [ ] Types: `Mission`, `Project`, `AgentIdentity`, `OperationsJournalEntry`
+- [ ] Migration script para DB existente
+- **Archivos:** `src/lib/kanban-db.ts`, `src/types/mission-control.ts`
+- **Esfuerzo:** 2-3 horas
 
-### Tier 3: Future
-1. **RBAC** - Sistema de roles multi-usuario
-2. **Pipeline Orchestration** - Workflows con templates
-3. **Super Admin / Multi-tenant** - Provisioning de múltiples tenants
-4. **Plugins system** - Extensions de terceros
-5. **AI Agents personalizables** - Configurar comportamiento de cada agente
+### 14.2 Mission Statement System ⏳
+> La "fuente de verdad" que alinea a todos los agentes
+
+- [ ] API: `GET/PUT /api/mission` - Mission Statement CRUD
+- [ ] Storage: `data/mission.json` con campos: statement, goals, values, lastUpdated
+- [ ] UI: Página `/mission` con editor de misión
+- [ ] UI: Mission display en dashboard home
+- [ ] UI: Mission card en HeartbeatStatus
+- **Archivos:** `src/app/api/mission/route.ts`, `src/app/(dashboard)/mission/page.tsx`, `src/components/MissionCard.tsx`
+- **Esfuerzo:** 3-4 horas
+
+### 14.3 Reverse Prompting Engine ⏳
+> "¿Qué debo hacer hoy basado en mi misión?"
+
+- [ ] API: `POST /api/mission/prompt` - Reverse Prompting endpoint
+- [ ] Lógica: Scoring de tareas por alineación con misión
+- [ ] UI: Input "Ask Mission Control" en `/mission`
+- [ ] UI: Panel de respuesta con prioridades sugeridas
+- [ ] Integración: Mission context en Suggestions Engine
+- **Archivos:** `src/app/api/mission/prompt/route.ts`, `src/components/ReversePromptPanel.tsx`, `src/lib/suggestions-engine.ts`
+- **Esfuerzo:** 4-5 horas
+
+### 14.4 Projects System ⏳
+> Proyectos como entidad de primer orden con milestones
+
+- [ ] API: CRUD completo `/api/projects`
+- [ ] DB: Projects table con campos: id, name, description, status, milestones, createdAt
+- [ ] Link: Tasks → Projects (campo `projectId` en kanban tasks)
+- [ ] UI: Página `/projects` con lista de proyectos
+- [ ] UI: Project detail view con tasks vinculadas
+- [ ] UI: Project selector en Mission page
+- [ ] Kanban: Filtro por proyecto
+- **Archivos:** `src/app/api/projects/route.ts`, `src/app/(dashboard)/projects/page.tsx`, `src/lib/kanban-db.ts`
+- **Esfuerzo:** 4-5 horas
+
+### 14.5 Agent Identities ⏳
+> Personalidad, roles y avatares para agentes
+
+- [ ] DB: `agent_identities` table con campos: agentId, name, role, personality, avatar, mission
+- [ ] API: `GET/PUT /api/agents/[id]/identity`
+- [ ] UI: Identity editor en AgentInspectPanel
+- [ ] Office 3D: Mostrar identidad en vez de solo model/estado
+- [ ] Heartbeat: Agent identity visible en status
+- **Archivos:** `src/app/api/agents/[id]/identity/route.ts`, `src/components/AgentIdentityCard.tsx`
+- **Esfuerzo:** 3-4 horas
+
+### 14.6 Heartbeat Autonomy Mode ⏳
+> Heartbeat consume tareas del Kanban autónomamente
+
+- [ ] API: Flag `--execute` en Heartbeat para modo autonomía
+- [ ] Lógica: Heartbeat lee tareas asignadas a "OpenClaw" del Kanban
+- [ ] Lógica: Suggest vs Auto-execute modes
+- [ ] UI: Toggle de autonomía en HeartbeatStatus
+- [ ] UI: Preview de tareas que se ejecutarán
+- [ ] Audit: Log de ejecuciones autónomas
+- **Archivos:** `src/app/api/heartbeat/route.ts`, `src/components/HeartbeatStatus.tsx`
+- **Esfuerzo:** 3-4 horas
+
+### 14.7 Operations Journal ⏳
+> Diario narrativo de operaciones (no solo activity log)
+
+- [ ] DB: `operations_journal` table con campos: id, date, narrative, highlights, createdAt
+- [ ] API: CRUD `/api/journal`
+- [ ] Lógica: Auto-generar entrada diaria desde activities
+- [ ] UI: Página `/journal` con timeline narrativo
+- [ ] UI: Entry editor para añadir highlights manuales
+- **Archivos:** `src/app/api/journal/route.ts`, `src/app/(dashboard)/journal/page.tsx`
+- **Esfuerzo:** 2-3 horas
+
+---
+
+## Fase 15: Future Work 🚀
+> Features para después de Mission Control
+
+### Infrastructure
+- [ ] **RBAC** - Sistema de roles multi-usuario
+- [ ] **Multi-tenant** - Provisioning de múltiples instancias
+- [ ] **Plugins System** - Extensions de terceros
+- [ ] **Webhooks Outbound** - Notificaciones a servicios externos
+
+### Integrations
+- [ ] **GitHub Issues Sync** - Sincronizar issues como tasks
+- [ ] **Direct CLI Connection** - Conectar CLIs sin gateway
+- [ ] **Quality Gates** - Aprobaciones obligatorias antes de ejecutar
+
+### Polish
+- [ ] **Command Palette** - Quick actions con Cmd+K
+- [ ] **Auto-categorization** - Detectar PRDs, specs, docs automáticamente
+- [ ] **Daily Standup** - Reportes automáticos de estado cada mañana
 
 ---
 
 *Creado: 2026-02-07*
-*Última actualización: 2026-03-02*
+*Última actualización: 2026-03-03*
 
-**NUEVO en 2026-03-02:**
-> Ideas extraídas del análisis de builderz-labs/mission-control - Marzo 2026
+**NUEVO en 2026-03-03:**
+> Fase 14 redefinida basada en análisis de `FUNCIO.md`
 >
-> **Referencia:** Dashboard de orquestación de agentes con 26 paneles, SQLite, RBAC, webhooks, y más.
+> **Cambios principales:**
+> - Enfoque en "Mission Control Layer" como paradigma humano/filosófico
+> - 7 sub-fases concretas con 38 tareas específicas
+> - Integración: Mission → Projects → Tasks → Heartbeat autonomy
+> - Estimación: 15-20 horas totales
 >
-> **Resumen de nuevas features identificadas:**
-> - Tier 1 - 6 core features (Kanban, Quality Gates, Heartbeat, Standup, Webhooks, GitHub Sync, Direct CLI)
-> - Tier 2 - 4 integrations (Webhooks, Alerts, GitHub, Direct CLI)
-> - Tier 3 - 4 infrastructure items (SQLite WAL, Scheduler, Rate Limiting, Audit Log)
-> - Tier 4 - 7 enhanced features (Claude Scanner, Multi-gateway, EventBus, Comments, Settings, Claude Sessions)
-> - Tier 5 - 3 future items (RBAC, Pipelines, Multi-tenant)
-> - Tier 6 - 7 polish items (Command Palette, Search, Templates, Costs, Replay, Health)
-> - Tier 7 - 20 UI components (E2E, CLI Dashboard, Quick Start, Notifications, Accessibility, i18n, Tutorials, Help, Profile, 2FA, Maintenance, Snapshots, Audit Trail, Webhooks, Labels, Batch Ops, Activity Maps, Keyboard Nav, Undo/Redo, Bookmarks, Workspace Templates, Custom Themes, API Versioning, Rate Limits, Feature Flags, Changelog, Session Management, Debug Panel, Shortcuts Modal, Onboarding, Empty States, Accessibility Menu, Notification Sounds, API Health, Quick Actions, Drag & Drop, Tooltips, Toasts, Confirm Dialogs, Modals, Table Pagination, Command Palette, Widget Library
- Form Validation, Data Fetching, Error Boundaries, Loading States, Animations, Theme Provider
- Notification Badge
- Status Indicator, Filter Bar
- Sortable Table
- Date Range Picker
- Search Bar
- Sidebar Nav
- Tab System
- Breadcrumb
- Avatar, Badge, Card)
-> - **Total: 51 new features identified**
->
-> **Ver detalle completo:** Ver secciones 14.1 - 14.7 en este documento
+> **Decisiones técnicas tomadas:**
+> - Storage: Extender `kanban.db` (no bases separadas)
+> - UI: Página `/mission` dedicada (no Settings)
+> - Heartbeat: Modo suggest + auto-execute configurable
