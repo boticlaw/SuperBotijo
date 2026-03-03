@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Briefcase,
   Plus,
@@ -11,6 +12,10 @@ import {
   Clock,
   AlertTriangle,
   ExternalLink,
+  Target,
+  LayoutGrid,
+  BookOpen,
+  Rocket,
 } from "lucide-react";
 import type { Project, Milestone } from "@/lib/mission-types";
 
@@ -271,6 +276,61 @@ export default function ProjectsPage() {
           })}
         </div>
       )}
+
+      {/* Quick Links to Mission Control */}
+      <div
+        className="mt-6 rounded-xl p-4"
+        style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+      >
+        <h3
+          className="mb-3 text-sm font-semibold"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Mission Control
+        </h3>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <Link
+            href="/mission"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <Target className="h-4 w-4" style={{ color: "var(--accent)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Mission
+            </span>
+          </Link>
+          <Link
+            href="/kanban"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <LayoutGrid className="h-4 w-4" style={{ color: "var(--info)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Kanban
+            </span>
+          </Link>
+          <Link
+            href="/journal"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <BookOpen className="h-4 w-4" style={{ color: "var(--success)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Journal
+            </span>
+          </Link>
+          <Link
+            href="/autonomy"
+            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--surface-elevated)" }}
+          >
+            <Rocket className="h-4 w-4" style={{ color: "var(--warning)" }} />
+            <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Autonomy
+            </span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
