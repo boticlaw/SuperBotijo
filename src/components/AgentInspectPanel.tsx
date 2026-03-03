@@ -43,7 +43,18 @@ interface AgentMetrics {
   topTasks: { task: string; count: number }[];
 }
 
-type TabId = 'overview' | 'activity' | 'logs' | 'config' | 'metrics';
+interface AgentIdentity {
+  id: string;
+  name: string;
+  role: string;
+  personality: string | null;
+  avatar: string | null;
+  mission: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type TabId = 'overview' | 'activity' | 'logs' | 'config' | 'identity' | 'metrics';
 
 interface AgentInspectPanelProps {
   agentId: string;
@@ -58,6 +69,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'activity', label: 'Activity', icon: '⚡' },
   { id: 'logs', label: 'Logs', icon: '📝' },
   { id: 'config', label: 'Config', icon: '⚙️' },
+  { id: 'identity', label: 'Identity', icon: '🎭' },
   { id: 'metrics', label: 'Metrics', icon: '📈' },
 ];
 
@@ -70,6 +82,17 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
   const [config, setConfig] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [logFilter, setLogFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
+  const [identity, setIdentity] = useState<AgentIdentity | null>(null);
+  const [identityForm, setIdentityForm] = useState({
+    name: '',
+    role: '',
+    personality: '',
+    avatar: '',
+    mission: '',
+  });
+  const [identitySaving, setIdentitySaving] = useState(false);
+  const [identitySaveSuccess, setIdentitySaveSuccess] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
 
   // Fetch agent data
   const fetchAgentData = useCallback(async () => {
@@ -132,6 +155,20 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
           heartbeatInterval: 30,
         });
       }
+
+      // Fetch identity
+      const identityRes = await fetch(`/api/agents/${agentId}/identity`);
+      if (identityRes.ok) {
+        const data = await identityRes.json();
+        setIdentity(data.identity);
+        setIdentityForm({
+          name: data.identity.name || '',
+          role: data.identity.role || '',
+          personality: data.identity.personality || '',
+          avatar: data.identity.avatar || '',
+          mission: data.identity.mission || '',
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch agent data:', error);
     } finally {
@@ -148,6 +185,41 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
   // Handle context menu actions
   const handleAction = (action: string) => {
     onAction?.(action, agentId);
+  };
+
+  // Handle identity save
+  const handleSaveIdentity = async () => {
+    setIdentitySaving(true);
+    setIdentityError(null);
+    setIdentitySaveSuccess(false);
+
+    try {
+      const res = await fetch(`/api/agents/${agentId}/identity`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: identityForm.name,
+          role: identityForm.role,
+          personality: identityForm.personality || null,
+          avatar: identityForm.avatar || null,
+          mission: identityForm.mission || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save identity');
+      }
+
+      const data = await res.json();
+      setIdentity(data.identity);
+      setIdentitySaveSuccess(true);
+      setTimeout(() => setIdentitySaveSuccess(false), 2000);
+    } catch (error) {
+      setIdentityError(error instanceof Error ? error.message : 'Failed to save identity');
+    } finally {
+      setIdentitySaving(false);
+    }
   };
 
   // Format relative time
@@ -197,14 +269,25 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
       {/* Header */}
       <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${
-            agent?.status === 'working' ? 'bg-success animate-pulse' :
-            agent?.status === 'error' ? 'bg-error' :
-            agent?.status === 'paused' ? 'bg-warning' :
-            'bg-neutral-400'
-          }`} />
+          {/* Show identity avatar if exists, otherwise status dot */}
+          {identity?.avatar ? (
+            <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg overflow-hidden">
+              {identity.avatar.startsWith('http') || identity.avatar.startsWith('/') ? (
+                <img src={identity.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span>{identity.avatar}</span>
+              )}
+            </div>
+          ) : (
+            <div className={`w-3 h-3 rounded-full ${
+              agent?.status === 'working' ? 'bg-success animate-pulse' :
+              agent?.status === 'error' ? 'bg-error' :
+              agent?.status === 'paused' ? 'bg-warning' :
+              'bg-neutral-400'
+            }`} />
+          )}
           <h2 className="font-semibold text-neutral-900 dark:text-white">
-            {agent?.name || agentId}
+            {identity?.name || agent?.name || agentId}
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -464,6 +547,129 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
                     </span>
                   </div>
                 ))}
+              </motion.div>
+            )}
+
+            {/* Identity Tab */}
+            {activeTab === 'identity' && (
+              <motion.div
+                key="identity"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                {/* Avatar preview */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-2xl overflow-hidden">
+                    {identityForm.avatar ? (
+                      identityForm.avatar.startsWith('http') || identityForm.avatar.startsWith('/') ? (
+                        <img src={identityForm.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{identityForm.avatar}</span>
+                      )
+                    ) : (
+                      <span>🎭</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-neutral-900 dark:text-white">
+                      {identityForm.name || agentId}
+                    </div>
+                    <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {identityForm.role || 'Agent'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form fields */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={identityForm.name}
+                      onChange={(e) => setIdentityForm({ ...identityForm, name: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-info"
+                      placeholder="Agent display name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      Role
+                    </label>
+                    <input
+                      type="text"
+                      value={identityForm.role}
+                      onChange={(e) => setIdentityForm({ ...identityForm, role: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-info"
+                      placeholder="Agent role"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      Avatar (emoji or URL)
+                    </label>
+                    <input
+                      type="text"
+                      value={identityForm.avatar}
+                      onChange={(e) => setIdentityForm({ ...identityForm, avatar: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-info"
+                      placeholder="🤖 or https://..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      Personality
+                    </label>
+                    <textarea
+                      value={identityForm.personality}
+                      onChange={(e) => setIdentityForm({ ...identityForm, personality: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-info resize-none"
+                      rows={3}
+                      placeholder="Describe the agent's personality traits..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      Mission
+                    </label>
+                    <textarea
+                      value={identityForm.mission}
+                      onChange={(e) => setIdentityForm({ ...identityForm, mission: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-info resize-none"
+                      rows={3}
+                      placeholder="Agent's personal mission statement..."
+                    />
+                  </div>
+                </div>
+
+                {/* Status messages */}
+                {identityError && (
+                  <div className="text-sm text-error bg-error-soft dark:bg-error-soft px-3 py-2 rounded-lg">
+                    {identityError}
+                  </div>
+                )}
+                {identitySaveSuccess && (
+                  <div className="text-sm text-success bg-success-soft dark:bg-success-soft px-3 py-2 rounded-lg">
+                    Identity saved successfully!
+                  </div>
+                )}
+
+                {/* Save button */}
+                <button
+                  onClick={handleSaveIdentity}
+                  disabled={identitySaving}
+                  className="w-full px-4 py-2 text-sm bg-info hover:bg-info/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {identitySaving ? 'Saving...' : 'Save Identity'}
+                </button>
               </motion.div>
             )}
 
