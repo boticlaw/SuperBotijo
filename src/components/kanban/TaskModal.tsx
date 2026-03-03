@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, FolderOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import type { KanbanColumn as KanbanColumnType, KanbanTask as KanbanTaskType, KanbanLabel } from "@/lib/kanban-db";
+import type { Project } from "@/lib/mission-types";
 
 const LABEL_COLORS = [
   "#ef4444", "#f97316", "#3b82f6", "#8b5cf6", "#ec4899",
@@ -11,6 +12,11 @@ const LABEL_COLORS = [
   "#06b6d4", "#14b8ae", "#6366f1",
   "#8b5cf6", "#d97706",
 ];
+
+interface ProjectWithStats extends Project {
+  taskCount: number;
+  progress: number;
+}
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -35,6 +41,8 @@ export function TaskModal({ isOpen, onClose, onSave, onDelete, columns, editingT
   const [assignee, setAssignee] = useState("");
   const [status, setStatus] = useState("backlog");
   const [labels, setLabels] = useState<KanbanLabel[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newLabelName, setNewLabelName] = useState("");
@@ -50,6 +58,7 @@ export function TaskModal({ isOpen, onClose, onSave, onDelete, columns, editingT
       setAssignee(editingTask.assignee || "");
       setStatus(editingTask.status);
       setLabels(editingTask.labels || []);
+      setProjectId(editingTask.projectId);
     } else {
       setTitle("");
       setDescription("");
@@ -57,10 +66,27 @@ export function TaskModal({ isOpen, onClose, onSave, onDelete, columns, editingT
       setAssignee("");
       setStatus("backlog");
       setLabels([]);
+      setProjectId(null);
     }
     setError(null);
     setShowLabelPicker(false);
   }, [editingTask, isOpen]);
+
+  // Fetch projects on mount
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const res = await fetch("/api/projects");
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data.projects || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+      }
+    }
+    fetchProjects();
+  }, []);
 
   if (!isOpen) return;
 
@@ -84,6 +110,7 @@ export function TaskModal({ isOpen, onClose, onSave, onDelete, columns, editingT
         assignee: assignee.trim() || null,
         status,
         labels,
+        projectId,
       };
 
       if (editingTask) {
@@ -293,6 +320,31 @@ export function TaskModal({ isOpen, onClose, onSave, onDelete, columns, editingT
                 color: "var(--text-primary)",
               }}
             />
+          </div>
+
+          {/* Project */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+              <FolderOpen className="inline-block h-4 w-4 mr-1" style={{ color: "var(--text-muted)" }} />
+              Project
+            </label>
+            <select
+              value={projectId || ""}
+              onChange={(e) => setProjectId(e.target.value || null)}
+              className="w-full rounded-lg border px-4 py-3 text-sm outline-none cursor-pointer"
+              style={{
+                backgroundColor: "var(--card-elevated)",
+                borderColor: "var(--border)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <option value="">No Project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Labels */}

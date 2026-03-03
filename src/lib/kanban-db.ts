@@ -43,6 +43,7 @@ export interface KanbanTask {
   assignee: string | null;
   labels: KanbanLabel[];
   order: number;
+  projectId: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +63,7 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   assignee?: string | null;
   labels?: KanbanLabel[];
+  projectId?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -72,6 +74,7 @@ export interface UpdateTaskInput {
   assignee?: string | null;
   labels?: KanbanLabel[];
   order?: number;
+  projectId?: string | null;
 }
 
 export interface CreateColumnInput {
@@ -93,6 +96,7 @@ export interface ListTasksFilters {
   assignee?: string;
   priority?: TaskPriority;
   search?: string;
+  projectId?: string;
 }
 
 export interface TasksStats {
@@ -191,6 +195,22 @@ function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_operations_journal_date ON operations_journal(date);
   `);
 
+  // Idempotent migration: Add project_id column to kanban_tasks
+  // project_id references projects.id with ON DELETE SET NULL behavior
+  const projectColumnExists = _db
+    .prepare("SELECT 1 FROM pragma_table_info('kanban_tasks') WHERE name = 'project_id'")
+    .get() as { "1": number } | undefined;
+
+  if (!projectColumnExists) {
+    _db.exec(`
+      ALTER TABLE kanban_tasks ADD COLUMN project_id TEXT;
+      -- FK constraint: project_id REFERENCES projects(id) ON DELETE SET NULL
+      -- Note: SQLite doesn't support ADD CONSTRAINT, so FK is enforced in deleteProject()
+      CREATE INDEX IF NOT EXISTS idx_kanban_tasks_project_id ON kanban_tasks(project_id);
+    `);
+    console.log("[kanban-db] Added project_id column to kanban_tasks");
+  }
+
   // Seed default columns if empty
   const columnCount = (_db.prepare("SELECT COUNT(*) as n FROM kanban_columns").get() as { n: number }).n;
   if (columnCount === 0) {
@@ -240,6 +260,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
   const status = input.status ?? "backlog";
   const priority = input.priority ?? "medium";
   const labels = input.labels ?? [];
+  const projectId = input.projectId ?? null;
 
   // Get the max order in the target column to append at the end
   const maxOrder = (db.prepare(`
@@ -249,8 +270,8 @@ export function createTask(input: CreateTaskInput): KanbanTask {
   const order = maxOrder + 1000;
 
   db.prepare(`
-    INSERT INTO kanban_tasks (id, title, description, status, priority, assignee, labels, "order", created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO kanban_tasks (id, title, description, status, priority, assignee, labels, "order", project_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -260,6 +281,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     input.assignee ?? null,
     JSON.stringify(labels),
     order,
+    projectId,
     now,
     now
   );
@@ -275,6 +297,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
         taskTitle: input.title,
         column: status,
         priority,
+        projectId,
       },
     }
   );
@@ -288,6 +311,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     assignee: input.assignee ?? null,
     labels,
     order,
+    projectId,
     created_at: now,
     updated_at: now,
   };
@@ -351,6 +375,10 @@ export function updateTask(id: string, updates: UpdateTaskInput): KanbanTask | n
   if (updates.order !== undefined) {
     fields.push('"order" = ?');
     values.push(updates.order);
+  }
+  if (updates.projectId !== undefined) {
+    fields.push("project_id = ?");
+    values.push(updates.projectId);
   }
 
   if (fields.length === 0) return existing;
@@ -426,6 +454,11 @@ export function listTasks(filters?: ListTasksFilters): KanbanTask[] {
     conditions.push("(title LIKE ? OR description LIKE ?)");
     const searchPattern = `%${filters.search}%`;
     params.push(searchPattern, searchPattern);
+  }
+
+  if (filters?.projectId !== undefined) {
+    conditions.push("project_id = ?");
+    params.push(filters.projectId);
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -753,6 +786,7 @@ function parseTaskRow(row: Record<string, unknown>): KanbanTask {
     assignee: row.assignee as string | null,
     labels: row.labels ? JSON.parse(row.labels as string) : [],
     order: row.order as number,
+    projectId: (row.project_id as string | null) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
   };
@@ -871,12 +905,21 @@ export function updateProject(id: string, updates: UpdateProjectInput): Project 
 /**
  * Delete a project
  * @param id - Project UUID
- * @returns True if deleted, false if not found
+ * @returns Object with deleted status and count of orphaned tasks
  */
-export function deleteProject(id: string): boolean {
+export function deleteProject(id: string): { deleted: boolean; orphanedTasks: number } {
   const db = getDb();
+
+  // Count tasks that will be orphaned
+  const taskCount = (db.prepare("SELECT COUNT(*) as n FROM kanban_tasks WHERE project_id = ?").get(id) as { n: number }).n;
+
+  // Orphan tasks (set project_id to NULL) - enforces ON DELETE SET NULL behavior
+  if (taskCount > 0) {
+    db.prepare("UPDATE kanban_tasks SET project_id = NULL WHERE project_id = ?").run(id);
+  }
+
   const result = db.prepare("DELETE FROM projects WHERE id = ?").run(id);
-  return result.changes > 0;
+  return { deleted: result.changes > 0, orphanedTasks: taskCount };
 }
 
 /**

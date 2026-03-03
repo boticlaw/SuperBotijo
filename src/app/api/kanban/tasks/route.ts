@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/kanban/tasks
  * List tasks with optional filters
- * Query params: status, assignee, priority, search, columnId
+ * Query params: status, assignee, priority, search, columnId, projectId
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
     const assignee = searchParams.get("assignee") || undefined;
     const priority = (searchParams.get("priority") || undefined) as TaskPriority | undefined;
     const search = searchParams.get("search") || undefined;
+    const projectId = searchParams.get("projectId") || undefined;
 
-    const tasks = listTasks({ status, assignee, priority, search });
+    const tasks = listTasks({ status, assignee, priority, search, projectId });
 
     return NextResponse.json({ tasks });
   } catch (error) {
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
       priority: body.priority,
       assignee: body.assignee ?? null,
       labels: body.labels ?? [],
+      projectId: body.projectId ?? null,
     });
 
     // Emit real-time event

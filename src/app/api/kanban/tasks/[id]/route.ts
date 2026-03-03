@@ -89,6 +89,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Validate projectId (can be string or null to unassign)
+    if (body.projectId !== undefined && body.projectId !== null && typeof body.projectId !== "string") {
+      return NextResponse.json(
+        { error: "projectId must be a string or null" },
+        { status: 400 }
+      );
+    }
+
     const task = updateTask(id, body);
 
     if (!task) {
@@ -106,6 +114,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (body.priority !== undefined) changes.priority = body.priority;
     if (body.assignee !== undefined) changes.assignee = body.assignee;
     if (body.labels !== undefined) changes.labels = body.labels;
+    if (body.projectId !== undefined) changes.projectId = body.projectId;
 
     emitKanbanTaskUpdated(task.id, task.title, changes);
 

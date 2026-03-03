@@ -8,11 +8,17 @@ interface AssigneeStats {
   count: number;
 }
 
+interface ProjectStats {
+  projectId: string | null;
+  count: number;
+}
+
 interface FullStats {
   total: number;
   byStatus: Record<string, number>;
   byPriority: Record<string, number>;
   byAssignee: AssigneeStats[];
+  byProject: ProjectStats[];
   columns: Array<{
     id: string;
     name: string;
@@ -45,6 +51,24 @@ export async function GET() {
     // Sort by count descending
     byAssignee.sort((a, b) => b.count - a.count);
 
+    // Calculate by project
+    const projectCounts: Map<string | null, number> = new Map();
+    for (const task of allTasks) {
+      const current = projectCounts.get(task.projectId) ?? 0;
+      projectCounts.set(task.projectId, current + 1);
+    }
+
+    const byProject: ProjectStats[] = [];
+    for (const [projectId, count] of projectCounts) {
+      byProject.push({ projectId, count });
+    }
+    // Sort by count descending, with unassigned (null) at the end
+    byProject.sort((a, b) => {
+      if (a.projectId === null) return 1;
+      if (b.projectId === null) return -1;
+      return b.count - a.count;
+    });
+
     // Calculate task count per column
     const taskCountByColumn: Record<string, number> = {};
     for (const task of allTasks) {
@@ -63,6 +87,7 @@ export async function GET() {
       byStatus: stats.byStatus,
       byPriority: stats.byPriority,
       byAssignee,
+      byProject,
       columns: columnsWithCounts,
     };
 

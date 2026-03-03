@@ -22,6 +22,7 @@ function createMockTask(overrides: Partial<KanbanTaskType> = {}): KanbanTaskType
     assignee: null,
     labels: [],
     order: 1000,
+    projectId: null,
     created_at: "2024-01-01T00:00:00.000Z",
     updated_at: "2024-01-01T00:00:00.000Z",
     ...overrides,
