@@ -576,10 +576,9 @@
 | 11. Advanced Viz | ✅ | 100% |
 | 12. Collaboration | ✅ | 90% (solo Team Dashboard pendiente) |
 | 13. UI/UX Improvements | ✅ | 100% |
-| 14. Mission Control Layer | 🚧 | 57% (4/7 features completadas) |
-| 15. Future Work | 🔮 | Planned |
+| 14. Mission Control Layer | 🚧 | 71% (5/7 features completadas) |
 
-**Overall: 96% completado (Fase 14 al 57% - 4/7 features completadas)**
+**Overall: 97% completado (Fase 14 al 71% - 5/7 features completadas)**
 
 ---
 
@@ -591,6 +590,7 @@
 | `4cc3433` | Mission Control Foundation | Types + DB + Mission API + UI |
 | `25b1b98` | Projects System | Projects API + Task linking + UI |
 | `8f54cb6` | Heartbeat Autonomy | Autonomous task execution + audit |
+| `79d22ff` | Agent Identities | API + UI para identidad de agentes |
 | `f814f63` | Fix: use client | Agregado "use client" a forbidden/not-found |
 | `726cf1e` | Fix: allowedDevOrigins | Cross-origin request handling |
 
@@ -654,16 +654,18 @@
 - **Esfuerzo:** 4-5 horas
 - **Commit:** `25b1b98`
 
-### 14.5 Agent Identities ⏳
+### 14.5 Agent Identities ✅
 > Personalidad, roles y avatares para agentes
 
 - [x] DB: `agent_identities` table (created in Phase 14.1)
-- [ ] API: `GET/PUT /api/agents/[id]/identity`
-- [ ] UI: Identity editor en AgentInspectPanel
-- [ ] Office 3D: Mostrar identidad en vez de solo model/estado
-- [ ] Heartbeat: Agent identity visible en status
-- **Archivos:** `src/app/api/agents/[id]/identity/route.ts`, `src/components/AgentIdentityCard.tsx`
+- [x] API: `GET/PUT /api/agents/[id]/identity`
+- [x] UI: Identity tab en AgentInspectPanel
+- [x] UI: Avatar + name en Overview header
+- [ ] Office 3D: Mostrar identidad en vez de solo model/estado (deferido)
+- [ ] Heartbeat: Agent identity visible en status (deferido)
+- **Archivos:** `src/app/api/agents/[id]/identity/route.ts`, `src/components/AgentInspectPanel.tsx`
 - **Esfuerzo:** 3-4 horas
+- **Commit:** `79d22ff`
 
 ### 14.6 Heartbeat Autonomy Mode ✅
 > Heartbeat consume tareas del Kanban autónomamente
