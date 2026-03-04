@@ -7,35 +7,120 @@ import {
   Home,
   FolderOpen,
   Brain,
-  Bot,
   Building2,
-  Activity,
   DollarSign,
   Settings,
   LogOut,
   Users,
-  FileBarChart,
   Workflow,
-  Beaker,
   SquareTerminal,
   Server,
 } from "lucide-react";
 
-function DockItems() {
-  const { t } = useI18n();
-  
+interface DockItem {
+  href: string;
+  labelKey: string;
+  helpKey: string;
+  icon: typeof Home;
+}
+
+function DockItems(): DockItem[] {
   return [
-    { href: "/", labelKey: "dock.dashboard", icon: Home },
-    { href: "/agents", labelKey: "dock.agents", icon: Users },
-    { href: "/office", labelKey: "dock.office", icon: Building2 },
-    { href: "/memory", labelKey: "dock.memory", icon: Brain },
-    { href: "/files", labelKey: "dock.files", icon: FolderOpen },
-    { href: "/analytics", labelKey: "dock.analytics", icon: DollarSign },
-    { href: "/workflows", labelKey: "dock.workflows", icon: Workflow },
-    { href: "/terminal", labelKey: "dock.terminal", icon: SquareTerminal },
-    { href: "/system", labelKey: "dock.system", icon: Server },
-    { href: "/settings", labelKey: "dock.settings", icon: Settings },
+    { href: "/", labelKey: "dock.dashboard", helpKey: "help.dashboard", icon: Home },
+    { href: "/agents", labelKey: "dock.agents", helpKey: "help.agents", icon: Users },
+    { href: "/office", labelKey: "dock.office", helpKey: "help.office", icon: Building2 },
+    { href: "/memory", labelKey: "dock.memory", helpKey: "help.memory", icon: Brain },
+    { href: "/files", labelKey: "dock.files", helpKey: "help.files", icon: FolderOpen },
+    { href: "/analytics", labelKey: "dock.analytics", helpKey: "help.analytics", icon: DollarSign },
+    { href: "/workflows", labelKey: "dock.workflows", helpKey: "help.workflows", icon: Workflow },
+    { href: "/terminal", labelKey: "dock.terminal", helpKey: "help.terminal", icon: SquareTerminal },
+    { href: "/system", labelKey: "dock.system", helpKey: "help.system", icon: Server },
+    { href: "/settings", labelKey: "dock.settings", helpKey: "help.settings", icon: Settings },
   ];
+}
+
+interface DockItemTooltipProps {
+  title: string;
+  description: string;
+  isActive: boolean;
+}
+
+function DockItemTooltip({ title, description, isActive }: DockItemTooltipProps) {
+  return (
+    <div
+      className="dock-tooltip"
+      style={{
+        position: "absolute",
+        left: "72px",
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 100,
+        pointerEvents: "none",
+        opacity: 0,
+        transition: "opacity 150ms ease",
+      }}
+    >
+      {/* Arrow */}
+      <div
+        style={{
+          position: "absolute",
+          left: "-6px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 0,
+          height: 0,
+          borderStyle: "solid",
+          borderWidth: "6px 6px 6px 0",
+          borderColor: "transparent var(--surface-elevated) transparent transparent",
+        }}
+      />
+      
+      <div
+        style={{
+          backgroundColor: "var(--surface-elevated)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+          padding: "10px 14px",
+          minWidth: "200px",
+          maxWidth: "260px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "13px",
+            fontWeight: 600,
+            color: isActive ? "var(--accent)" : "var(--text-primary)",
+            marginBottom: "4px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          {isActive && (
+            <span
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: "var(--accent)",
+              }}
+            />
+          )}
+          {title}
+        </div>
+        <div
+          style={{
+            fontSize: "11px",
+            lineHeight: "1.5",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {description}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function Dock() {
@@ -73,6 +158,8 @@ export function Dock() {
       {dockItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
         const Icon = item.icon;
+        const title = t(`${item.helpKey}.title`);
+        const description = t(`${item.helpKey}.description`);
 
         return (
           <Link
@@ -98,11 +185,15 @@ export function Dock() {
               if (!isActive) {
                 e.currentTarget.style.backgroundColor = "var(--surface-hover)";
               }
+              const tooltip = e.currentTarget.querySelector(".dock-tooltip") as HTMLElement;
+              if (tooltip) tooltip.style.opacity = "1";
             }}
             onMouseLeave={(e) => {
               if (!isActive) {
                 e.currentTarget.style.backgroundColor = "transparent";
               }
+              const tooltip = e.currentTarget.querySelector(".dock-tooltip") as HTMLElement;
+              if (tooltip) tooltip.style.opacity = "0";
             }}
           >
             <Icon
@@ -130,18 +221,7 @@ export function Dock() {
               {t(item.labelKey).split(" ")[0]}
             </span>
 
-            <span
-              className="absolute left-[72px] top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg text-sm whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-              style={{
-                backgroundColor: "var(--surface-elevated)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-                fontSize: "12px",
-                fontWeight: 500,
-              }}
-            >
-              {t(item.labelKey)}
-            </span>
+            <DockItemTooltip title={title} description={description} isActive={isActive} />
           </Link>
         );
       })}

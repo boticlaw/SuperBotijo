@@ -85,6 +85,72 @@ public/models/           # GLB avatar models
 
 ---
 
+## Internationalization (i18n)
+
+This project supports **English (en)** and **Spanish (es)** via a custom i18n system. **ALL user-visible text MUST be internationalized.**
+
+### How It Works
+
+1. **Provider**: `I18nProvider` wraps the dashboard layout
+2. **Hook**: `useI18n()` provides translation functions
+3. **Messages**: JSON files in `src/i18n/messages/` (`en.json`, `es.json`)
+4. **Detection**: Auto-detects locale from localStorage, cookie, or browser settings
+
+### Usage
+
+```typescript
+import { useI18n } from "@/i18n/provider";
+
+export function MyComponent() {
+  const { t, locale, setLocale, formatNumber, formatDateTime } = useI18n();
+
+  return (
+    <div>
+      {/* Simple translation */}
+      <h1>{t("dashboard.title")}</h1>
+
+      {/* With interpolation */}
+      <p>{t("common.showing", { count: 5, total: 100 })}</p>
+
+      {/* Number formatting */}
+      <span>{formatNumber(1234567)}</span>
+
+      {/* Date/time formatting */}
+      <time>{formatDateTime(new Date())}</time>
+    </div>
+  );
+}
+```
+
+### Adding New Translations
+
+1. Add the key to **BOTH** `en.json` and `es.json`:
+   ```json
+   // en.json
+   "myFeature": {
+     "title": "My Feature",
+     "description": "This is {name}'s feature"
+   }
+
+   // es.json
+   "myFeature": {
+     "title": "Mi Feature",
+     "description": "Este es el feature de {name}"
+   }
+   ```
+
+2. Use it in code: `t("myFeature.title")` or `t("myFeature.description", { name: "John" })`
+
+### Rules
+
+- **NEVER** hardcode user-visible strings in components
+- **ALWAYS** add translations to both `en.json` and `es.json`
+- Use **dot notation** for nested keys: `"section.subkey"`
+- Use **interpolation** for dynamic values: `{count}`, `{name}`, etc.
+- **API error messages** should also be internationalized when shown to users
+
+---
+
 ## Code Style Guidelines
 
 ### Imports
@@ -324,7 +390,85 @@ Read environment variables via `process.env.VAR_NAME` or in `src/config/branding
 
 ---
 
-## Model Pricing System
+## Contextual Help System
+
+SuperBotijo uses a **contextual help system** that explains what each section does and how to use it. All pages include tooltips with explanations accessible via this system.
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `HelpTooltip` | Reusable tooltip component with title + description |
+| `PageHeader` | Page header with optional help badge |
+
+### Usage
+
+| Component | Example |
+|-----------|---------|
+| `HelpTooltip` | `<HelpTooltip title="What is this?" description="Click the ? icon" /> |
+| `PageHeader` | `<PageHeader title="Agents" helpTitle="Agents" helpDescription="..." /> |
+
+### Adding help to a new section
+1. Add the help key in **BOTH** `en.json` and `es.json`:
+    ```json
+    // en.json
+    "help": {
+      "dashboard": {
+        "title": "Dashboard",
+        "description": "Overview of agent activity, quick stats, and recent events. Your command center for monitoring OpenClaw."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "View and manage your AI agents. See hierarchy, communication patterns, and spawn new subagents."
+      },
+      "office": {
+        "title": "3D Office",
+        "description": "Interactive 3D visualization of your agent workspace. A fun way to see your agents in action."
+      },
+      "memory": {
+        "title": "Memory Browser",
+        "description": "Explore and edit agent memory files. See what your agents remember across sessions."
+      },
+      "files": {
+        "title": "File Browser",
+        "description": "Browse agent workspaces and files. Navigate the code your agents are working on."
+      },
+      "analytics": {
+        "title": "Analytics & Costs",
+        "description": "Track token usage, costs by model, and budget. Keep your AI spending under control."
+      },
+      "workflows": {
+        "title": "Workflow Designer",
+        "description": "Design visual workflows for multi-agent automation. Chain agents together."
+      },
+      "terminal": {
+        "title": "Terminal",
+        "description": "Browser-based terminal for quick commands. Read-only for safety (ls, cat, git status, etc.)"
+      },
+      "system": {
+        "title": "System Monitor",
+        "description": "Real-time server monitoring. CPU, RAM, disk, network, and service status."
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Configure OpenClaw, edit model pricing, and manage system settings."
+      }
+    }
+    ```
+
+2. Use it in code: `t("myFeature.title")` or `t("myFeature.description", { name: "John" })`
+
+    ```
+
+### Rules
+
+- **NEVER** hardcode user-visible strings in components
+- **ALWAYS** add translations to both `en.json` and `es.json`
+- Use **dot notation** for nested keys: `"section.subkey"`
+- Use **interpolation** for dynamic values: `{count}`, `{name}`, etc.
+- **API error messages** should also be internationalized when shown to users
+
+
 
 SuperBotijo supports **runtime configuration of model prices** via the Settings UI.
 

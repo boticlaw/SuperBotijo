@@ -55,6 +55,52 @@
     "settings": "Settings",
     "logout": "Logout"
   },
+  "help": {
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Overview of agent activity, quick stats, and recent events. Your command center for monitoring OpenClaw."
+    },
+    "agents": {
+      "title": "Agents",
+      "description": "View and manage your AI agents. See hierarchy, communication patterns, and spawn new subagents."
+    },
+    "office": {
+      "title": "3D Office",
+      "description": "Interactive 3D visualization of your agent workspace. A fun way to see your agents in action."
+    },
+    "memory": {
+      "title": "Memory Browser",
+      "description": "Explore and edit agent memory files. See what your agents remember across sessions."
+    },
+    "files": {
+      "title": "File Browser",
+      "description": "Browse agent workspaces and files. Navigate the code your agents are working on."
+    },
+    "analytics": {
+      "title": "Analytics & Costs",
+      "description": "Track token usage, costs by model, and budget. Keep your AI spending under control."
+    },
+    "workflows": {
+      "title": "Workflow Designer",
+      "description": "Design visual workflows for multi-agent automation. Chain agents together."
+    },
+    "terminal": {
+      "title": "Terminal",
+      "description": "Browser-based terminal for quick commands. Read-only for safety (ls, cat, git status, etc.)"
+    },
+    "system": {
+      "title": "System Monitor",
+      "description": "Real-time server monitoring. CPU, RAM, disk, network, and service status."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Configure OpenClaw, edit model pricing, and manage system settings."
+    },
+    "mission": {
+      "title": "Mission Control",
+      "description": "Define your agent's purpose, goals, and core values. This guides decision-making and prioritization."
+    }
+  },
   "topbar": {
     "search": "Search... ⌘K",
     "logout": "Logout"

@@ -9,6 +9,7 @@ import { MoodWidget } from "@/components/MoodWidget";
 import { SuggestionsPanel } from "@/components/SuggestionsPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MissionCard } from "@/components/MissionCard";
+import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n/provider";
 import {
   Activity,
@@ -25,6 +26,7 @@ import {
   Zap,
   Server,
   Terminal,
+  Home,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -82,28 +84,12 @@ export default function DashboardPage() {
     <ErrorBoundary>
       <div className="p-4 md:p-8">
         {/* Header */}
-      <div className="mb-4 md:mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <img 
-            src="/logo.png" 
-            alt="SuperBotijo" 
-            style={{ width: "40px", height: "40px", objectFit: "contain" }}
-          />
-          <h1 
-            className="text-2xl md:text-3xl font-bold"
-            style={{ 
-              fontFamily: 'var(--font-heading)',
-              color: 'var(--text-primary)',
-              letterSpacing: '-1.5px'
-            }}
-          >
-            SuperBotijo
-          </h1>
-        </div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {t("dashboard.overview")}
-        </p>
-      </div>
+        <PageHeader
+          title="SuperBotijo"
+          subtitle={t("dashboard.overview")}
+          helpTitle={t("help.dashboard.title")}
+          helpDescription={t("help.dashboard.description")}
+        />
 
       {/* Stats Grid + Weather */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4 md:mb-6">

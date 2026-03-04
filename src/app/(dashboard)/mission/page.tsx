@@ -146,7 +146,7 @@ export default function MissionPage() {
   };
 
   const handleReset = async () => {
-    if (!confirm("Are you sure you want to reset the mission to default?")) {
+    if (!confirm(t("mission.confirmReset"))) {
       return;
     }
 
@@ -235,7 +235,7 @@ export default function MissionPage() {
           style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
         >
           <RefreshCw className="h-5 w-5 animate-spin" style={{ color: "var(--accent)" }} />
-          <span style={{ color: "var(--text-secondary)" }}>Loading mission...</span>
+          <span style={{ color: "var(--text-secondary)" }}>{t("mission.loading")}</span>
         </div>
       </div>
     );
@@ -261,11 +261,11 @@ export default function MissionPage() {
             style={{ color: "var(--text-primary)" }}
           >
             <Target className="inline-block w-6 h-6 mr-2 mb-0.5" style={{ color: "var(--accent)" }} />
-            Mission Control
+            {t("mission.title")}
           </h1>
         </div>
         <p className="text-sm ml-12" style={{ color: "var(--text-muted)" }}>
-          Define your agent&apos;s purpose, goals, and core values
+          {t("mission.subtitle")}
         </p>
       </div>
 
@@ -294,7 +294,7 @@ export default function MissionPage() {
           style={{ backgroundColor: "var(--card)", border: "1px solid var(--success)" }}
         >
           <CheckCircle2 className="h-5 w-5" style={{ color: "var(--success)" }} />
-          <span style={{ color: "var(--success)" }}>Mission saved successfully!</span>
+          <span style={{ color: "var(--success)" }}>{t("mission.savedSuccess")}</span>
         </div>
       )}
 
@@ -314,13 +314,13 @@ export default function MissionPage() {
               className="block text-sm font-semibold mb-2"
               style={{ color: "var(--text-primary)" }}
             >
-              Mission Statement
+              {t("mission.statement")}
             </label>
             <textarea
               value={statement}
               onChange={(e) => setStatement(e.target.value)}
               maxLength={MAX_STATEMENT_LENGTH}
-              placeholder="Define the core purpose of your agent..."
+              placeholder={t("mission.statementPlaceholder")}
               className="w-full rounded-lg border px-4 py-3 text-sm outline-none resize-none"
               style={{
                 backgroundColor: "var(--card-elevated)",
@@ -350,7 +350,7 @@ export default function MissionPage() {
                 className="text-sm font-semibold"
                 style={{ color: "var(--text-primary)" }}
               >
-                Strategic Goals ({goals.length}/{MAX_GOALS_COUNT})
+                {t("mission.goals")} ({goals.length}/{MAX_GOALS_COUNT})
               </label>
             </div>
 
@@ -394,7 +394,7 @@ export default function MissionPage() {
                   value={newGoal}
                   onChange={(e) => setNewGoal(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addGoal()}
-                  placeholder="Add a new goal..."
+                  placeholder={t("mission.goalsPlaceholder")}
                   className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
                   style={{
                     backgroundColor: "var(--card-elevated)",
@@ -412,7 +412,7 @@ export default function MissionPage() {
                   }}
                 >
                   <Plus className="h-4 w-4" />
-                  Add
+                  {t("mission.addGoal")}
                 </button>
               </div>
             )}
@@ -425,7 +425,7 @@ export default function MissionPage() {
                 className="text-sm font-semibold"
                 style={{ color: "var(--text-primary)" }}
               >
-                Core Values ({values.length}/{MAX_VALUES_COUNT})
+                {t("mission.values")} ({values.length}/{MAX_VALUES_COUNT})
               </label>
             </div>
 
@@ -461,7 +461,7 @@ export default function MissionPage() {
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addValue()}
-                  placeholder="Add a new value..."
+                  placeholder={t("mission.valuesPlaceholder")}
                   className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
                   style={{
                     backgroundColor: "var(--card-elevated)",
@@ -480,7 +480,7 @@ export default function MissionPage() {
                   }}
                 >
                   <Plus className="h-4 w-4" />
-                  Add
+                  {t("mission.addValue")}
                 </button>
               </div>
             )}
@@ -501,7 +501,7 @@ export default function MissionPage() {
               className="text-sm font-semibold mb-4"
               style={{ color: "var(--text-primary)" }}
             >
-              Actions
+              {t("mission.actions")}
             </h3>
 
             <div className="space-y-3">
@@ -517,12 +517,12 @@ export default function MissionPage() {
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
+                    {t("mission.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Save Mission
+                    {t("mission.saveMission")}
                   </>
                 )}
               </button>
@@ -538,7 +538,7 @@ export default function MissionPage() {
                 }}
               >
                 <RotateCcw className="h-4 w-4" />
-                Reset to Default
+                {t("mission.resetDefault")}
               </button>
 
               <button
@@ -551,7 +551,7 @@ export default function MissionPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Dashboard
+                {t("mission.backToDashboard")}
               </button>
             </div>
           </div>
@@ -568,13 +568,13 @@ export default function MissionPage() {
               className="text-sm font-semibold mb-3"
               style={{ color: "var(--text-primary)" }}
             >
-              💡 Tips
+              💡 {t("mission.tips.statement").split(" ")[0]}
             </h3>
             <ul className="space-y-2 text-sm" style={{ color: "var(--text-muted)" }}>
-              <li>• Keep the mission statement clear and inspiring</li>
-              <li>• Goals should be specific and measurable</li>
-              <li>• Values guide decision-making when facing trade-offs</li>
-              <li>• Review and update your mission periodically</li>
+              <li>• {t("mission.tips.statement")}</li>
+              <li>• {t("mission.tips.goals")}</li>
+              <li>• {t("mission.tips.values")}</li>
+              <li>• {t("mission.tips.review")}</li>
             </ul>
           </div>
 
@@ -591,7 +591,7 @@ export default function MissionPage() {
               style={{ color: "var(--text-primary)" }}
             >
               <Sparkles className="h-4 w-4" style={{ color: "var(--accent)" }} />
-              Ask Mission Control
+              {t("mission.askMissionControl")}
             </h3>
 
             <div className="space-y-3">
@@ -600,7 +600,7 @@ export default function MissionPage() {
                 value={promptQuery}
                 onChange={(e) => setPromptQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handlePromptSubmit()}
-                placeholder="What should I work on?"
+                placeholder={t("mission.promptPlaceholder")}
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
                 style={{
                   backgroundColor: "var(--card-elevated)",
@@ -621,12 +621,12 @@ export default function MissionPage() {
                 {promptLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyzing...
+                    {t("mission.analyzing")}
                   </>
                 ) : (
                   <>
                     <Zap className="h-4 w-4" />
-                    Get Recommendations
+                    {t("mission.getRecommendations")}
                   </>
                 )}
               </button>
@@ -637,7 +637,7 @@ export default function MissionPage() {
                   {/* Summary */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                      Top Recommendations
+                      {t("mission.topRecommendations")}
                     </span>
                     <div className="flex gap-1">
                       {promptSummary && (
@@ -646,19 +646,19 @@ export default function MissionPage() {
                             className="px-2 py-0.5 rounded text-xs font-medium"
                             style={{ backgroundColor: "var(--error)", color: "white" }}
                           >
-                            {promptSummary.highPriority} high
+                            {promptSummary.highPriority} {t("mission.high")}
                           </span>
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium"
                             style={{ backgroundColor: "var(--info)", color: "white" }}
                           >
-                            {promptSummary.mediumPriority} med
+                            {promptSummary.mediumPriority} {t("mission.medium")}
                           </span>
                           <span
                             className="px-2 py-0.5 rounded text-xs font-medium"
                             style={{ backgroundColor: "var(--text-muted)", color: "white" }}
                           >
-                            {promptSummary.lowPriority} low
+                            {promptSummary.lowPriority} {t("mission.low")}
                           </span>
                         </>
                       )}
@@ -723,8 +723,8 @@ export default function MissionPage() {
                   className="mt-4 pt-4 border-t text-center"
                   style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
                 >
-                  <p className="text-sm">No tasks match your mission yet.</p>
-                  <p className="text-xs mt-1">Add goals and values to get recommendations.</p>
+                  <p className="text-sm">{t("mission.noTasksMatch")}</p>
+                  <p className="text-xs mt-1">{t("mission.addGoalsValues")}</p>
                 </div>
               )}
             </div>

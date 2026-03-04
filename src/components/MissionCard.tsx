@@ -1,6 +1,8 @@
 "use client";
 
 import { Target, Edit3 } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
+import { HelpTooltip } from "@/components/HelpTooltip";
 import type { Mission } from "@/lib/mission-types";
 
 interface MissionCardProps {
@@ -9,6 +11,8 @@ interface MissionCardProps {
 }
 
 export function MissionCard({ mission, onEdit }: MissionCardProps) {
+  const { t } = useI18n();
+
   // Handle empty/null mission gracefully
   if (!mission) {
     return (
@@ -30,8 +34,13 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
               }}
             >
               <Target className="inline-block w-5 h-5 mr-2 mb-0.5" />
-              Mission
+              {t("mission.title")}
             </h3>
+            <HelpTooltip
+              title={t("help.mission.title")}
+              description={t("help.mission.description")}
+              position="right"
+            />
           </div>
           <button
             onClick={onEdit}
@@ -42,20 +51,20 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
             }}
           >
             <Edit3 className="h-3.5 w-3.5" />
-            Define Mission
+            {t("mission.defineMission")}
           </button>
         </div>
         <p
           className="text-sm italic"
           style={{ color: "var(--text-muted)" }}
         >
-          No mission defined yet. Click &quot;Define Mission&quot; to set your agent&apos;s purpose.
+          {t("mission.noMissionDefined")}
         </p>
       </div>
     );
   }
 
-  // Show max 5 goals, with "more..." indicator
+  // Show max 5 goals with "more..." indicator
   const visibleGoals = mission.goals.slice(0, 5);
   const hasMoreGoals = mission.goals.length > 5;
 
@@ -78,8 +87,13 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
             }}
           >
             <Target className="inline-block w-5 h-5 mr-2 mb-0.5" />
-            Mission
+            {t("mission.title")}
           </h3>
+          <HelpTooltip
+            title={t("help.mission.title")}
+            description={t("help.mission.description")}
+            position="right"
+          />
         </div>
         <button
           onClick={onEdit}
@@ -91,7 +105,7 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
           }}
         >
           <Edit3 className="h-3.5 w-3.5" />
-          Edit
+          {t("common.edit")}
         </button>
       </div>
 
@@ -110,7 +124,7 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
             className="text-xs font-semibold uppercase tracking-wide mb-2"
             style={{ color: "var(--text-muted)" }}
           >
-            Goals
+            {t("mission.goals")}
           </h4>
           <ul className="space-y-1.5">
             {visibleGoals.map((goal, index) => (
@@ -131,21 +145,21 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
                 className="text-sm italic pl-3.5"
                 style={{ color: "var(--text-muted)" }}
               >
-                +{mission.goals.length - 5} more...
+                +{mission.goals.length - 5} {t("mission.more")}
               </li>
             )}
           </ul>
         </div>
       )}
 
-      {/* Values as Tags */}
+      {/* Values as tags */}
       {mission.values.length > 0 && (
         <div>
           <h4
             className="text-xs font-semibold uppercase tracking-wide mb-2"
             style={{ color: "var(--text-muted)" }}
           >
-            Values
+            {t("mission.values")}
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {mission.values.map((value, index) => (
@@ -174,7 +188,7 @@ export function MissionCard({ mission, onEdit }: MissionCardProps) {
             borderTop: "1px solid var(--border)",
           }}
         >
-          Last updated: {new Date(mission.lastUpdated).toLocaleDateString()}
+          {t("mission.lastUpdated")}: {new Date(mission.lastUpdated).toLocaleDateString()}
         </p>
       )}
     </div>

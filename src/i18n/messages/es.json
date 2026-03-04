@@ -84,178 +84,46 @@
     "openOffice": "Abrir Oficina",
     "smartSuggestions": "💡 Sugerencias inteligentes"
   },
-  "fleet": {
-    "title": "Flota",
-    "loading": "Cargando flota...",
-    "loadError": "No se pudieron cargar los datos de flota.",
-    "overview": "Resumen de agentes entre instancias",
-    "instances": "instancias",
-    "totalAgents": "agentes totales",
-    "sessions": "sesiones",
-    "updatedSeconds": "Actualizado hace {count}s",
-    "updatedMinutes": "Actualizado hace {count}m",
-    "never": "Nunca",
-    "justNow": "Ahora mismo",
-    "minutesAgo": "hace {count}m",
-    "hoursAgo": "hace {count}h",
-    "daysAgo": "hace {count}d"
-  },
-  "agents": {
-    "title": "Agentes",
-    "loading": "Cargando agentes...",
-    "overview": "Resumen del sistema multiagente • {count} agentes configurados",
-    "cards": "Tarjetas",
-    "organigrama": "Organigrama",
-    "hierarchy": "Jerarquía de agentes",
-    "hierarchySubtitle": "Visualización de permisos de comunicación entre agentes",
-    "communication": "Comunicación",
-    "communicationGraph": "Grafo de comunicación de agentes",
-    "communicationSubtitle": "Flujo de comunicación en tiempo real entre agentes",
-    "noCommData": "No hay datos de comunicación",
-    "noCommDataHint": "Ejecuta sesiones con subagentes para ver el grafo de comunicación",
-    "never": "Nunca",
-    "justNow": "Ahora mismo",
-    "minutesAgo": "hace {count}m",
-    "hoursAgo": "hace {count}h",
-    "daysAgo": "hace {count}d",
-    "telegramConnected": "Bot de Telegram conectado",
-    "model": "Modelo",
-    "workspace": "Workspace",
-    "dmPolicy": "Política DM",
-    "canSpawn": "Puede crear subagentes ({count})",
-    "lastActivity": "Última actividad",
-    "active": "activos"
-  },
-  "cron": {
-    "title": "Gestor de Cron",
-    "subtitle": "Tareas programadas de Sistema, OpenClaw y Heartbeat",
-    "cards": "Tarjetas",
-    "timeline": "Cronograma",
-    "totalJobs": "Tareas totales",
-    "active": "Activas",
-    "paused": "Pausadas",
-    "createJob": "Crear tarea",
-    "noJobs": "No hay tareas cron",
-    "noJobsHint": "Crea tu primera tarea para empezar",
-    "all": "Todas",
-    "systemJobs": "Tareas del sistema",
-    "agentJobs": "Tareas del agente",
-    "heartbeat": "Heartbeat",
-    "scheduleOverview": "Resumen de programación 7 días",
-    "triggered": "ejecutada",
-    "failedToTrigger": "Error al ejecutar",
-    "jobUpdated": "Tarea actualizada",
-    "jobCreated": "Tarea creada",
-    "confirmDelete": "¿Eliminar \"{name}\"?",
-    "timelineView": "Cronograma",
-    "cardsView": "Tarjetas"
-  },
-  "files": {
-    "title": "Explorador de archivos",
-    "subtitle": "Explora los espacios de trabajo y archivos de los agentes",
-    "noFiles": "No se encontraron archivos",
-    "selectWorkspace": "Selecciona un workspace para explorar archivos",
-    "view3D": "Vista 3D",
-    "view2D": "Vista 2D",
-    "listView": "Vista de lista",
-    "gridView": "Vista de íconos",
-    "building3D": "Construyendo árbol 3D...",
-    "fileTypes": "Tipos de archivo",
-    "clearFilters": "Limpiar filtros",
-    "type": "Tipo",
-    "size": "Tamaño",
-    "path": "Ruta",
-    "lastModified": "Última modificación",
-    "directory": "Directorio",
-    "items": "elementos"
-  },
-  "memory": {
-    "title": "Explorador de memoria",
-    "subtitle": "Ver y editar archivos de memoria de los agentes",
-    "discardPrompt": "Tienes cambios sin guardar. ¿Deseas descartarlos?",
-    "loadFilesError": "No se pudieron cargar los archivos",
-    "loadTreeError": "No se pudo cargar el árbol de archivos",
-    "loadFileError": "No se pudo cargar el archivo",
-    "saveFileError": "No se pudo guardar el archivo",
-    "editor": "Editor",
-    "graph": "Grafo",
-    "wordCloud": "Nube de palabras",
-    "preview": "Vista previa",
-    "edit": "Editar",
-    "selectFile": "Selecciona un archivo",
-    "selectWorkspace": "Selecciona un workspace",
-    "noEntities": "No se encontraron entidades en la memoria",
-    "runAgentToPopulate": "Ejecuta el agente para poblar la memoria"
-  },
-  "workflows": {
-    "title": "Diseñador de Workflows",
-    "subtitle": "Diseña workflows visuales para automatización multi-agente",
-    "newWorkflow": "Nuevo Workflow",
-    "templates": "Plantillas",
-    "yourWorkflows": "Tus Workflows",
-    "nodes": "nodos",
-    "connections": "conexiones",
-    "back": "← Volver",
-    "edit": "Editar",
-    "export": "Exportar"
-  },
-  "terminal": {
-    "title": "Terminal del navegador",
-    "subtitle": "Solo comandos de lectura (ls, cat, df, ps, git status, etc.)",
-    "copy": "Copiar",
-    "clear": "Limpiar",
-    "run": "Ejecutar",
-    "running": "Ejecutando...",
-    "enterCommand": "Ingresa un comando...",
-    "typeOrClick": "Escribe un comando o haz clic en uno rápido arriba",
-    "arrowHistory": "Flechas Arriba/Abajo para historial"
-  },
-  "skills": {
-    "title": "Gestor de Skills",
-    "subtitle": "Skills disponibles en el sistema OpenClaw",
-    "browseClawHub": "Explorar ClawHub",
-    "updateAll": "Actualizar todo ({count})",
-    "totalSkills": "Skills totales",
-    "workspaceSkills": "Skills de workspace",
-    "systemSkills": "Skills del sistema",
-    "searchPlaceholder": "Buscar skills...",
-    "all": "Todos",
-    "workspace": "Workspace",
-    "system": "Sistema",
-    "noSkills": "No se encontraron skills",
-    "files": "archivos",
-    "disableSkill": "¿Desactivar skill \"{name}\"? Esto puede afectar la funcionalidad de OpenClaw.",
-    "skillEnabled": "Skill activado",
-    "skillDisabled": "Skill desactivado",
-    "disable": "Desactivar",
-    "enable": "Activar",
-    "disabled": "DESACTIVADO",
-    "homepage": "Página principal"
-  },
-  "logs": {
-    "title": "Visor de logs",
-    "subtitle": "Streaming de logs en tiempo real desde servicios",
-    "filterLogs": "Filtrar logs...",
-    "auto": "↓ Auto",
-    "stream": "Stream",
-    "stop": "Detener",
-    "live": "EN VIVO",
-    "stopped": "DETENIDO",
-    "lines": "líneas",
-    "filtered": "filtrado de {count}",
-    "waiting": "Esperando logs...",
-    "clickToStream": "Haz clic en 'Stream' para iniciar el visor de logs"
-  },
-  "settings": {
-    "title": "Configuración",
-    "subtitle": "Estado del sistema, integraciones y configuración",
-    "lastUpdated": "Última actualización",
-    "footerLeft": "SuperBotijo v1.0.0",
-    "footerRight": "Panel de agentes OpenClaw",
-    "tabs": {
-      "system": "Sistema",
-      "config": "Config",
-      "pricing": "Precios"
+  "help": {
+    "dashboard": {
+      "title": "Panel Principal",
+      "description": "Resumen de la actividad del agente, estadísticas rápidas y eventos recientes. Tu centro de comando para monitorear OpenClaw."
+    },
+    "agents": {
+      "title": "Agentes",
+      "description": "Ver y gestionar tus agentes de IA. Ver jerarquía, patrones de comunicación y crear subagentes."
+    },
+    "office": {
+      "title": "Oficina 3D",
+      "description": "Visualización 3D interactiva del workspace de tus agentes. Una forma divertida de ver a tus agentes en acción."
+    },
+    "memory": {
+      "title": "Explorador de Memoria",
+      "description": "Explorar y editar archivos de memoria del agente. Ver qué recuerdan tus agentes entre sesiones."
+    },
+    "files": {
+      "title": "Explorador de Archivos",
+      "description": "Navegar por workspaces y archivos del agente. Explorar el código en el que trabajan tus agentes."
+    },
+    "analytics": {
+      "title": "Analíticas y Costos",
+      "description": "Seguimiento de uso de tokens, costos por modelo y presupuesto. Mantener el gasto en IA bajo control."
+    },
+    "workflows": {
+      "title": "Diseñador de Workflows",
+      "description": "Diseñar workflows visuales para automatización multi-agente. Encadenar agentes en secuencia."
+    },
+    "terminal": {
+      "title": "Terminal",
+      "description": "Terminal basada en navegador para comandos rápidos. Solo lectura por seguridad (ls, cat, git status, etc.)"
+    },
+    "system": {
+      "title": "Monitor del Sistema",
+      "description": "Monitoreo del servidor en tiempo real. CPU, RAM, disco, red y estado de servicios."
+    },
+    "settings": {
+      "title": "Configuración",
+      "description": "Configurar OpenClaw, editar precios de modelos y gestionar ajustes del sistema."
     }
   },
   "system": {
@@ -423,12 +291,16 @@
     "analyzing": "Analizando...",
     "topRecommendations": "Principales Recomendaciones",
     "high": "alto",
-    "medium": "med",
+    "medium": "medio",
     "low": "bajo",
     "noTasksMatch": "No hay tareas que coincidan con tu misión aún.",
     "addGoalsValues": "Agrega objetivos y valores para obtener recomendaciones.",
     "loading": "Cargando misión...",
     "confirmReset": "¿Estás seguro de que deseas restablecer la misión por defecto?",
+    "defineMission": "Definir Misión",
+    "noMissionDefined": "Aún no hay misión definida. Haz clic en \"Definir Misión\" para establecer el propósito de tu agente.",
+    "more": "más",
+    "lastUpdated": "Última actualización",
     "tips": {
       "statement": "Mantén la declaración de misión clara e inspiradora",
       "goals": "Los objetivos deben ser específicos y medibles",

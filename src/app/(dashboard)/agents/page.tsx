@@ -19,6 +19,7 @@ import {
 import { AgentOrganigrama } from "@/components/AgentOrganigrama";
 import { CommunicationGraphComponent } from "@/components/CommunicationGraph";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n/provider";
 import type { CommunicationGraph, MessageType } from "@/lib/communication-aggregator";
 
@@ -135,22 +136,13 @@ export default function AgentsPage() {
   return (
     <ErrorBoundary>
       <div className="p-4 md:p-8">
-        <div className="mb-6">
-        <h1
-          className="text-3xl font-bold mb-2"
-          style={{
-            fontFamily: "var(--font-heading)",
-            color: "var(--text-primary)",
-            letterSpacing: "-1.5px",
-          }}
-        >
-          <Users className="inline-block w-8 h-8 mr-2 mb-1" />
-          {t("agents.title")}
-        </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-          {t("agents.overview", { count: agents.length })}
-        </p>
-      </div>
+        <PageHeader
+          title={t("agents.title")}
+          subtitle={t("agents.overview", { count: agents.length })}
+          icon={<Users className="w-8 h-8" />}
+          helpTitle={t("help.agents.title")}
+          helpDescription={t("help.agents.description")}
+        />
 
       <div className="flex gap-2 mb-6 border-b" style={{ borderColor: "var(--border)" }}>
         {[
