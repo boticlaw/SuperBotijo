@@ -190,6 +190,43 @@
       "description": "Configurar OpenClaw, editar precios de modelos y gestionar ajustes del sistema."
     }
   },
+  "files": {
+    "title": "Explorador de Archivos",
+    "subtitle": "Navegar workspaces y archivos del agente",
+    "noFiles": "No se encontraron archivos",
+    "selectWorkspace": "Selecciona un workspace para explorar archivos",
+    "view3D": "Vista 3D",
+    "view2D": "Vista 2D",
+    "listView": "Vista de lista",
+    "gridView": "Vista de cuadrícula",
+    "building3D": "Construyendo árbol 3D...",
+    "fileTypes": "Tipos de archivo",
+    "clearFilters": "Limpiar filtros",
+    "type": "Tipo",
+    "size": "Tamaño",
+    "path": "Ruta",
+    "lastModified": "Última modificación",
+    "directory": "Directorio",
+    "items": "elementos"
+  },
+  "memory": {
+    "title": "Explorador de Memoria",
+    "subtitle": "Ver y editar archivos de memoria del agente",
+    "discardPrompt": "Tenés cambios sin guardar. ¿Descartarlos?",
+    "loadFilesError": "Error al cargar archivos",
+    "loadTreeError": "Error al cargar el árbol de archivos",
+    "loadFileError": "Error al cargar el archivo",
+    "saveFileError": "Error al guardar el archivo",
+    "editor": "Editor",
+    "graph": "Grafo",
+    "wordCloud": "Nube de Palabras",
+    "preview": "Vista previa",
+    "edit": "Editar",
+    "selectFile": "Selecciona un archivo",
+    "selectWorkspace": "Selecciona un workspace",
+    "noEntities": "No se encontraron entidades en la memoria",
+    "runAgentToPopulate": "Ejecuta el agente para poblar la memoria"
+  },
   "system": {
     "title": "Monitor del sistema",
     "subtitle": "Monitoreo en tiempo real de recursos y servicios del servidor",
