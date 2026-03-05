@@ -275,12 +275,28 @@ export function getActivities(opts: GetActivitiesOptions = {}): ActivitiesResult
   };
 }
 
-export function getActivityStats(): {
+export interface HeatmapDay {
+  day: string;
+  count: number;
+}
+
+export interface TrendDay {
+  day: string;
+  count: number;
+  success: number;
+  errors: number;
+}
+
+export interface ActivityStats {
   total: number;
   today: number;
   byType: Record<string, number>;
   byStatus: Record<string, number>;
-} {
+  heatmap: HeatmapDay[];
+  trend: TrendDay[];
+}
+
+export function getActivityStats(): ActivityStats {
   const db = getDb();
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -296,5 +312,38 @@ export function getActivityStats(): {
   const byStatus: Record<string, number> = {};
   for (const r of statusRows) byStatus[r.status] = r.n;
 
-  return { total, today, byType, byStatus };
+  // Heatmap: last 365 days
+  const yearAgo = new Date();
+  yearAgo.setDate(yearAgo.getDate() - 365);
+  const heatmapRows = db.prepare(`
+    SELECT date(timestamp) as day, COUNT(*) as count
+    FROM activities
+    WHERE timestamp >= ?
+    GROUP BY day
+    ORDER BY day
+  `).all(yearAgo.toISOString()) as Array<{ day: string; count: number }>;
+  const heatmap: HeatmapDay[] = heatmapRows.map((r) => ({ day: r.day, count: r.count }));
+
+  // Trend: last 30 days with success/error breakdown
+  const monthAgo = new Date();
+  monthAgo.setDate(monthAgo.getDate() - 30);
+  const trendRows = db.prepare(`
+    SELECT
+      date(timestamp) as day,
+      COUNT(*) as count,
+      SUM(CASE WHEN status = 'success' OR status = 'approved' THEN 1 ELSE 0 END) as success,
+      SUM(CASE WHEN status = 'error' OR status = 'rejected' THEN 1 ELSE 0 END) as errors
+    FROM activities
+    WHERE timestamp >= ?
+    GROUP BY day
+    ORDER BY day DESC
+  `).all(monthAgo.toISOString()) as Array<{ day: string; count: number; success: number; errors: number }>;
+  const trend: TrendDay[] = trendRows.map((r) => ({
+    day: r.day,
+    count: r.count,
+    success: r.success,
+    errors: r.errors,
+  }));
+
+  return { total, today, byType, byStatus, heatmap, trend };
 }
