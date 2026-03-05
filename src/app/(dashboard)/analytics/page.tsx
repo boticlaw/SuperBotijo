@@ -7,10 +7,9 @@ import { HourlyHeatmap } from "@/components/charts/HourlyHeatmap";
 import { SuccessRateGauge } from "@/components/charts/SuccessRateGauge";
 import { TopTasksList } from "@/components/TopTasksList";
 import { EfficiencyGauge } from "@/components/EfficiencyGauge";
-import { TokenFlowSankey, TaskFlowSankey, TimeFlowSankey } from "@/components/sankey/SankeyDiagrams";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useI18n } from "@/i18n/provider";
-import { BarChart3, TrendingUp, Clock, Target, GitBranch, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Target, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MODEL_PRICING } from "@/lib/pricing-types";
 
@@ -40,16 +39,9 @@ interface CostData {
   hourly: Array<{ hour: string; cost: number }>;
 }
 
-interface SankeyData {
-  nodes: Array<{ name: string }>;
-  links: Array<{ source: number; target: number; value: number }>;
-}
-
 const COLORS = ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#30B0C7', '#32ADE6', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55'];
 
-type Tab = "overview" | "flows" | "costs";
-type FlowType = "token" | "task" | "time";
-type Period = "day" | "week" | "month";
+type Tab = "overview" | "costs";
 
 export default function AnalyticsPage() {
   const { t } = useI18n();
@@ -63,12 +55,6 @@ export default function AnalyticsPage() {
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [savingBudget, setSavingBudget] = useState(false);
-
-  const [flowType, setFlowType] = useState<FlowType>("token");
-  const [period, setPeriod] = useState<Period>("week");
-  const [flowData, setFlowData] = useState<SankeyData | null>(null);
-  const [flowLoading, setFlowLoading] = useState(true);
-  const [flowError, setFlowError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/analytics")
@@ -120,41 +106,9 @@ export default function AnalyticsPage() {
     }
   }, [budgetInput, costData]);
 
-  useEffect(() => {
-    fetchCostData();
-  }, [fetchCostData]);
-
-  const fetchFlowData = useCallback(async () => {
-    setFlowLoading(true);
-    setFlowError(null);
-    try {
-      const res = await fetch(`/api/analytics/${flowType}-flow?period=${period}`);
-      if (!res.ok) throw new Error("Failed to load data");
-      const fData = await res.json();
-      setFlowData(fData);
-    } catch (err) {
-      setFlowError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setFlowLoading(false);
-    }
-  }, [flowType, period]);
-
-  useEffect(() => {
-    if (activeTab === "flows") {
-      fetchFlowData();
-    }
-  }, [fetchFlowData, activeTab]);
-
   const tabs: Array<{ id: Tab; label: string; icon: typeof BarChart3 }> = [
     { id: "overview", label: t("analytics.overview"), icon: BarChart3 },
-    { id: "flows", label: t("analytics.flows"), icon: GitBranch },
     { id: "costs", label: t("analytics.costs"), icon: DollarSign },
-  ];
-
-  const flowTabs: Array<{ id: FlowType; label: string; icon: string }> = [
-    { id: "token", label: t("analytics.tokenFlow"), icon: "📊" },
-    { id: "task", label: t("analytics.taskFlow"), icon: "✅" },
-    { id: "time", label: t("analytics.timeFlow"), icon: "⏰" },
   ];
 
   return (
@@ -319,86 +273,7 @@ export default function AnalyticsPage() {
               </div>
             </>
           )}
-        </>
-      )}
-
-      {activeTab === "flows" && (
-        <div>
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <div className="flex gap-2 p-1 rounded-lg" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}>
-              {flowTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setFlowType(tab.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
-                  style={{
-                    backgroundColor: flowType === tab.id ? "var(--accent)" : "transparent",
-                    color: flowType === tab.id ? "var(--bg)" : "var(--text-secondary)",
-                  }}
-                >
-                  <span>{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value as Period)}
-                className="px-3 py-2 rounded-lg text-sm"
-                style={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                <option value="day">{t("analytics.today")}</option>
-                <option value="week">{t("analytics.thisWeek")}</option>
-                <option value="month">{t("analytics.thisMonth")}</option>
-              </select>
-              <button
-                onClick={fetchFlowData}
-                disabled={flowLoading}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                style={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                  cursor: flowLoading ? "wait" : "pointer",
-                }}
-              >
-                <RefreshCw size={14} className={flowLoading ? "animate-spin" : ""} />
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="rounded-xl p-6 min-h-[400px]"
-            style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
-          >
-            {flowLoading ? (
-              <div className="flex items-center justify-center h-[300px]">
-                <div className="text-center">
-                  <Loader2 size={32} className="animate-spin mb-3" style={{ color: "var(--accent)" }} />
-                  <p style={{ color: "var(--text-muted)" }}>{t("analytics.loadingFlow")}</p>
-                </div>
-              </div>
-            ) : flowError ? (
-              <div className="flex items-center justify-center h-[300px]">
-                <div className="text-center">
-                  <AlertCircle size={32} className="mb-3" style={{ color: "var(--error)" }} />
-                  <p style={{ color: "var(--error)" }}>{flowError}</p>
-                </div>
-              </div>
-            ) : flowData ? (
-              <>
-                {flowType === "token" && <TokenFlowSankey data={flowData} />}
-                {flowType === "task" && <TaskFlowSankey data={flowData} />}
-                {flowType === "time" && <TimeFlowSankey data={flowData} />}
-              </>
-            ) : null}
-          </div>
-        </div>
+         </>
       )}
 
       {activeTab === "costs" && (
