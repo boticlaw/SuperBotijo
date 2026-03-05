@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Eye, Edit3, RefreshCw, Brain, Network, Cloud } from "lucide-react";
+import { Eye, Edit3, RefreshCw, Brain, Cloud } from "lucide-react";
 import { FileTree, FileNode } from "@/components/FileTree";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
-import { KnowledgeGraphComponent } from "@/components/KnowledgeGraph";
 import { MemoryWordCloud } from "@/components/MemoryWordCloud";
 import { useI18n } from "@/i18n/provider";
-import type { KnowledgeGraph } from "@/lib/memory-parser";
 import type { WordFrequency } from "@/app/api/memories/word-cloud/route";
 
-type MainTab = "editor" | "graph" | "wordcloud";
+type MainTab = "editor" | "wordcloud";
 type ViewMode = "edit" | "preview";
 
 interface Workspace {
@@ -34,9 +32,6 @@ export default function MemoryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [graphData, setGraphData] = useState<KnowledgeGraph | null>(null);
-  const [graphLoading, setGraphLoading] = useState(false);
   const [wordCloudData, setWordCloudData] = useState<WordFrequency[]>([]);
   const [wordCloudLoading, setWordCloudLoading] = useState(false);
 
@@ -53,17 +48,6 @@ export default function MemoryPage() {
       })
       .catch(() => setWorkspaces([]));
   }, []);
-
-  useEffect(() => {
-    if (mainTab === "graph" && !graphData) {
-      setGraphLoading(true);
-      fetch("/api/knowledge-graph")
-        .then((res) => res.json())
-        .then((data) => setGraphData(data))
-        .catch(console.error)
-        .finally(() => setGraphLoading(false));
-    }
-  }, [mainTab, graphData]);
 
   useEffect(() => {
     if (mainTab === "wordcloud" && wordCloudData.length === 0) {
@@ -208,25 +192,6 @@ export default function MemoryPage() {
             >
               <Edit3 size={14} />
               Editor
-            </button>
-            <button
-              onClick={() => setMainTab("graph")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "8px 14px",
-                borderRadius: "6px",
-                backgroundColor: mainTab === "graph" ? "var(--accent)" : "transparent",
-                color: mainTab === "graph" ? "var(--bg)" : "var(--text-secondary)",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: 500,
-              }}
-            >
-              <Network size={14} />
-              Graph
             </button>
             <button
               onClick={() => setMainTab("wordcloud")}
@@ -449,24 +414,6 @@ export default function MemoryPage() {
               )}
             </main>
           </div>
-        ) : mainTab === "graph" ? (
-          graphLoading ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)" }}>
-              <RefreshCw size={24} style={{ animation: "spin 1s linear infinite" }} />
-            </div>
-          ) : graphData && graphData.entities.length > 0 ? (
-            <div style={{ flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
-              <KnowledgeGraphComponent data={graphData} />
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)" }}>
-              <div style={{ textAlign: "center" }}>
-                <Network size={64} style={{ opacity: 0.3, marginBottom: "16px" }} />
-                <p>No entities found in memory</p>
-                <p style={{ fontSize: "12px", marginTop: "8px" }}>Run the agent to populate memory</p>
-              </div>
-            </div>
-          )
         ) : (
           <div style={{ height: "100%", padding: "24px" }}>
             <div style={{ height: "100%", backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px" }}>
