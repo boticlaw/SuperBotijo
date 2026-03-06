@@ -20,7 +20,6 @@ import {
   X,
   Users,
   Gamepad2,
-  Workflow,
   Zap,
   Server,
   GitFork,
@@ -79,7 +78,6 @@ const navGroups = [
   {
     title: "Tools",
     items: [
-      { href: "/workflows", label: "Workflows", icon: Workflow },
       { href: "/playground", label: "Playground", icon: Beaker },
       { href: "/terminal", label: "Terminal", icon: SquareTerminal },
       { href: "/git", label: "Git", icon: GitFork },

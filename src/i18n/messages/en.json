@@ -49,7 +49,6 @@
     "memory": "Memory",
     "files": "Files",
     "analytics": "Analytics",
-    "workflows": "Workflows",
     "terminal": "Terminal",
     "system": "System",
     "settings": "Settings",
@@ -79,10 +78,6 @@
     "analytics": {
       "title": "Analytics & Costs",
       "description": "Track token usage, costs by model, and budget. Keep your AI spending under control."
-    },
-    "workflows": {
-      "title": "Workflow Designer",
-      "description": "Design visual workflows for multi-agent automation. Chain agents together."
     },
     "terminal": {
       "title": "Terminal",
@@ -121,7 +116,6 @@
     "recentActivity": "Recent Activity",
     "quickLinks": "Quick Links",
     "cronJobs": "Cron Jobs",
-    "workflows": "Workflows",
     "system": "System",
     "liveLogs": "Live Logs",
     "memory": "Memory",
@@ -246,18 +240,6 @@
     "selectWorkspace": "Select a workspace",
     "noEntities": "No entities found in memory",
     "runAgentToPopulate": "Run the agent to populate memory"
-  },
-  "workflows": {
-    "title": "Workflow Designer",
-    "subtitle": "Design visual workflows for multi-agent automation",
-    "newWorkflow": "New Workflow",
-    "templates": "Templates",
-    "yourWorkflows": "Your Workflows",
-    "nodes": "nodes",
-    "connections": "connections",
-    "back": "← Back",
-    "edit": "Edit",
-    "export": "Export"
   },
   "terminal": {
     "title": "Browser Terminal",

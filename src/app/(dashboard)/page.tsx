@@ -275,7 +275,6 @@ export default function DashboardPage() {
           <div className="p-4 grid grid-cols-2 gap-2">
             {[
               { href: "/cron", icon: Calendar, labelKey: "dashboard.cronJobs", color: "#a78bfa" },
-              { href: "/workflows", icon: Zap, labelKey: "dashboard.workflows", color: "var(--accent)" },
               { href: "/system", icon: Server, labelKey: "dashboard.system", color: "var(--success)" },
               { href: "/logs", icon: Terminal, labelKey: "dashboard.liveLogs", color: "#60a5fa" },
               { href: "/memory", icon: Brain, labelKey: "dashboard.memory", color: "#f59e0b" },

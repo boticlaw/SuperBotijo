@@ -15,7 +15,6 @@ import {
   Bell,
   BarChart3,
   FileBarChart,
-  Workflow,
   Beaker,
   SquareTerminal,
   GitFork,
@@ -138,14 +137,6 @@ export const NAV_COMMANDS: Command[] = [
   },
 
   // Tools
-  {
-    id: "nav-workflows",
-    label: "Workflows",
-    icon: Workflow,
-    href: "/workflows",
-    group: "Tools",
-    keywords: ["flujos", "automation", "pipelines"],
-  },
   {
     id: "nav-playground",
     label: "Playground",

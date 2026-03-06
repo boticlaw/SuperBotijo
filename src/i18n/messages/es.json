@@ -49,7 +49,6 @@
     "memory": "Memoria",
     "files": "Archivos",
     "analytics": "Analíticas",
-    "workflows": "Workflows",
     "terminal": "Terminal",
     "system": "Sistema",
     "settings": "Config",
@@ -75,7 +74,6 @@
     "recentActivity": "Actividad reciente",
     "quickLinks": "Accesos rápidos",
     "cronJobs": "Tareas cron",
-    "workflows": "Workflows",
     "system": "Sistema",
     "liveLogs": "Logs en vivo",
     "memory": "Memoria",
@@ -172,10 +170,6 @@
     "analytics": {
       "title": "Analíticas y Costos",
       "description": "Seguimiento de uso de tokens, costos por modelo y presupuesto. Mantener el gasto en IA bajo control."
-    },
-    "workflows": {
-      "title": "Diseñador de Workflows",
-      "description": "Diseñar workflows visuales para automatización multi-agente. Encadenar agentes en secuencia."
     },
     "terminal": {
       "title": "Terminal",
