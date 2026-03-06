@@ -295,11 +295,9 @@ export async function calculateAgentMood(
     );
 
     // Calculate mood based on activity patterns
-    let activityCount = recentActivities.length;
-    let errorCount = recentActivities.filter((a) => a.status === "error").length;
-    let successCount = recentActivities.filter((a) => a.status === "success").length;
-
-    let totalTokens = recentActivities.reduce((sum, a) => sum + (a.tokens_used || 0), 0);
+    const activityCount = recentActivities.length;
+    const errorCount = recentActivities.filter((a) => a.status === "error").length;
+    const successCount = recentActivities.filter((a) => a.status === "success").length;
 
     // Determine mood
     let mood: AgentMood["mood"];

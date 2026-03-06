@@ -81,6 +81,13 @@ export default function AnalyticsPage() {
     }
   }, [timeframe]);
 
+  // Fetch cost data when timeframe changes or when switching to costs tab
+  useEffect(() => {
+    if (activeTab === "costs") {
+      fetchCostData();
+    }
+  }, [activeTab, timeframe, fetchCostData]);
+
   const saveBudget = useCallback(async () => {
     const newBudget = parseFloat(budgetInput);
     if (isNaN(newBudget) || newBudget <= 0) return;

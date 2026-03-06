@@ -87,7 +87,7 @@ export function useActivityStream(options: UseActivityStreamOptions = {}): UseAc
         }
 
     if (data.type === "new" && data.activity) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setActivities((prev) => {
         const exists = prev.some((a) => a.id === data.activity.id);
         if (exists) return prev;

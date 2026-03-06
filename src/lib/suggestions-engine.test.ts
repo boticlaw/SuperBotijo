@@ -7,7 +7,6 @@ import {
   dismissSuggestion,
   applySuggestion,
   getSuggestionById,
-  type Suggestion,
   type UsageData,
 } from "./suggestions-engine";
 

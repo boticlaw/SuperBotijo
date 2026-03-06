@@ -32,7 +32,7 @@ export function LiveStatusIndicator() {
       // setState is intentional here - we're responding to new activity
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecentActivity(latestActivity);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setShowIndicator(true);
 
       const timeout = setTimeout(() => {

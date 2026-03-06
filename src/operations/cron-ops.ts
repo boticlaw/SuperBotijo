@@ -41,7 +41,7 @@ export function parseCronExpression(expression: string): string {
   const parts = expression.split(' ');
   if (parts.length !== 5) return expression;
 
-  const [min, hour, dayOfMonth, month, dayOfWeek] = parts;
+  const [min, hour] = parts;
 
   // Common patterns
   if (min === '*' && hour === '*') return 'Every minute';
@@ -63,7 +63,7 @@ export function calculateNextRun(expression: string): Date | null {
     if (parts.length !== 5) return null;
 
     const now = new Date();
-    const [min, hour, dom, month, dow] = parts.map(p => {
+    const [min, hour] = parts.map(p => {
       if (p === '*') return null;
       if (p.startsWith('*/')) return parseInt(p.slice(2));
       return parseInt(p);

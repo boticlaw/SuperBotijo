@@ -211,14 +211,14 @@ export async function installSkill(
     const versionArg = version ? `@${version}` : '';
     
     try {
-      const { stdout, stderr } = await execAsync(
+      const { stderr } = await execAsync(
         `clawhub install ${skillId}${versionArg} --path "${SKILLS_PATH}" 2>&1`
       );
-      
+
       if (stderr && !stderr.includes('warning')) {
         warnings.push(stderr);
       }
-    } catch (installError) {
+    } catch {
       // ClawHub might not be available, try direct clone
       report('downloading', 'Trying alternative installation...', 50);
       

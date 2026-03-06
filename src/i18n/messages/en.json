@@ -500,5 +500,42 @@
       "values": "Values guide decision-making when facing trade-offs",
       "review": "Review and update your mission periodically"
     }
+  },
+  "efficiency": {
+    "calculating": "Calculating efficiency...",
+    "title": "Efficiency Score",
+    "noData": "No data available yet. Complete some activities to see your efficiency score.",
+    "description": "Measures agent productivity and success rate",
+    "vsPrevious": "+{percent}% vs previous period",
+    "vsPreviousNeg": "-{percent}% vs previous period",
+    "stable": "Stable",
+    "scoreComponents": "Score Components",
+    "successRate": "Success Rate",
+    "taskCompletion": "Task Completion",
+    "tokenEfficiency": "Token Efficiency",
+    "totalActivities": "Total Activities",
+    "successFailed": "Success / Failed",
+    "trendHistory": "Efficiency Trend (Last {days} days)",
+    "efficiencyScore": "Efficiency Score",
+    "days": "{days}d",
+    "formula": "Formula:",
+    "formulaText": "Success Rate (40%) + Task Completion (40%) + Token Efficiency (20%)",
+    "successRateTooltip": "Percentage of activities completed successfully (40% weight)",
+    "taskCompletionTooltip": "Successful tasks vs failed (excludes pending) (40% weight)",
+    "tokenEfficiencyTooltip": "Output tokens vs total tokens (20% weight)"
+  },
+  "topTasks": {
+    "loading": "Loading top tasks...",
+    "title": "Top 5 Token Consumers",
+    "noData": "No token data available",
+    "totalTokens": "{tokens} total tokens",
+    "vsPrevious": "{percent}% vs previous period",
+    "tasks": "{count} tasks",
+    "stable": "stable",
+    "averagePerType": "Average: {tokens} per type",
+    "viewAllActivities": "View all activities",
+    "periodDay": "Today",
+    "periodWeek": "Week",
+    "periodMonth": "Month"
   }
 }

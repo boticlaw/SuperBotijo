@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
-import Database from "better-sqlite3";
 import {
   extractSessionData,
   calculateSnapshot,
@@ -13,7 +12,6 @@ import {
 } from "./usage-collector";
 
 const TEST_DB_PATH = path.join(process.cwd(), "data", "test-usage-collector.db");
-const DATA_DIR = path.join(process.cwd(), "data");
 
 function cleanup() {
   try {

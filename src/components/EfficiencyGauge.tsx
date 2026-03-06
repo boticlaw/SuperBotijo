@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useI18n } from "@/i18n/provider";
 
 interface EfficiencyData {
   score: number;
@@ -67,10 +68,13 @@ function getScoreColor(score: number): string {
 type PeriodType = "7" | "14" | "30";
 
 export function EfficiencyGauge() {
+  const { t } = useI18n();
   const [data, setData] = useState<EfficiencyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodType>("7");
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
+
+  const [efficiencyScoreLabel, setEfficiencyScoreLabel] = useState("Efficiency Score");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,6 +95,10 @@ export function EfficiencyGauge() {
     fetchData();
   }, [period]);
 
+  useEffect(() => {
+    setEfficiencyScoreLabel(t("efficiency.efficiencyScore"));
+  }, [t, efficiencyScoreLabel]);
+
   if (loading) {
     return (
       <div
@@ -106,7 +114,7 @@ export function EfficiencyGauge() {
             style={{ color: "var(--accent)" }}
           />
           <span style={{ color: "var(--text-secondary)" }}>
-            Calculating efficiency...
+            {t("efficiency.calculating")}
           </span>
         </div>
       </div>
@@ -126,12 +134,11 @@ export function EfficiencyGauge() {
           className="text-lg font-semibold mb-4"
           style={{ color: "var(--text-primary)" }}
         >
-          Efficiency Score
+          {t("efficiency.title")}
         </h3>
         <div className="text-center py-8">
           <p style={{ color: "var(--text-muted)" }}>
-            No data available yet. Complete some activities to see your
-            efficiency score.
+            {t("efficiency.noData")}
           </p>
         </div>
       </div>
@@ -153,10 +160,10 @@ export function EfficiencyGauge() {
             className="text-lg font-semibold"
             style={{ color: "var(--text-primary)" }}
           >
-            Efficiency Score
+            {t("efficiency.title")}
           </h3>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            Measures agent productivity and success rate
+            {t("efficiency.description")}
           </p>
         </div>
 
@@ -175,7 +182,7 @@ export function EfficiencyGauge() {
                 color: period === p ? "white" : "var(--text-secondary)",
               }}
             >
-              {p}d
+              {t("efficiency.days", { days: p })}
             </button>
           ))}
         </div>
@@ -232,7 +239,7 @@ export function EfficiencyGauge() {
               <>
                 <TrendingUp className="w-4 h-4" style={{ color: "var(--success)" }} />
                 <span style={{ color: "var(--success)" }}>
-                  +{data.trendPercent}% vs previous period
+                  {t("efficiency.vsPrevious", { percent: data.trendPercent })}
                 </span>
               </>
             )}
@@ -240,14 +247,14 @@ export function EfficiencyGauge() {
               <>
                 <TrendingDown className="w-4 h-4" style={{ color: "var(--error)" }} />
                 <span style={{ color: "var(--error)" }}>
-                  -{data.trendPercent}% vs previous period
+                  {t("efficiency.vsPrevious", { percent: data.trendPercent })}
                 </span>
               </>
             )}
             {data.trend === "stable" && (
               <>
                 <Minus className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-                <span style={{ color: "var(--text-muted)" }}>Stable</span>
+                <span style={{ color: "var(--text-muted)" }}>{t("efficiency.stable")}</span>
               </>
             )}
           </div>
@@ -259,7 +266,7 @@ export function EfficiencyGauge() {
             className="text-sm font-semibold uppercase tracking-wide"
             style={{ color: "var(--text-secondary)" }}
           >
-            Score Components
+            {t("efficiency.scoreComponents")}
           </h4>
 
           {/* Success Rate */}
@@ -270,7 +277,9 @@ export function EfficiencyGauge() {
           >
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <span style={{ color: "var(--text-primary)" }}>Success Rate</span>
+                <span style={{ color: "var(--text-primary)" }}>
+                  {t("efficiency.successRate")}
+                </span>
                 <Info
                   className="w-3 h-3 cursor-help"
                   style={{ color: "var(--text-muted)" }}
@@ -304,7 +313,7 @@ export function EfficiencyGauge() {
                   color: "var(--text-secondary)",
                 }}
               >
-                Percentage of activities completed successfully (40% weight)
+                {t("efficiency.successRateTooltip")}
               </div>
             )}
           </div>
@@ -318,7 +327,7 @@ export function EfficiencyGauge() {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span style={{ color: "var(--text-primary)" }}>
-                  Task Completion
+                  {t("efficiency.taskCompletion")}
                 </span>
                 <Info
                   className="w-3 h-3 cursor-help"
@@ -353,7 +362,7 @@ export function EfficiencyGauge() {
                   color: "var(--text-secondary)",
                 }}
               >
-                Successful tasks vs failed (excludes pending) (40% weight)
+                {t("efficiency.taskCompletionTooltip")}
               </div>
             )}
           </div>
@@ -367,7 +376,7 @@ export function EfficiencyGauge() {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span style={{ color: "var(--text-primary)" }}>
-                  Token Efficiency
+                  {t("efficiency.tokenEfficiency")}
                 </span>
                 <Info
                   className="w-3 h-3 cursor-help"
@@ -402,7 +411,7 @@ export function EfficiencyGauge() {
                   color: "var(--text-secondary)",
                 }}
               >
-                Output tokens vs total tokens (20% weight)
+                {t("efficiency.tokenEfficiencyTooltip")}
               </div>
             )}
           </div>
@@ -411,7 +420,7 @@ export function EfficiencyGauge() {
           <div className="mt-4 pt-4 grid grid-cols-2 gap-4" style={{ borderTop: "1px solid var(--border)" }}>
             <div>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Total Activities
+                {t("efficiency.totalActivities")}
               </p>
               <p
                 className="text-lg font-semibold"
@@ -422,7 +431,7 @@ export function EfficiencyGauge() {
             </div>
             <div>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Success / Failed
+                {t("efficiency.successFailed")}
               </p>
               <p
                 className="text-lg font-semibold"
@@ -448,7 +457,7 @@ export function EfficiencyGauge() {
             className="text-sm font-semibold uppercase tracking-wide mb-4"
             style={{ color: "var(--text-secondary)" }}
           >
-            Efficiency Trend (Last {period} days)
+            {t("efficiency.trendHistory", { days: period })}
           </h4>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={data.history}>
@@ -476,7 +485,7 @@ export function EfficiencyGauge() {
                 stroke="var(--accent)"
                 strokeWidth={2}
                 dot={{ fill: "var(--accent)", r: 4 }}
-                name="Efficiency Score"
+                name={efficiencyScoreLabel}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -489,8 +498,7 @@ export function EfficiencyGauge() {
         style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}
       >
         <p>
-          <strong>Formula:</strong> Success Rate (40%) + Task Completion (40%) +
-          Token Efficiency (20%)
+          <strong>{t("efficiency.formula")}</strong> {t("efficiency.formulaText")}
         </p>
       </div>
     </div>

@@ -406,7 +406,43 @@
       "statement": "Mantén la declaración de misión clara e inspiradora",
       "goals": "Los objetivos deben ser específicos y medibles",
       "values": "Los valores guían la toma de decisiones ante disyuntivas",
-      "review": "Revisa y actualiza tu misión periódicamente"
+      "review": "Revisá y actualiza tu misión periódicamente"
     }
+  },
+  "efficiency": {
+    "calculating": "Calculando eficiencia...",
+    "title": "Puntaje de Eficiencia",
+    "noData": "Sin datos disponibles. Completá algunas actividades para ver tu puntaje de eficiencia.",
+    "description": "Mide la productividad y tasa de éxito del agente",
+    "vsPrevious": "{percent}% vs período anterior",
+    "stable": "Estable",
+    "scoreComponents": "Componentes del Puntaje",
+    "successRate": "Tasa de Éxito",
+    "successRateTooltip": "Porcentaje de actividades completadas exitosamente (40% peso)",
+    "taskCompletion": "Completitud de Tareas",
+    "taskCompletionTooltip": "Tareas exitosas vs fallidas (excluye pendientes) (40% peso)",
+    "tokenEfficiency": "Eficiencia de Tokens",
+    "tokenEfficiencyTooltip": "Tokens de salida vs tokens totales (20% peso)",
+    "totalActivities": "Actividades Totales",
+    "successFailed": "Éxito / Fallidas",
+    "trendHistory": "Tendencia de Eficiencia (Últimos {days} días)",
+    "efficiencyScore": "Puntaje de Eficiencia",
+    "days": "{days}d",
+    "formula": "Fórmula:",
+    "formulaText": "Tasa de Éxito (40%) + Completitud de Tareas (40%) + Eficiencia de Tokens (20%)"
+  },
+  "topTasks": {
+    "loading": "Cargando top tasks...",
+    "title": "Top 5 Consumidores de Tokens",
+    "noData": "No hay datos de tokens disponibles",
+    "totalTokens": "{tokens} tokens totales",
+    "vsPrevious": "{percent}% vs período anterior",
+    "tasks": "{count} tareas",
+    "stable": "estable",
+    "averagePerType": "Promedio: {tokens} por tipo",
+    "viewAllActivities": "Ver todas las actividades",
+    "periodDay": "Hoy",
+    "periodWeek": "Semana",
+    "periodMonth": "Mes"
   }
 }
