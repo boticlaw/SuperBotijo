@@ -1,8 +1,8 @@
 "use client";
 
-import { GripVertical, AlertCircle, Lock, Clock, Play, CheckCircle, XCircle, PauseCircle } from "lucide-react";
+import { AlertCircle, Lock, Clock, Play, CheckCircle, XCircle, PauseCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import type { KanbanTask as KanbanTaskType, KanbanLabel } from "@/lib/kanban-db";
+import type { KanbanTask as KanbanTaskType } from "@/lib/kanban-db";
 
 interface KanbanTaskProps {
   task: KanbanTaskType;
@@ -37,12 +37,38 @@ function stringToColor(str: string): string {
   return `hsl(${hue}, 70%, 50%)`;
 }
 
+function getDomainColor(domain: string): string {
+  const colors: Record<string, string> = {
+    work: "#3b82f6",
+    finance: "#22c55e",
+    personal: "#ec4899",
+    communication: "#f59e0b",
+    admin: "#8b5cf6",
+    general: "#6b7280",
+  };
+  return colors[domain.toLowerCase()] || colors.general;
+}
+
+function getExecutionIcon(status: string) {
+  const icons: Record<string, React.ReactNode> = {
+    running: <Play className="h-3 w-3" />,
+    success: <CheckCircle className="h-3 w-3" />,
+    error: <XCircle className="h-3 w-3" />,
+    skipped: <PauseCircle className="h-3 w-3" />,
+    pending: <Clock className="h-3 w-3" />,
+  };
+  return icons[status] || icons.pending;
+}
+
 export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }: KanbanTaskProps) {
   const priorityConfig = PRIORITY_CONFIG[task.priority];
 
   function handleDragStart(e: React.DragEvent) {
     onDragStart(e, task);
   }
+
+  // Build metadata indicators for the compact view
+  const hasMetadata = task.claimedBy || task.executionStatus || task.labels.length > 0 || task.domain;
 
   return (
     <div
@@ -63,153 +89,121 @@ export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }
         }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.15 }}
-        className="rounded-lg border transition-shadow hover:shadow-lg"
+        className="rounded border transition-shadow hover:shadow-md"
         style={{
           backgroundColor: "var(--card)",
           borderColor: isDragging ? "var(--accent)" : "var(--border)",
+          borderLeftColor: priorityConfig.color,
+          borderLeftWidth: "3px",
         }}
       >
-        {/* Priority indicator bar */}
-        <div
-          className="h-1 rounded-t-lg"
-          style={{ backgroundColor: priorityConfig.color }}
-        />
-
-        <div className="p-3">
-          {/* Header with drag handle */}
+        <div className="px-2.5 py-2">
+          {/* Title row */}
           <div className="flex items-start gap-2">
-            <div
-              className="mt-0.5 cursor-grab opacity-0 transition-opacity group-hover:opacity-100"
-              style={{ color: "var(--text-muted)" }}
-            >
-              <GripVertical className="h-4 w-4" />
-            </div>
-
             <div className="flex-1 min-w-0">
               <h4
-                className="text-sm font-medium line-clamp-2"
+                className="text-xs font-medium leading-tight line-clamp-2"
                 style={{ color: "var(--text-primary)" }}
+                title={task.title}
               >
                 {task.title}
               </h4>
-
-              {task.description && (
-                <p
-                  className="mt-1 text-xs line-clamp-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {task.description}
-                </p>
-              )}
             </div>
+
+            {/* Assignee avatar - compact */}
+            {task.assignee && (
+              <div
+                className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                style={{
+                  backgroundColor: stringToColor(task.assignee),
+                  color: "white",
+                }}
+                title={task.assignee}
+              >
+                {getInitials(task.assignee)}
+              </div>
+            )}
           </div>
 
-          {/* Labels */}
-          {task.labels.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {task.labels.map((label, index) => (
-                <LabelBadge key={`${label.name}-${index}`} label={label} />
+          {/* Metadata row - single line with dots */}
+          {hasMetadata && (
+            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+              {/* Domain dot */}
+              {task.domain && (
+                <span
+                  className="h-2 w-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: getDomainColor(task.domain) }}
+                  title={task.domain}
+                />
+              )}
+
+              {/* Labels as colored dots */}
+              {task.labels.slice(0, 3).map((label, index) => (
+                <span
+                  key={`${label.name}-${index}`}
+                  className="h-2 w-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: label.color }}
+                  title={label.name}
+                />
               ))}
+
+              {/* Claimed indicator */}
+              {task.claimedBy && (
+                <span
+                  className="flex items-center gap-0.5 text-[10px]"
+                  style={{ color: "var(--warning)" }}
+                  title={`Claimed by ${task.claimedBy}`}
+                >
+                  <Lock className="h-2.5 w-2.5" />
+                </span>
+              )}
+
+              {/* Execution status */}
+              {task.executionStatus && (
+                <span
+                  className="flex items-center"
+                  style={{
+                    color: task.executionStatus === "success" ? "var(--success)" :
+                           task.executionStatus === "error" ? "var(--error)" :
+                           task.executionStatus === "running" ? "var(--info)" : "var(--text-muted)"
+                  }}
+                  title={`${task.executionStatus}${task.executionResult ? `: ${task.executionResult}` : ""}`}
+                >
+                  {getExecutionIcon(task.executionStatus)}
+                </span>
+              )}
+
+              {/* Created by agent - subtle indicator */}
+              {task.createdBy && (
+                <span
+                  className="text-[9px] px-1 rounded"
+                  style={{
+                    backgroundColor: "rgba(139, 92, 246, 0.15)",
+                    color: "#a855f7",
+                  }}
+                  title={`Created by ${task.createdBy}`}
+                >
+                  bot
+                </span>
+              )}
+
+              {/* Priority badge - only for high/critical */}
+              {(task.priority === "high" || task.priority === "critical") && (
+                <span
+                  className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium"
+                  style={{
+                    backgroundColor: priorityConfig.bgColor,
+                    color: priorityConfig.color,
+                  }}
+                >
+                  {task.priority === "critical" && <AlertCircle className="h-2.5 w-2.5" />}
+                  {task.priority.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
           )}
-
-           {/* Claimed indicator */}
-           {task.claimedBy && (
-             <div
-               className="mb-2 flex items-center gap-1.5 rounded px-2 py-1 text-xs"
-               style={{
-                 backgroundColor: "rgba(255, 214, 10, 0.1)",
-                 color: "var(--warning)",
-                 border: "1px solid rgba(255, 214, 10, 0.3)",
-               }}
-             >
-               <Lock className="h-3 w-3" />
-               <span>Claimed by {task.claimedBy}</span>
-               {task.claimedAt && (
-                 <span style={{ color: "var(--text-muted)" }}>
-                   <Clock className="h-3 w-3 ml-1 inline" />
-                   {new Date(task.claimedAt).toLocaleTimeString()}
-                 </span>
-               )}
-             </div>
-           )}
-
-           {/* Execution Status indicator */}
-           {task.executionStatus && (
-             <ExecutionStatusBadge status={task.executionStatus} result={task.executionResult} />
-           )}
-
-           {/* Footer: Priority + Assignee */}
-           <div className="mt-3 flex items-center justify-between">
-             <span
-               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium"
-               style={{
-                 backgroundColor: priorityConfig.bgColor,
-                 color: priorityConfig.color,
-               }}
-             >
-               {task.priority === "critical" && <AlertCircle className="h-3 w-3" />}
-               {task.priority}
-             </span>
-
-             {task.assignee && (
-               <div
-                 className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-                 style={{
-                   backgroundColor: stringToColor(task.assignee),
-                   color: "white",
-                 }}
-                 title={task.assignee}
-               >
-                 {getInitials(task.assignee)}
-               </div>
-             )}
-           </div>
         </div>
       </motion.div>
-    </div>
-  );
-}
-
-function LabelBadge({ label }: { label: KanbanLabel }) {
-  return (
-    <span
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-      style={{
-        backgroundColor: `${label.color}20`,
-        color: label.color,
-        border: `1px solid ${label.color}40`,
-      }}
-    >
-      {label.name}
-    </span>
-  );
-}
-
-function ExecutionStatusBadge({ status, result }: { status: string; result: string | null }) {
-  const config = {
-    running: { icon: <Play className="h-3 w-3" />, label: "Running", color: "var(--info)", bg: "rgba(10, 132, 255, 0.15)" },
-    success: { icon: <CheckCircle className="h-3 w-3" />, label: "Success", color: "var(--success)", bg: "rgba(46, 160, 67, 0.15)" },
-    error: { icon: <XCircle className="h-3 w-3" />, label: "Error", color: "var(--error)", bg: "rgba(255, 69, 58, 0.15)" },
-    skipped: { icon: <PauseCircle className="h-3 w-3" />, label: "Skipped", color: "var(--text-muted)", bg: "rgba(82, 82, 82, 0.15)" },
-    pending: { icon: <Clock className="h-3 w-3" />, label: "Pending", color: "var(--warning)", bg: "rgba(255, 214, 10, 0.15)" },
-  };
-
-  const c = config[status as keyof typeof config] || config.pending;
-
-  return (
-    <div
-      className="mb-2 flex items-center gap-1.5 rounded px-2 py-1 text-xs cursor-help"
-      style={{ backgroundColor: c.bg, color: c.color, border: `1px solid ${c.color}40` }}
-      title={result || undefined}
-    >
-      {c.icon}
-      <span>{c.label}</span>
-      {result && (
-        <span className="ml-1 truncate max-w-[100px]" style={{ opacity: 0.7 }}>
-          - {result.length > 20 ? result.slice(0, 20) + "..." : result}
-        </span>
-      )}
     </div>
   );
 }

@@ -108,7 +108,7 @@ export function KanbanColumn({
       {/* Tasks Container */}
       <div className="flex-1 overflow-y-auto p-3">
         <AnimatePresence mode="popLayout">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {tasks.map((task) => (
               <KanbanTask
                 key={task.id}

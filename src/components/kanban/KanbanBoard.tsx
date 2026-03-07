@@ -1,38 +1,44 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, Filter } from "lucide-react";
+import { Plus } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
 import type { KanbanTask, KanbanColumn as KanbanColumnType } from "@/lib/kanban-db";
-import type { Project } from "@/lib/mission-types";
-
-interface ProjectWithStats extends Project {
-  taskCount: number;
-  progress: number;
-}
 
 interface KanbanBoardProps {
   columns: KanbanColumnType[];
   tasks: KanbanTask[];
-  projects: ProjectWithStats[];
-  selectedProjectId: string | null;
-  onProjectFilterChange: (projectId: string | null) => void;
   onTaskClick: (task: KanbanTask) => void;
   onAddTask: (columnId: string) => void;
   onAddColumn: () => void;
   onMoveTask: (taskId: string, targetColumnId: string, targetOrder?: number) => Promise<void>;
+  // Agent filters
+  configuredAgents?: string[];
+  createdByFilter?: string | null;
+  assigneeFilter?: string | null;
+  onCreatedByFilterChange?: (agentId: string | null) => void;
+  onAssigneeFilterChange?: (agentId: string | null) => void;
+  // Domain filters
+  domains?: { id: string; name: string }[];
+  domainFilter?: string | null;
+  onDomainFilterChange?: (domain: string | null) => void;
 }
 
 export function KanbanBoard({
   columns,
   tasks,
-  projects,
-  selectedProjectId,
-  onProjectFilterChange,
   onTaskClick,
   onAddTask,
   onAddColumn,
   onMoveTask,
+  configuredAgents = [],
+  createdByFilter = null,
+  assigneeFilter = null,
+  onCreatedByFilterChange,
+  onAssigneeFilterChange,
+  domains = [],
+  domainFilter = null,
+  onDomainFilterChange,
 }: KanbanBoardProps) {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
@@ -72,12 +78,27 @@ export function KanbanBoard({
   // Sort columns by order
   const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
 
-  // Filter tasks by selected project
-  const filteredTasks = selectedProjectId === null
-    ? tasks
-    : selectedProjectId === "unassigned"
-      ? tasks.filter((t) => t.projectId === null)
-      : tasks.filter((t) => t.projectId === selectedProjectId);
+  // Filter tasks by agent filters
+  let filteredTasks = tasks;
+
+  // Filter by domain
+  if (domainFilter) {
+    if (domainFilter === "unassigned") {
+      filteredTasks = filteredTasks.filter((t) => !t.domain);
+    } else {
+      filteredTasks = filteredTasks.filter((t) => t.domain === domainFilter);
+    }
+  }
+
+  // Filter by creator agent
+  if (createdByFilter) {
+    filteredTasks = filteredTasks.filter((t) => t.createdBy === createdByFilter);
+  }
+
+  // Filter by assignee agent
+  if (assigneeFilter) {
+    filteredTasks = filteredTasks.filter((t) => t.assignee === assigneeFilter);
+  }
 
   // Group tasks by column
   const tasksByColumn = sortedColumns.map((column) => ({
@@ -106,28 +127,82 @@ export function KanbanBoard({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Project Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
-            <select
-              value={selectedProjectId || ""}
-              onChange={(e) => onProjectFilterChange(e.target.value || null)}
-              className="rounded-lg border px-3 py-2 text-sm outline-none cursor-pointer"
-              style={{
-                backgroundColor: "var(--card)",
-                borderColor: "var(--border)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <option value="">All Projects</option>
-              <option value="unassigned">Unassigned</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Domain Filter - Only show if there are domains */}
+          {domains.length > 0 && onDomainFilterChange && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Domain:</span>
+              <select
+                value={domainFilter || ""}
+                onChange={(e) => onDomainFilterChange(e.target.value || null)}
+                className="rounded-lg border px-2 py-1.5 text-xs outline-none cursor-pointer"
+                style={{
+                  backgroundColor: "var(--card)",
+                  borderColor: "var(--border)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <option value="">All</option>
+                {domains.map((domain) => (
+                  <option key={domain.id} value={domain.id}>
+                    {domain.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          {/* Agent Filters - Only show if there are configured agents */}
+          {configuredAgents.length > 0 && (
+            <>
+              {/* Created By Filter */}
+              {onCreatedByFilterChange && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Created by:</span>
+                  <select
+                    value={createdByFilter || ""}
+                    onChange={(e) => onCreatedByFilterChange(e.target.value || null)}
+                    className="rounded-lg border px-2 py-1.5 text-xs outline-none cursor-pointer"
+                    style={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    <option value="">All</option>
+                    {configuredAgents.map((agentId) => (
+                      <option key={agentId} value={agentId}>
+                        {agentId}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Assignee Filter */}
+              {onAssigneeFilterChange && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Assigned to:</span>
+                  <select
+                    value={assigneeFilter || ""}
+                    onChange={(e) => onAssigneeFilterChange(e.target.value || null)}
+                    className="rounded-lg border px-2 py-1.5 text-xs outline-none cursor-pointer"
+                    style={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    <option value="">All</option>
+                    {configuredAgents.map((agentId) => (
+                      <option key={agentId} value={agentId}>
+                        {agentId}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
           <button
             onClick={onAddColumn}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"

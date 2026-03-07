@@ -2,23 +2,15 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { RefreshCw, AlertCircle, AlertTriangle, Play, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
-import { KanbanBoard, TaskModal, ProjectProgressCard, OrphanTasksModal } from "@/components/kanban";
+import { RefreshCw, AlertCircle, Play, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
+import { KanbanBoard, TaskModal } from "@/components/kanban";
 import type { KanbanTask, KanbanColumn } from "@/lib/kanban-db";
-import type { Project } from "@/lib/mission-types";
-
-interface ProjectWithStats extends Project {
-  taskCount: number;
-  progress: number;
-}
 
 type ExecutionFilter = "all" | "running" | "success" | "error" | "pending" | "none";
 
 export default function KanbanPage() {
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
-  const [projects, setProjects] = useState<ProjectWithStats[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [executionFilter, setExecutionFilter] = useState<ExecutionFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,30 +19,39 @@ export default function KanbanPage() {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
   const [newColumnColor, setNewColumnColor] = useState("#3b82f6");
-  const [orphanModalOpen, setOrphanModalOpen] = useState(false);
+  // Agent filter state
+  const [configuredAgents, setConfiguredAgents] = useState<string[]>([]);
+  const [createdByFilter, setCreatedByFilter] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+  // Domain filter state
+  const [domains, setDomains] = useState<{ id: string; name: string }[]>([]);
+  const [domainFilter, setDomainFilter] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [columnsRes, tasksRes, projectsRes] = await Promise.all([
+      const [columnsRes, tasksRes, agentsRes, domainsRes] = await Promise.all([
         fetch("/api/kanban/columns"),
         fetch("/api/kanban/tasks"),
-        fetch("/api/projects"),
+        fetch("/api/kanban/agent/ids").catch(() => ({ ok: false, json: async () => ({ agents: [] }) })),
+        fetch("/api/kanban/agent/domains").catch(() => ({ ok: false, json: async () => ({ domains: [] }) })),
       ]);
 
-      if (!columnsRes.ok || !tasksRes.ok || !projectsRes.ok) {
+      if (!columnsRes.ok || !tasksRes.ok) {
         throw new Error("Failed to fetch kanban data");
       }
 
       const columnsData = await columnsRes.json();
       const tasksData = await tasksRes.json();
-      const projectsData = await projectsRes.json();
+      const agentsData = agentsRes.ok ? await agentsRes.json() : { agents: [] };
+      const domainsData = domainsRes.ok ? await domainsRes.json() : { domains: [] };
 
       setColumns(columnsData.columns || []);
       setTasks(tasksData.tasks || []);
-      setProjects(projectsData.projects || []);
+      setConfiguredAgents(agentsData.agents || []);
+      setDomains(domainsData.domains || []);
     } catch (err) {
       console.error("Failed to fetch kanban data:", err);
       setError(err instanceof Error ? err.message : "Failed to load kanban board");
@@ -220,64 +221,6 @@ export default function KanbanPage() {
 
   return (
     <div className="h-full p-4 md:p-6">
-      {/* Project Cards Section */}
-      {projects.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Projects
-            </h2>
-            {/* Orphan tasks button */}
-            {tasks.some((t) => t.projectId === null) && (
-              <button
-                onClick={() => setOrphanModalOpen(true)}
-                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: "var(--warning-bg)",
-                  border: "1px solid var(--warning)",
-                  color: "var(--warning)",
-                }}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                Unassigned Tasks
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* "All Projects" card */}
-            <ProjectProgressCard
-              id=""
-              name="All Tasks"
-              taskCount={tasks.length}
-              progress={
-                tasks.length > 0
-                  ? Math.round(
-                      (tasks.filter((t) => t.status === "done").length / tasks.length) * 100
-                    )
-                  : 0
-              }
-              isActive={selectedProjectId === null}
-              onClick={() => setSelectedProjectId(null)}
-            />
-            {/* Project cards */}
-            {projects.map((project) => (
-              <ProjectProgressCard
-                key={project.id}
-                id={project.id}
-                name={project.name}
-                taskCount={project.taskCount}
-                progress={project.progress}
-                isActive={selectedProjectId === project.id}
-                onClick={() => setSelectedProjectId(project.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Execution Status Filters */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -350,13 +293,18 @@ export default function KanbanPage() {
       <KanbanBoard
         columns={columns}
         tasks={filteredTasks}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onProjectFilterChange={setSelectedProjectId}
         onTaskClick={handleTaskClick}
         onAddTask={handleAddTask}
         onAddColumn={() => setAddColumnModalOpen(true)}
         onMoveTask={handleMoveTask}
+        configuredAgents={configuredAgents}
+        createdByFilter={createdByFilter}
+        assigneeFilter={assigneeFilter}
+        onCreatedByFilterChange={setCreatedByFilter}
+        onAssigneeFilterChange={setAssigneeFilter}
+        domains={domains}
+        domainFilter={domainFilter}
+        onDomainFilterChange={setDomainFilter}
       />
 
       {/* Task Modal */}
@@ -449,13 +397,6 @@ export default function KanbanPage() {
           </div>
         </div>
       )}
-
-      {/* Orphan Tasks Modal */}
-      <OrphanTasksModal
-        isOpen={orphanModalOpen}
-        onClose={() => setOrphanModalOpen(false)}
-        onReassigned={fetchData}
-      />
     </div>
   );
 }
