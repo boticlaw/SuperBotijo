@@ -207,14 +207,24 @@ cp data/configured-skills.example.json data/configured-skills.json
 cp data/tasks.example.json data/tasks.json
 ```
 
-### 4. Generate secrets
+### 4. Configure Agent Kanban API (optional)
+
+If you want agents to use the Kanban, add to `.env.local`:
+
+```env
+KANBAN_AGENT_KEYS=boti:sk-boti-secret-2026,memo:sk-memo-secret-2026,opencode:sk-opencode-secret-2026
+```
+
+Generate unique keys for each agent. See [docs/agent-integration.md](./docs/agent-integration.md) for full setup.
+
+### 5. Generate secrets
 
 ```bash
 openssl rand -base64 32   # AUTH_SECRET
 openssl rand -base64 18   # ADMIN_PASSWORD
 ```
 
-### 5. Run
+### 6. Run
 
 ```bash
 npm run dev    # Development → http://localhost:3000

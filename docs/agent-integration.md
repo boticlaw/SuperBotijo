@@ -1,7 +1,16 @@
 # Agent Integration Guide
 
-> 
-Use the guide to configure your OpenClaw agents to use the Kanban system in SuperBotijo.
+> Configure your OpenClaw agents to use the Kanban system in SuperBotijo.
+
+---
+
+## Overview
+
+SuperBotijo provides a REST API for agents to manage tasks programmatically. Each agent needs:
+
+1. **IDENTITY.md** - Define role and domain
+2. **API Key** - In auth-profiles.json
+3. **SuperBotijo Config** - KANBAN_AGENT_KEYS in .env
 
 ---
 
@@ -9,247 +18,205 @@ Use the guide to configure your OpenClaw agents to use the Kanban system in Supe
 
 ### Step 1: Create IDENTITY.md
 
-Create a file at `/home/daniel/.openclaw/agents/<agent-id>/IDENTITY.md`:
+Create `/home/daniel/.openclaw/agents/<agent-id>/IDENTITY.md`:
 
-   ```markdown
-   # IDENTITY.md
+```markdown
+# IDENTITY.md
 
-   *role:* <Role description>
-   *domain:* <domain>
-   *agent-id:* <agent-id>
-   ```
+*Role:* <Role description>
+*Domain:* <work|general|finance|personal>
+*Agent-Id:* <agent-id>
+```
 
-2. **Add API key to auth-profile**
+### Step 2: Add API Key to Agent
 
-   ```bash
-   # From agent's perspective
-   # in auth-profiles.json
-   "profiles": {
-     "superbotijo:kanban": {
-       "type": "api_key",
-       "provider": "superbotijo",
-       "key": "<your-api-key>"
-     }
-   }
-   ```
+Add to `/home/daniel/.openclaw/agents/<agent-id>/agent/auth-profiles.json`:
 
-3. **Configure SuperBotijo .env** |
-   ```bash
-   # SuperBotijo root directory
-   echo "KANBAN_agent_keys=boti:sk-boti-secret-2026,memo:sk-memo-secret-2026,...
-   ```
+```json
+{
+  "profiles": {
+    "superbotijo:kanban": {
+      "type": "api_key",
+      "provider": "superbotijo",
+      "key": "sk-<agent-id>-secret-2026"
+    }
+  }
+}
+```
 
-4. **Restart SuperBotijo** to apply changes.
+### Step 3: Configure SuperBotijo
 
-   ```
+Add to `/home/daniel/.openclaw/workspace/superbotijo/.env`:
 
-## Using the Kanban
+```bash
+KANBAN_AGENT_KEYS=boti:sk-boti-secret-2026,memo:sk-memo-secret-2026,opencode:sk-opencode-secret-2026
+```
 
-### Create a task
+Format: `agent-id:api-key,agent-id:api-key,...`
+
+### Step 4: Restart SuperBotijo
+
+```bash
+cd /home/daniel/.openclaw/workspace/superbotijo
+npm run build && npm start
+```
+
+---
+
+## API Reference
+
+**Base URL:** `http://localhost:3000/api/kanban/agent`
+
+**Required Headers:**
+```
+X-Agent-Id: <agent-id>
+X-Agent-Key: <api-key>
+Content-Type: application/json
+```
+
+### Create Task
+
 ```bash
 curl -X POST http://localhost:3000/api/kanban/agent/tasks \
   -H "Content-Type: application/json" \
-  -H "X-Agent-Id: <your-agent-id>"  -H "X-Agent-Key: <your-api-key> \
-  -d '{
-    "title": "Review security logs",
-    "status": "backlog",
-    "priority": "high",
-    "assignee": "leo"
-  }'
+  -H "X-Agent-Id: boti" \
+  -H "X-Agent-Key: sk-boti-secret-2026" \
+  -d '{"title": "Fix bug", "status": "backlog", "priority": "high"}'
 ```
 
-### List your tasks
+### List Tasks
+
 ```bash
-curl "http://localhost:3000/api/kanban/agent/tasks?assignee=leo" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026"
+curl "http://localhost:3000/api/kanban/agent/tasks?assignee=boti" \
+  -H "X-Agent-Id: boti" \
+  -H "X-Agent-Key: sk-boti-secret-2026"
 ```
 
-### Claim and update a task
-```bash
-curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
-  -d '{"claim": true, "status": "in_progress"}'
-```
+### Update Task
 
-### Complete a task
-```bash
-curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
-  -d '{"status": "review"}'
-```
-
-### Review and mark done
 ```bash
 curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
   -H "Content-Type: application/json" \
   -H "X-Agent-Id: boti" \
   -H "X-Agent-Key: sk-boti-secret-2026" \
-  -d '{"status": "done"}'
+  -d '{"status": "in_progress"}'
 ```
 
-### Delete a task
+### Claim Task
+
+```bash
+curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
+  -H "Content-Type: application/json" \
+  -H "X-Agent-Id: boti" \
+  -H "X-Agent-Key: sk-boti-secret-2026" \
+  -d '{"claim": true, "status": "in_progress"}'
+```
+
+### Delete Task
+
 ```bash
 curl -X DELETE http://localhost:3000/api/kanban/agent/tasks/{taskId} \
   -H "X-Agent-Id: boti" \
   -H "X-Agent-Key: sk-boti-secret-2026"
 ```
 
-### Filter by domain
-```bash
-curl "http://localhost:3000/api/kanban/agent/tasks?domain=work&assignee=leo" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026"
-```
-
-### Get your assigned tasks
-```bash
-curl "http://localhost:3000/api/kanban/agent/tasks?assignee=leo" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026"
-```
-### Claim before starting
-```bash
-curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
-  -d '{"claim": true, "status": "in_progress"}'
-```
-### Use blocked status
-```bash
-curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
-  -d '{"status": "blocked"}'
-```
-### Release a claim
-```bash
-curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
-  -d '{"claim": false}'
-```
+---
 
 ## Status Values
-| status | Description |
+
+| Status | Description |
 |--------|-------------|
-| `backlog` | Task is in the backlog, not started |
-| `in_progress` | Task is currently being worked on |
-| `review` | Task is complete, needs review |
-| `done` | Task is fully complete |
-| `blocked` | Task is blocked by something |
-| `waiting` | Task is waiting for external input |
+| `backlog` | Task is pending |
+| `in_progress` | Currently working |
+| `review` | Needs review |
+| `done` | Completed |
+| `blocked` | Blocked by something |
+| `waiting` | Waiting for external input |
 
 ## Priority Values
-| priority | description |
+
+| Priority | Description |
 |----------|-------------|
 | `low` | Nice to have |
 | `medium` | Normal priority |
 | `high` | Important |
-| `critical` | Urgent, needs immediate attention |
+| `critical` | Urgent |
+
 ## Domain Values
-| domain | description |
+
+| Domain | Description |
 |--------|-------------|
-| `work` | Development, operations, infrastructure |
-| `finance` | Invoices, payments, budgets |
-| `personal` | Family, health, personal time |
-| `communication` | Emails, calls, follow-ups |
-| `admin` | Legal, compliance, subscriptions |
-| `general` | Default domain for general-purpose agents |
-## Authorization Rules
-| Action | Who can do it |
+| `work` | Development, operations |
+| `finance` | Invoices, payments |
+| `personal` | Family, health |
+| `general` | Default domain |
+
+---
+
+## Authorization
+
+| Action | Who Can Do It |
 |--------|---------------|
 | Create task | Any authenticated agent |
-| update task | Creator, Assignee, or claimer |
-| claim task | Any authenticated agent (if unclaimed) |
-| unclaim task | Only the claimer |
-| delete task | Only the creator |
-## Error Responses
-| status | meaning |
-|------|--------|
-| 401 | Missing or invalid X-Agent-Id / X-Agent-Key headers |
-| 403 | Not authorized (you're not creator/assignee/claimer) |
-| 404 | Task not found |
-| 409 | Conflict (e.g., task already claimed by someone else) |
-| 400 | Invalid request body or parameters |
-## Best Practices
-1. **Always check assigned tasks first** - Use `GET /tasks?assignee=your-id`
-2. **Filter by your domain** - Use `GET /tasks?domain=your-domain`
-3. **Claim before starting** - Use `claim: true` when moving to `in_progress`
-4. **Use blocked status** - When stuck, set status to `blocked`
-5. **Use waiting status** - When waiting for external input
+| Update task | Creator, Assignee, or Claimer |
+| Claim task | Any agent (if unclaimed) |
+| Unclaim task | Only the claimer |
+| Delete task | Only the creator |
 
-## Troubleshooting
-- **Check your API key** - Make sure it `KANBAN_agent_keys` is configured in `.env`
-- **Check agent identity** - Ensure `X-Agent-Id` matches your agent name
-- **Test connectivity** - Try a simple GET request first
-- **Enable logs** - Enable logging in SuperBotijo for debugging
-- **Review agent permissions** - Check if your domain matches expected domains
-## Security Notes
-- **Keep API keys secure** - Never commit them to version control or public repos
-- **Use HTTPS in production** - Always use HTTPS for production deployments
-- **Validate input** - Always validate user input before processing
-- **Rate limiting** - Implement rate limiting to prevent abuse
-- **Use environment variables** - Store sensitive data in environment variables, not hardcoded
-## Examples
-### Complete workflow example
+---
+
+## Complete Example
+
+**Boti creates task for Memo:**
+
 ```bash
-# Boti creates and assigns task to Leo
+# 1. Boti creates and assigns task
 curl -X POST http://localhost:3000/api/kanban/agent/tasks \
   -H "Content-Type: application/json" \
   -H "X-Agent-Id: boti" \
   -H "X-Agent-Key: sk-boti-secret-2026" \
-  -d '{
-    "title": "Review security logs",
-    "status": "backlog",
-    "priority": "high",
-    "assignee": "leo"
-  }'
+  -d '{"title": "Review Obsidian notes", "status": "backlog", "priority": "high", "assignee": "memo"}'
 
-# Leo sees the claims, and starts working on the task
-curl "http://localhost:3000/api/kanban/agent/tasks?assignee=leo" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026"
-
-# Output: tasks assigned to Leo
-
+# 2. Memo claims and starts working
 curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
   -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
+  -H "X-Agent-Id: memo" \
+  -H "X-Agent-Key: sk-memo-secret-2026" \
   -d '{"claim": true, "status": "in_progress"}'
 
-# Leo completes the task and marks for review
+# 3. Memo completes task
 curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
   -H "Content-Type: application/json" \
-  -H "X-Agent-Id: leo" \
-  -H "X-Agent-Key: sk-leo-secret-2026" \
+  -H "X-Agent-Id: memo" \
+  -H "X-Agent-Key: sk-memo-secret-2026" \
   -d '{"status": "review"}'
 
-# Boti reviews and marks as done
+# 4. Boti reviews and marks done
 curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
   -H "Content-Type: application/json" \
   -H "X-Agent-Id: boti" \
   -H "X-Agent-Key: sk-boti-secret-2026" \
   -d '{"status": "done"}'
 ```
-## Integration with OpenClaw
-This guide works with any OpenClaw agent. The configuration steps are the similar.
 
-### For Other Task Systems
-The API is compatible with other task management systems:
-- Linear
-- Jira
-- Asana
-- Trello
-- Custom REST APIs
-## Support
-For questions or issues, or feature requests:
- please open an issue on GitHub or contact the maintainers.
+---
+
+## Troubleshooting
+
+**401 Unauthorized:**
+- Check X-Agent-Id header is correct
+- Check X-Agent-Key matches KANBAN_AGENT_KEYS in .env
+
+**403 Forbidden:**
+- You're not creator/assignee/claimer of the task
+
+**Task not appearing:**
+- Restart SuperBotijo after adding KANBAN_AGENT_KEYS
+- Check .env file is in SuperBotijo root directory
+
+---
+
+## See Also
+
+- **Skill:** `/home/daniel/.openclaw/skills/kanban-tasks/SKILL.md`
+- **API Docs:** `/home/daniel/.openclaw/workspace/superbotijo/docs/AGENT_KANBAN_API.md`
