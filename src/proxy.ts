@@ -4,8 +4,14 @@ import type { NextRequest } from "next/server";
 // Routes that never require authentication
 const PUBLIC_ROUTES = new Set(["/login"]);
 
-// API routes that are always public (auth endpoints + health check)
-const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/health"];
+// API routes that are always public (auth endpoints + health check + heartbeat + kanban agent endpoints)
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/",
+  "/api/health",
+  "/api/heartbeat",
+  "/api/kanban/agent",
+  "/api/kanban/tasks/",  // Task operations (claim, update, move)
+];
 
 // Auth token stored in cookie (set during login)
 // In production, this should be a signed JWT or similar

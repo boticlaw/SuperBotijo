@@ -15,7 +15,6 @@ import {
   moveTask,
   clearAllDataForTesting,
   type KanbanTask as KanbanTaskType,
-  type KanbanColumn as KanbanColumnType,
 } from "./kanban-db";
 
 describe("kanban-db", () => {

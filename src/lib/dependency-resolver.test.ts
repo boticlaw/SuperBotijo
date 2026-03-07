@@ -18,6 +18,7 @@ function createMockTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
     labels: [],
     order: 1000,
     projectId: null,
+    domain: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     dueDate: null,
@@ -28,6 +29,7 @@ function createMockTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
     waitingFor: null,
     claimedBy: null,
     claimedAt: null,
+    createdBy: null,
     ...overrides,
   };
 }

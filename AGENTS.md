@@ -518,7 +518,132 @@ calculateCost(modelId, inputTokens, outputTokens, cacheRead?, cacheWrite?): numb
 
 ---
 
-## Before Committing
+## Kanban Heartbeat Integration
+
+SuperBotijo supports **heartbeat-driven task polling** for OpenClaw agents. This enables agents to autonomously check for new or updated tasks on the Kanban board—similar to how Vikunja or other task queue systems work.
+
+### The Problem
+
+Agents in OpenClaw are typically "set and forget"—they're spawned with tasks but have no built-in mechanism to periodically check for new work. When a task is assigned or updated, the agent doesn't know unless manually triggered or respawned.
+
+### The Solution: Heartbeats
+
+Agents configure a `heartbeat` in `openclaw.json` that specifies how often they should poll for work. When the heartbeat fires, the agent:
+
+1. Calls `GET /api/heartbeat/tasks?agentName=<agent-id>`
+2. Receives tasks assigned to it with status `in_progress`
+3. Claims unclaimed tasks and processes them
+4. Updates task status as work progresses
+
+### Agent Configuration
+
+Add to `openclaw.json`:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "id": "developer",
+      "name": "Developer Agent",
+      "heartbeat": {
+        "every": "15m"
+      }
+    }
+  }
+}
+```
+
+**Supported intervals**:
+- `1m` — every minute (aggressive, for testing)
+- `5m` — every 5 minutes
+- `15m` — every 15 minutes
+- `30m` — every 30 minutes
+- `1h` — every hour
+
+### API Endpoints
+
+#### GET /api/heartbeat/tasks
+
+Returns tasks assigned to the agent with status `in_progress`:
+
+```json
+{
+  "agentName": "developer",
+  "count": 2,
+  "tasks": [
+    {
+      "id": "task-123",
+      "title": "Fix login bug",
+      "description": "Users can't login with SSO",
+      "priority": "high",
+      "status": "in_progress",
+      "isExecutable": true,
+      "blockedReason": null,
+      "claimedBy": "developer",
+      "claimedAt": "2026-03-07T08:15:00Z"
+    }
+  ]
+}
+```
+
+#### GET /api/tasks
+
+Returns all scheduled tasks (cron + heartbeat):
+
+```json
+[
+  {
+    "id": "heartbeat",
+    "name": "Heartbeat",
+    "type": "heartbeat",
+    "agentId": "main",
+    "schedule": "*/15 * * * *",
+    "scheduleDisplay": "Every 15 min",
+    "enabled": true,
+    "description": "Periodic agent self-check"
+  }
+]
+```
+
+### Heartbeat Workflow
+
+```
+1. Timer fires (every N minutes)
+        ↓
+2. Agent calls GET /api/heartbeat/tasks?agentName=me
+        ↓
+3. API returns assigned tasks (status=in_progress)
+        ↓
+4. For each task:
+   - Check if already claimed by me
+   - If not claimed: claim it (PATCH /api/kanban/tasks)
+   - If already claimed: process it
+        ↓
+5. Update task status as work progresses
+   - PATCH /api/kanban/tasks/{id} { status: "done" }
+```
+
+### User Story: The Morning Standup
+
+> Every morning at 8:00 AM, the Project Manager agent reviews the Kanban board and assigns three new tasks to the Developer agent. The Developer agent has a heartbeat configured to run every 15 minutes. When it fires, it polls for tasks, finds the new work waiting, and starts processing it—without being respawned.
+
+This enables **autonomous agent behavior**: agents work like employees checking a task board, picking up new work when it appears.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/openclaw-agents.ts` | Reads heartbeat config from openclaw.json |
+| `src/lib/kanban-db.ts` | Kanban task storage and queries |
+| `src/app/api/heartbeat/tasks/route.ts` | Returns assigned in-progress tasks |
+| `src/app/api/tasks/route.ts` | Unified cron + heartbeat view |
+
+### Best Practices
+
+1. **Choose appropriate interval**: 15-30 minutes is good for most agents
+2. **Claim tasks promptly**: Agents should claim tasks quickly to avoid conflicts
+3. **Update status regularly**: Mark tasks as done, error, or in-progress as work progresses
+4. **Handle dependencies**: Use the dependency resolver to avoid working on blocked tasks
 
 Run these commands to ensure code quality:
 

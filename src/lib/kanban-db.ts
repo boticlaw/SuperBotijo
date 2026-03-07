@@ -22,7 +22,10 @@ import type {
   ListJournalEntriesFilters,
 } from "@/lib/mission-types";
 
-const DB_PATH = path.join(process.cwd(), "data", "kanban.db");
+// Use in-memory database for tests to avoid concurrency issues
+const DB_PATH = process.env.NODE_ENV === "test"
+  ? ":memory:"
+  : path.join(process.cwd(), "data", "kanban.db");
 
 // ============================================================================
 // Types
@@ -45,6 +48,7 @@ export interface KanbanTask {
   labels: KanbanLabel[];
   order: number;
   projectId: string | null;
+  domain: string | null;  // Agent's domain: WORK, FINANCE, PERSONAL, COMMUNICATION, ADMIN, GENERAL
   created_at: string;
   updated_at: string;
   dueDate: string | null;
@@ -55,6 +59,7 @@ export interface KanbanTask {
   waitingFor: string[] | null;
   claimedBy: string | null;
   claimedAt: string | null;
+  createdBy?: string | null;  // Agent ID or "user" for human-created tasks
 }
 
 export interface KanbanColumn {
@@ -73,6 +78,8 @@ export interface CreateTaskInput {
   assignee?: string | null;
   labels?: KanbanLabel[];
   projectId?: string | null;
+  domain?: string | null;  // Agent's domain: WORK, FINANCE, PERSONAL, etc.
+  createdBy?: string | null;  // Agent ID or "user"
 }
 
 export interface UpdateTaskInput {
@@ -84,6 +91,9 @@ export interface UpdateTaskInput {
   labels?: KanbanLabel[];
   order?: number;
   projectId?: string | null;
+  domain?: string | null;  // Update task's domain
+  claimedBy?: string | null;  // For claim/unclaim
+  claimedAt?: string | null;  // Timestamp when claimed
 }
 
 export interface CreateColumnInput {
@@ -106,6 +116,8 @@ export interface ListTasksFilters {
   priority?: TaskPriority;
   search?: string;
   projectId?: string;
+  createdBy?: string;  // Filter by creator (agent ID or "user")
+  domain?: string;  // Filter by agent domain (WORK, FINANCE, PERSONAL, etc.)
 }
 
 export interface TasksStats {
@@ -119,6 +131,17 @@ export interface TasksStats {
 // ============================================================================
 
 let _db: Database.Database | null = null;
+
+/**
+ * Reset the database connection (for testing only)
+ * Closes the current connection and resets the singleton
+ */
+export function resetDbForTesting(): void {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+}
 
 /**
  * Get the database connection singleton
@@ -230,6 +253,7 @@ function getDb(): Database.Database {
     { name: "waiting_for", sql: "ALTER TABLE kanban_tasks ADD COLUMN waiting_for TEXT" },
     { name: "claimed_by", sql: "ALTER TABLE kanban_tasks ADD COLUMN claimed_by TEXT" },
     { name: "claimed_at", sql: "ALTER TABLE kanban_tasks ADD COLUMN claimed_at TEXT" },
+    { name: "created_by", sql: "ALTER TABLE kanban_tasks ADD COLUMN created_by TEXT" },
   ];
 
   for (const migration of migrations) {
@@ -249,6 +273,20 @@ function getDb(): Database.Database {
 
   // Idempotent migration: Add index for claimed_by
   _db.exec(`CREATE INDEX IF NOT EXISTS idx_kanban_tasks_claimed_by ON kanban_tasks(claimed_by)`);
+
+  // Idempotent migration: Add index for created_by
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_kanban_tasks_created_by ON kanban_tasks(created_by)`);
+
+  // Idempotent migration: Add domain column for agent task categorization
+  const domainColumnExists = _db
+    .prepare("SELECT 1 FROM pragma_table_info('kanban_tasks') WHERE name = 'domain'")
+    .get() as { "1": number } | undefined;
+
+  if (!domainColumnExists) {
+    _db.exec(`ALTER TABLE kanban_tasks ADD COLUMN domain TEXT`);
+    _db.exec(`CREATE INDEX IF NOT EXISTS idx_kanban_tasks_domain ON kanban_tasks(domain)`);
+    console.log("[kanban-db] Added domain column to kanban_tasks");
+  }
 
   // Idempotent migration: Add task_comments table for inter-agent communication
   const commentsTableExists = _db
@@ -323,6 +361,8 @@ export function createTask(input: CreateTaskInput): KanbanTask {
   const priority = input.priority ?? "medium";
   const labels = input.labels ?? [];
   const projectId = input.projectId ?? null;
+  const createdBy = input.createdBy ?? null;
+  const domain = input.domain ?? null;
 
   // Get the max order in the target column to append at the end
   const maxOrder = (db.prepare(`
@@ -332,8 +372,8 @@ export function createTask(input: CreateTaskInput): KanbanTask {
   const order = maxOrder + 1000;
 
   db.prepare(`
-    INSERT INTO kanban_tasks (id, title, description, status, priority, assignee, labels, "order", project_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO kanban_tasks (id, title, description, status, priority, assignee, labels, "order", project_id, domain, created_at, updated_at, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.title,
@@ -344,8 +384,10 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     JSON.stringify(labels),
     order,
     projectId,
+    domain,
     now,
-    now
+    now,
+    createdBy
   );
 
   // Log activity
@@ -360,6 +402,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
         column: status,
         priority,
         projectId,
+        createdBy,
       },
     }
   );
@@ -374,6 +417,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     labels,
     order,
     projectId,
+    domain: input.domain ?? null,
     created_at: now,
     updated_at: now,
     dueDate: null,
@@ -384,6 +428,7 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     waitingFor: null,
     claimedBy: null,
     claimedAt: null,
+    createdBy,
   };
 }
 
@@ -449,6 +494,16 @@ export function updateTask(id: string, updates: UpdateTaskInput): KanbanTask | n
   if (updates.projectId !== undefined) {
     fields.push("project_id = ?");
     values.push(updates.projectId);
+  }
+
+  if (updates.claimedBy !== undefined) {
+    fields.push("claimed_by = ?");
+    values.push(updates.claimedBy);
+  }
+
+  if (updates.claimedAt !== undefined) {
+    fields.push("claimed_at = ?");
+    values.push(updates.claimedAt);
   }
 
   if (fields.length === 0) return existing;
@@ -529,6 +584,16 @@ export function listTasks(filters?: ListTasksFilters): KanbanTask[] {
   if (filters?.projectId !== undefined) {
     conditions.push("project_id = ?");
     params.push(filters.projectId);
+  }
+
+  if (filters?.createdBy) {
+    conditions.push("created_by = ?");
+    params.push(filters.createdBy);
+  }
+
+  if (filters?.domain) {
+    conditions.push("domain = ?");
+    params.push(filters.domain);
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -1042,6 +1107,7 @@ function parseTaskRow(row: Record<string, unknown>): KanbanTask {
     labels: row.labels ? JSON.parse(row.labels as string) : [],
     order: row.order as number,
     projectId: (row.project_id as string | null) ?? null,
+    domain: (row.domain as string | null) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     // New fields for dependencies and execution tracking
@@ -1054,6 +1120,8 @@ function parseTaskRow(row: Record<string, unknown>): KanbanTask {
     // Claim fields for multi-agent coordination
     claimedBy: (row.claimed_by as string | null) ?? null,
     claimedAt: (row.claimed_at as string | null) ?? null,
+    // Creator field for agent-created tasks
+    createdBy: (row.created_by as string | null) ?? null,
   };
 }
 
@@ -1489,17 +1557,23 @@ function parseJournalEntryRow(row: Record<string, unknown>): OperationsJournalEn
 
 /**
  * Clear all data from the database (for testing only)
- * Resets to default columns
+ * Resets connection and reseeds default columns
+ * 
+ * IMPORTANT: Call this in beforeEach/afterEach to ensure test isolation
  */
 export function clearAllDataForTesting(): void {
+  // Reset connection to ensure fresh state
+  resetDbForTesting();
+  
   const db = getDb();
   db.exec("DELETE FROM kanban_tasks");
   db.exec("DELETE FROM kanban_columns");
   db.exec("DELETE FROM projects");
   db.exec("DELETE FROM agent_identities");
   db.exec("DELETE FROM operations_journal");
+  db.exec("DELETE FROM task_comments");
   
-  // Re-seed default columns
+  // Re-seed default columns (use INSERT OR IGNORE to handle existing columns)
   const defaultColumns = [
     { id: "backlog", name: "Backlog", color: "#6b7280", order: 0, limit: null },
     { id: "in_progress", name: "In Progress", color: "#3b82f6", order: 1, limit: null },
@@ -1508,7 +1582,7 @@ export function clearAllDataForTesting(): void {
   ];
 
   const insertColumn = db.prepare(`
-    INSERT INTO kanban_columns (id, name, color, "order", "limit")
+    INSERT OR IGNORE INTO kanban_columns (id, name, color, "order", "limit")
     VALUES (@id, @name, @color, @order, @limit)
   `);
 

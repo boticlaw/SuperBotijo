@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { QueueStatus } from "@/components/QueueStatus";
 import { useI18n } from "@/i18n/provider";
 import { Cpu, HardDrive, MemoryStick, Activity, Network, Server, ShieldCheck, RotateCw, Wifi, Monitor, Play, Square, X, Loader2, Terminal, ArrowDown, ArrowUp } from "lucide-react";
 
@@ -334,7 +333,6 @@ export default function SystemMonitorPage() {
             </div>
           </div>
           </div>
-          <QueueStatus />
         </div>
       )}
 

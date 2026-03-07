@@ -15,6 +15,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Complete technical documentation |
 | [AGENTS.md](./AGENTS.md) | AI coding agent instructions |
 | [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) | Cost tracking guide |
+| [docs/agent-integration.md](./docs/agent-integration.md) | Agent Kanban API setup |
 
 ---
 
@@ -34,7 +35,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 | Feature | Description |
 |---------|-------------|
-| **Memory Browser** | Edit MEMORY.md with live preview, knowledge graph, word cloud |
+| **Memory Browser** | Edit MEMORY.md with live preview, word cloud |
 | **File Browser** | Navigate workspaces with 2D/3D visualization |
 | **Global Search** | Full-text search across memory and workspace files |
 | **Git Dashboard** | Repository status, branch info, quick actions |
@@ -43,18 +44,17 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 | Feature | Description |
 |---------|-------------|
-| **Analytics** | Daily trends, Sankey diagrams, cost breakdown by agent/model |
+| **Analytics** | Daily trends, cost breakdown by agent/model, efficiency metrics |
 | **Reports** | Generate weekly/monthly reports with PDF export and sharing |
-| **Smart Suggestions** | AI-powered optimization tips based on usage patterns |
+| **Smart Suggestions** | Efficiency metrics and optimization insights |
 
 ### 🤖 Agent Intelligence
 
 | Feature | Description |
 |---------|-------------|
 | **Sub-Agents** | Real-time monitoring with spawn/completion timeline |
-| **Workflows** | Visual multi-agent workflow designer with drag & drop |
 | **Model Playground** | Compare responses from multiple models side-by-side |
-| **Communication Graph** | Network visualization of messages between agents |
+| **Kanban** | Task management with columns, priorities, and agent assignment |
 
 ### ⏰ Scheduling
 
@@ -62,7 +62,6 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 |---------|-------------|
 | **Cron Manager** | OpenClaw + system cron jobs with weekly timeline |
 | **Heartbeat** | Configure HEARTBEAT.md and active hours |
-| **Calendar** | Weekly view of scheduled tasks |
 
 ### 🏢 3D Visualization
 
@@ -78,7 +77,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 |---------|-------------|
 | **Terminal** | Browser-based terminal with safe command allowlist |
 | **Skills Manager** | View, enable/disable, and install skills from ClawHub |
-| **Notifications** | Outbox log of all messages sent (Telegram, Discord, etc.) |
+| **Git Dashboard** | Repository status, branch info, quick actions |
 | **Settings** | System info, integration status, config editor |
 
 ---
@@ -89,7 +88,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ![Dashboard](./docs/screenshots/dashboard.jpg)
 
-**Analytics** — daily cost trends, Sankey diagrams, and breakdown per agent
+**Analytics** — daily cost trends, efficiency metrics, and breakdown per agent
 
 ![Analytics](./docs/screenshots/costs.jpg)
 
@@ -126,7 +125,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 ├─────────────────────────────────────────────────────────────┤
 │                    Next.js 16 App Router                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  21 Pages   │  │ ~90 APIs    │  │    Auth Middleware   │  │
+│  │  17 Pages   │  │ 103 APIs    │  │    Auth Middleware   │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Data Sources                            │
@@ -293,16 +292,14 @@ superbotijo.yourdomain.com {
 superbotijo/
 ├── src/
 │   ├── app/
-│   │   ├── (dashboard)/     # 21 dashboard pages
-│   │   ├── api/             # ~90 API endpoints
+│   │   ├── (dashboard)/     # 17 dashboard pages
+│   │   ├── api/             # 103 API endpoints
 │   │   ├── login/           # Login page
 │   │   └── office/          # 3D office (public)
 │   ├── components/          # ~100 React components
 │   │   ├── SuperBotijo/     # OS-style UI shell
 │   │   ├── Office3D/        # 3D office scene
 │   │   ├── charts/          # Recharts wrappers
-│   │   ├── sankey/          # Sankey diagrams
-│   │   ├── workflow/        # Workflow designer
 │   │   └── files-3d/        # 3D file tree
 │   ├── hooks/               # 6 custom hooks
 │   ├── lib/                 # 20 utility modules
@@ -324,24 +321,20 @@ superbotijo/
 | `/` | Dashboard | Overview, stats, activity feed |
 | `/agents` | Agents | Multi-agent system overview |
 | `/sessions` | Sessions | Session history & transcripts |
-| `/analytics` | Analytics | Charts, costs, Sankey diagrams |
-| `/activity` | Activity | Activity log with filters |
+| `/analytics` | Analytics | Charts, costs, efficiency metrics |
 | `/memory` | Memory | Knowledge base editor |
 | `/files` | Files | File browser (2D/3D) |
 | `/system` | System | Hardware & services monitor |
 | `/cron` | Cron | Job scheduler |
 | `/subagents` | Subagents | Sub-agent monitoring |
-| `/workflows` | Workflows | Visual workflow designer |
 | `/playground` | Playground | Model comparison |
 | `/reports` | Reports | Generated reports |
 | `/skills` | Skills | Skills manager |
-| `/notifications` | Notifications | Outbox log |
 | `/terminal` | Terminal | Browser terminal |
 | `/settings` | Settings | Configuration |
 | `/git` | Git | Repository dashboard |
 | `/logs` | Logs | Real-time log streaming |
-| `/calendar` | Calendar | Weekly view |
-| `/about` | About | Agent profile |
+| `/kanban` | Kanban | Task management board |
 | `/office` | Office 3D | 3D visualization |
 
 ---
@@ -361,12 +354,11 @@ superbotijo/
 | Costs | 3 | Summary, efficiency, top tasks |
 | Cron | 9 | CRUD, runs, system jobs |
 | Skills | 7 | CRUD, toggle, ClawHub |
-| Workflows | 5 | CRUD, execute |
 | System | 6 | Info, monitor, services |
 | **Kanban** | 8 | CRUD, columns, move tasks, task dependencies, blocked/waiting states |
+| **Kanban Agent API** | 5 | Agent task creation, claim, update, delete |
 | **OpenClaw Agents** | 2 | GET agents, POST sync to projects |
-| **Tasks** | 1 | Unified tasks API (cron + heartbeat + scheduled) |
-| Other | 17 | Weather, git, logs, etc. |
+| Other | 30+ | Weather, git, logs, notifications, etc. |
 
 **See [ARCHITECTURE.md](./ARCHITECTURE.md#api-reference) for complete API documentation.**
 
@@ -466,12 +458,8 @@ Compared to the original TenecitOS:
 
 | Feature | Description |
 |---------|-------------|
-| Knowledge Graph | Interactive concept visualization |
 | Word Cloud | Frequent terms from memories |
 | 3D File Tree | Navigate files in 3D space |
-| Sankey Diagrams | Token/task/time flow visualization |
-| Communication Graph | Agent message network |
-| Workflow Designer | Visual multi-agent orchestration |
 | Model Playground | Side-by-side model comparison |
 | Smart Suggestions | AI-powered optimization tips |
 | Shareable Reports | Export and share reports |
@@ -481,6 +469,66 @@ Compared to the original TenecitOS:
 | i18n | English + Spanish support |
 | **Task Management** | Kanban with dependencies, blocked/waiting states, agent assignment |
 | **OpenClaw Agents API** | Auto-detect and sync agents to projects |
+| **Agent Kanban Integration** | Full REST API for agents to create/claim/update tasks |
+
+---
+
+## 🤖 Agent Kanban Integration
+
+SuperBotijo provides a complete REST API for OpenClaw agents to manage tasks programmatically.
+
+### Quick Setup for Agents
+
+**Step 1: Create IDENTITY.md**
+```bash
+# In your agent directory: ~/.openclaw/agents/<agent-id>/IDENTITY.md
+echo -e "*Role:* <Your Role>\n*Domain:* <work|general|finance|personal>\n*agent-id:* <agent-id>" > IDENTITY.md
+```
+
+**Step 2: Add API Key**
+```bash
+# In your agent's auth-profiles.json
+{
+  "profiles": {
+    "superbotijo:kanban": {
+      "type": "api_key",
+      "provider": "superbotijo",
+      "key": "sk-<agent-id>-secret-2026"
+    }
+  }
+}
+```
+
+**Step 3: Configure SuperBotijo**
+```bash
+# Add to superbotijo/.env
+KANBAN_AGENT_KEYS=<agent-id>:sk-<agent-id>-secret-2026,...
+```
+
+### API Quick Reference
+
+```bash
+# Create task
+curl -X POST http://localhost:3000/api/kanban/agent/tasks \
+  -H "Content-Type: application/json" \
+  -H "X-Agent-Id: <agent-id>" \
+  -H "X-Agent-Key: <your-api-key>" \
+  -d '{"title": "Task title", "status": "backlog", "priority": "medium"}'
+
+# Get your tasks
+curl "http://localhost:3000/api/kanban/agent/tasks?assignee=<agent-id>" \
+  -H "X-Agent-Id: <agent-id>" \
+  -H "X-Agent-Key: <your-api-key>"
+
+# Update task
+curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
+  -H "Content-Type: application/json" \
+  -H "X-Agent-Id: <agent-id>" \
+  -H "X-Agent-Key: <your-api-key>" \
+  -d '{"status": "in_progress"}'
+```
+
+📖 **Full documentation:** [docs/agent-integration.md](./docs/agent-integration.md)
 
 ---
 

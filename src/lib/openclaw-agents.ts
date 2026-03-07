@@ -40,6 +40,7 @@ export interface AgentIdentity {
   personality: string | null;
   avatar: string | null;
   mission: string | null;
+  domain: string | null;
 }
 
 export interface AgentInfo {
@@ -50,6 +51,7 @@ export interface AgentInfo {
   personality: string | null;
   avatar: string | null;
   mission: string | null;
+  domain: string | null;
   heartbeatInterval: number | null;
   hasIdentity: boolean;
 }
@@ -99,6 +101,7 @@ export function getOpenClawAgents(): AgentInfo[] {
         personality: identity?.personality ?? null,
         avatar: identity?.avatar ?? null,
         mission: identity?.mission ?? null,
+        domain: identity?.domain ?? null,
         heartbeatInterval,
         hasIdentity,
       };
@@ -110,13 +113,14 @@ export function getOpenClawAgents(): AgentInfo[] {
 }
 
 /**
- * Parse IDENTITY.md file for role, personality, mission
+ * Parse IDENTITY.md file for role, personality, mission, domain
  */
 function parseIdentityMd(content: string): AgentIdentity {
   let role = "general";
   let personality: string | null = null;
   let avatar: string | null = null;
   let mission: string | null = null;
+  let domain: string | null = null;
 
   const roleMatch = content.match(/(?:^|\n)\*?\*?Role:\*\*?\s*(.+?)(?:\n|$)/i);
   if (roleMatch) {
@@ -138,7 +142,12 @@ function parseIdentityMd(content: string): AgentIdentity {
     mission = missionMatch[1].trim();
   }
 
-  return { role, personality, avatar, mission };
+  const domainMatch = content.match(/(?:^|\n)\*?\*?Domain:\*\*?\s*(.+?)(?:\n|$)/i);
+  if (domainMatch) {
+    domain = domainMatch[1].trim();
+  }
+
+  return { role, personality, avatar, mission, domain };
 }
 
 /**
