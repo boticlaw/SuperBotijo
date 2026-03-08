@@ -148,8 +148,10 @@ export async function POST(request: NextRequest) {
       args.push("--at", escapeShellArg(at));
     }
 
-    if (timezone) {
-      args.push("--tz", escapeShellArg(timezone));
+    // Default timezone: Europe/Madrid
+    const tz = timezone || "Europe/Madrid";
+    if (tz) {
+      args.push("--tz", escapeShellArg(tz));
     }
 
     if (agentId) {

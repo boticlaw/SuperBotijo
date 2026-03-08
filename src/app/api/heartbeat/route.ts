@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
-import {
-  getAutonomySettings,
-  type AutonomySettings,
-} from "@/lib/autonomy-db";
 
 export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+
+export interface AgentHeartbeat {
+  agentId: string;
+  agentName: string;
+  workspace: string;
+  enabled: boolean;
+  every: string;
+  target: string;
+  activeHours: { start: string; end: string } | null;
+}
 
 export interface HeartbeatStatus {
   enabled: boolean;
@@ -18,18 +24,78 @@ export interface HeartbeatStatus {
   heartbeatMd: string;
   heartbeatMdPath: string;
   configured: boolean;
-  autonomy?: AutonomySettings;
+  agentHeartbeats: AgentHeartbeat[];
 }
 
-function getHeartbeatPaths(): string[] {
+/**
+ * Get all agents from openclaw.json with their workspace paths
+ */
+function getAllAgents(): { id: string; name: string; workspace: string; heartbeat?: Record<string, unknown> }[] {
+  const configPath = join(OPENCLAW_DIR, "openclaw.json");
+  
+  if (!existsSync(configPath)) {
+    return [];
+  }
+
+  try {
+    const raw = readFileSync(configPath, "utf-8");
+    const json = JSON.parse(raw);
+    const agentList = json.agents?.list || [];
+    
+    return agentList.map((agent: { id: string; name?: string; workspace?: string; heartbeat?: Record<string, unknown> }) => ({
+      id: agent.id,
+      name: agent.name || agent.id,
+      workspace: agent.workspace || join(OPENCLAW_DIR, "workspace"),
+      heartbeat: agent.heartbeat,
+    }));
+  } catch (e) {
+    console.error("[heartbeat] Error reading agents:", e);
+    return [];
+  }
+}
+
+/**
+ * Get agents that have heartbeat configured
+ */
+function getAgentHeartbeats(): AgentHeartbeat[] {
+  const agents = getAllAgents();
+  
+  return agents
+    .filter((agent) => agent.heartbeat)
+    .map((agent) => ({
+      agentId: agent.id,
+      agentName: agent.name,
+      workspace: agent.workspace,
+      enabled: !!(agent.heartbeat as Record<string, unknown>).every,
+      every: ((agent.heartbeat as Record<string, unknown>).every as string) || "30m",
+      target: ((agent.heartbeat as Record<string, unknown>).target as string) || "none",
+      activeHours: (agent.heartbeat as Record<string, unknown>).activeHours as { start: string; end: string } | null || null,
+    }));
+}
+
+/**
+ * Get HEARTBEAT.md path for a specific agent
+ */
+function getAgentHeartbeatPath(workspace: string): string {
+  return join(workspace, "HEARTBEAT.md");
+}
+
+/**
+ * Get default heartbeat paths (for main agent / backwards compatibility)
+ */
+function getDefaultHeartbeatPaths(): string[] {
   return [
     join(OPENCLAW_DIR, "workspace", "HEARTBEAT.md"),
     join(OPENCLAW_DIR, "HEARTBEAT.md"),
   ];
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get("agentId");
+
+    // Get default config
     let config = {
       enabled: false,
       every: "30m",
@@ -57,27 +123,46 @@ export async function GET() {
       }
     }
 
-    const paths = getHeartbeatPaths();
+    // Get agent heartbeats with workspace info
+    const agentHeartbeats = getAgentHeartbeats();
+
+    // Determine which HEARTBEAT.md to read
     let heartbeatMd = "";
     let heartbeatMdPath = "";
 
-    for (const p of paths) {
-      if (existsSync(p)) {
-        heartbeatMd = readFileSync(p, "utf-8");
-        heartbeatMdPath = p;
-        break;
+    if (agentId) {
+      // Find the specific agent
+      const agent = agentHeartbeats.find((a) => a.agentId === agentId);
+      if (agent) {
+        const path = getAgentHeartbeatPath(agent.workspace);
+        heartbeatMdPath = path;
+        if (existsSync(path)) {
+          heartbeatMd = readFileSync(path, "utf-8");
+        }
+      } else {
+        return NextResponse.json(
+          { error: `Agent "${agentId}" not found or has no heartbeat configured` },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Default: read from main workspace (backwards compatibility)
+      const paths = getDefaultHeartbeatPaths();
+      for (const p of paths) {
+        if (existsSync(p)) {
+          heartbeatMd = readFileSync(p, "utf-8");
+          heartbeatMdPath = p;
+          break;
+        }
       }
     }
-
-    // Get autonomy settings
-    const autonomy = getAutonomySettings();
 
     return NextResponse.json({
       ...config,
       heartbeatMd,
       heartbeatMdPath,
       configured: heartbeatMd.length > 0,
-      autonomy,
+      agentHeartbeats,
     });
   } catch (error) {
     console.error("[heartbeat] Error:", error);
@@ -91,7 +176,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { content } = body;
+    const { content, agentId } = body;
 
     if (typeof content !== "string") {
       return NextResponse.json(
@@ -107,8 +192,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const paths = getHeartbeatPaths();
-    const targetPath = paths.find((p) => existsSync(p)) || paths[0];
+    let targetPath: string;
+
+    if (agentId) {
+      // Find the specific agent's workspace
+      const agents = getAllAgents();
+      const agent = agents.find((a) => a.id === agentId);
+      
+      if (!agent) {
+        return NextResponse.json(
+          { error: `Agent "${agentId}" not found` },
+          { status: 404 }
+        );
+      }
+      
+      targetPath = getAgentHeartbeatPath(agent.workspace);
+    } else {
+      // Default: save to main workspace
+      const paths = getDefaultHeartbeatPaths();
+      targetPath = paths.find((p) => existsSync(p)) || paths[0];
+    }
 
     const dir = dirname(targetPath);
     if (!existsSync(dir)) {
@@ -120,6 +223,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       path: targetPath,
+      agentId: agentId || null,
       message: "HEARTBEAT.md saved successfully",
     });
   } catch (error) {

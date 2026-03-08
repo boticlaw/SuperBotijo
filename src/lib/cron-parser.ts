@@ -191,21 +191,21 @@ function matchesCron(date: Date, parts: CronParts): boolean {
  * @param expr - Cron expression (5 parts)
  * @param count - Number of next runs to calculate
  * @param fromDate - Starting date (defaults to now)
- * @param timezone - Timezone (defaults to UTC)
+ * @param timezone - Timezone (defaults to UTC) - NOTE: currently uses system timezone for evaluation
  * @returns Array of Date objects representing next run times
  */
 export function getNextRuns(
   expr: string,
   count: number = 3,
   fromDate: Date = new Date(),
-  timezone: string = 'UTC'
+  _timezone: string = "UTC" // Note: timezone param is accepted but currently uses system local time
 ): Date[] {
   const parts = parseCron(expr);
   if (!parts) return [];
 
   const runs: Date[] = [];
   const maxIterations = 525600; // Max 1 year of minutes
-  
+
   // Start from the next minute
   const current = new Date(fromDate);
   current.setSeconds(0);

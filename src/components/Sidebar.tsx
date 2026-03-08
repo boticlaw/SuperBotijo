@@ -54,7 +54,6 @@ const navGroups = [
       { href: "/kanban", label: "Kanban", icon: LayoutGrid },
       { href: "/projects", label: "Projects", icon: Briefcase },
       { href: "/journal", label: "Journal", icon: BookOpen },
-      { href: "/autonomy", label: "Autonomy", icon: Rocket },
     ],
   },
   {

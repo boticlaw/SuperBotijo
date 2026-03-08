@@ -177,7 +177,7 @@
   "cron": {
     "title": "Cron Manager",
     "subtitle": "Scheduled tasks from System, OpenClaw & Heartbeat",
-    "cards": "Cards",
+    "compact": "Compact",
     "timeline": "Timeline",
     "totalJobs": "Total Jobs",
     "active": "Active",
@@ -519,5 +519,26 @@
     "periodDay": "Today",
     "periodWeek": "Week",
     "periodMonth": "Month"
+  },
+  "heartbeat": {
+    "statusTitle": "Heartbeat Status",
+    "status": "Status",
+    "active": "✅ Active",
+    "notConfigured": "⚪ Not configured",
+    "interval": "Interval",
+    "every": "Every {interval}",
+    "target": "Target",
+    "activeHours": "Active Hours",
+    "viewDocs": "View Heartbeat Documentation",
+    "saving": "Saving...",
+    "agentHeartbeatsTitle": "Agent Heartbeats",
+    "editor": {
+      "title": "HEARTBEAT.md",
+      "preview": "Preview",
+      "edit": "Edit",
+      "noFile": "No HEARTBEAT.md file found. Create one to enable heartbeat checks.",
+      "useTemplate": "Use Template",
+      "saved": "Saved!"
+    }
   }
 }

@@ -13,6 +13,7 @@ import {
   Bot,
   Heart,
   Play,
+  Calendar,
 } from "lucide-react";
 import { CronJobCard, type CronJob } from "@/components/CronJobCard";
 import { CronWeeklyTimeline } from "@/components/CronWeeklyTimeline";
@@ -25,7 +26,7 @@ import { HeartbeatStatus } from "@/components/HeartbeatStatus";
 import type { SystemCronJob } from "@/app/api/cron/system/route";
 import { useI18n } from "@/i18n/provider";
 
-type ViewMode = "cards" | "timeline";
+type ViewMode = "compact" | "timeline";
 type CronTab = "all" | "system" | "openclaw" | "heartbeat";
 
 interface HeartbeatData {
@@ -46,8 +47,8 @@ export default function CronJobsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
-  const [activeTab, setActiveTab] = useState<CronTab>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("compact");
+  const [activeTab, setActiveTab] = useState<CronTab>("openclaw");
   const [runToast, setRunToast] = useState<{
     id: string;
     status: "success" | "error";
@@ -78,19 +79,28 @@ export default function CronJobsPage() {
 
       if (openclawRes.ok) {
         const data = await openclawRes.json();
+        console.log("[cron] OpenClaw jobs loaded:", Array.isArray(data) ? data.length : 0);
         setJobs(Array.isArray(data) ? data : []);
+      } else {
+        console.error("[cron] Failed to load OpenClaw jobs:", openclawRes.status, await openclawRes.text());
       }
 
       if (systemRes.ok) {
         const data = await systemRes.json();
+        console.log("[cron] System jobs loaded:", data.jobs?.length || 0);
         setSystemJobs(data.jobs || []);
+      } else {
+        console.error("[cron] Failed to load system jobs:", systemRes.status);
       }
 
       if (heartbeatRes.ok) {
         const data = await heartbeatRes.json();
         setHeartbeat(data);
+      } else {
+        console.error("[cron] Failed to load heartbeat:", heartbeatRes.status);
       }
     } catch (err) {
+      console.error("[cron] Error fetching data:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
@@ -244,11 +254,11 @@ export default function CronJobsPage() {
     }
   };
 
-  const handleHeartbeatSave = async (content: string) => {
+  const handleHeartbeatSave = async (content: string, agentId?: string) => {
     const res = await fetch("/api/heartbeat", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, agentId }),
     });
 
     if (!res.ok) {
@@ -312,95 +322,30 @@ export default function CronJobsPage() {
       );
     }
 
-    const showSystem =
-      activeTab === "all" || activeTab === "system";
-    const showOpenclaw =
-      activeTab === "all" || activeTab === "openclaw";
+    const showSystem = activeTab === "all" || activeTab === "system";
+    const showOpenclaw = activeTab === "all" || activeTab === "openclaw";
 
+    // Vista compacta (default): solo lo esencial
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
         {showSystem &&
           systemJobs.map((job) => (
-            <div key={job.id} style={{ position: "relative" }}>
-              <SystemCronCard
-                job={job}
-                onRun={handleSystemRun}
-                onViewLogs={handleViewLogs}
-              />
-            </div>
+            <CompactSystemCronCard
+              key={job.id}
+              job={job}
+              onRun={handleSystemRun}
+            />
           ))}
 
         {showOpenclaw &&
           jobs.map((job) => (
-            <div key={job.id} style={{ position: "relative" }}>
-              <CronJobCard
-                job={job}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRun={handleRun}
-              />
-              {deleteConfirm === job.id && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    backgroundColor: "rgba(12, 12, 12, 0.9)",
-                    borderRadius: "0.75rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backdropFilter: "blur(4px)",
-                    zIndex: 10,
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    <p
-                      style={{
-                        color: "var(--text-primary)",
-                        marginBottom: "1rem",
-                      }}
-                    >
-                      {t("cron.confirmDelete", { name: job.name })}
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                      }}
-                    >
-                      <button
-                        onClick={() => setDeleteConfirm(null)}
-                        style={{
-                          padding: "0.5rem 1rem",
-                          color: "var(--text-secondary)",
-                          background: "none",
-                          border: "none",
-                          borderRadius: "0.5rem",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {t("common.cancel")}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(job.id)}
-                        style={{
-                          padding: "0.5rem 1rem",
-                          backgroundColor: "var(--error)",
-                          color: "var(--text-primary)",
-                          border: "none",
-                          borderRadius: "0.5rem",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {t("common.delete")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CompactCronJobCard
+              key={job.id}
+              job={job}
+              onToggle={handleToggle}
+              onEdit={handleEdit}
+              onRun={handleRun}
+            />
           ))}
       </div>
     );
@@ -808,7 +753,7 @@ export default function CronJobsPage() {
             }}
           >
             <button
-              onClick={() => setViewMode("cards")}
+              onClick={() => setViewMode("compact")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -818,16 +763,16 @@ export default function CronJobsPage() {
                 fontSize: "0.8rem",
                 fontWeight: 600,
                 backgroundColor:
-                  viewMode === "cards" ? "var(--accent)" : "transparent",
+                  viewMode === "compact" ? "var(--accent)" : "transparent",
                 color:
-                  viewMode === "cards" ? "white" : "var(--text-secondary)",
+                  viewMode === "compact" ? "white" : "var(--text-secondary)",
                 border: "none",
                 cursor: "pointer",
                 transition: "all 0.15s",
               }}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              {t("cron.cards")}
+              {t("cron.compact")}
             </button>
             <button
               onClick={() => setViewMode("timeline")}
@@ -1023,6 +968,228 @@ export default function CronJobsPage() {
           }
         }
       `}</style>
+    </div>
+  );
+}
+
+// ============================================
+// Componentes de Tarjetas Compactas
+// ============================================
+
+const AGENT_EMOJI: Record<string, string> = {
+  main: "🫙",
+  academic: "🎓",
+  infra: "🔧",
+  studio: "🎬",
+  social: "📱",
+  linkedin: "💼",
+  freelance: "🔧",
+};
+
+function CompactCronJobCard({
+  job,
+  onToggle,
+  onEdit,
+  onRun,
+}: {
+  job: CronJob;
+  onToggle: (id: string, enabled: boolean) => void;
+  onEdit: (job: CronJob) => void;
+  onRun?: (id: string) => Promise<void>;
+}) {
+  const agentEmoji = AGENT_EMOJI[job.agentId] || "🤖";
+
+  const formatNextRun = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (diff < 0) return "now";
+    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `${minutes}m`;
+    return "soon";
+  };
+
+  return (
+    <div
+      onClick={() => onEdit(job)}
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "0.5rem",
+        backgroundColor: job.enabled ? "var(--card)" : "color-mix(in srgb, var(--card) 50%, var(--card-elevated))",
+        opacity: job.enabled ? 1 : 0.6,
+        cursor: "pointer",
+        transition: "all 0.15s",
+        padding: "0.5rem 0.625rem",
+      }}
+      className="hover:border-accent"
+    >
+      {/* Header: emoji + nombre + estado */}
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-sm">{agentEmoji}</span>
+        <span
+          className="text-xs font-medium truncate flex-1"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {job.name}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(job.id, !job.enabled);
+          }}
+          style={{
+            padding: "0.125rem 0.375rem",
+            fontSize: "0.6rem",
+            fontWeight: 600,
+            borderRadius: "0.25rem",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: job.enabled
+              ? "color-mix(in srgb, var(--success) 20%, transparent)"
+              : "rgba(42, 42, 42, 0.5)",
+            color: job.enabled ? "var(--success)" : "var(--text-muted)",
+          }}
+        >
+          {job.enabled ? "ON" : "OFF"}
+        </button>
+      </div>
+
+      {/* Schedule */}
+      <div className="flex items-center gap-1 mb-1">
+        <Clock className="w-3 h-3" style={{ color: "var(--info)" }} />
+        <code
+          className="text-[0.6rem] px-1 py-0.25 rounded"
+          style={{
+            backgroundColor: "rgba(42, 42, 42, 0.5)",
+            color: "var(--text-secondary)",
+            fontFamily: "monospace",
+          }}
+        >
+          {job.scheduleDisplay}
+        </code>
+      </div>
+
+      {/* Next run */}
+      {job.enabled && job.nextRun && (
+        <div className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" style={{ color: "var(--type-cron)" }} />
+          <span className="text-[0.65rem]" style={{ color: "var(--text-muted)" }}>
+            {formatNextRun(job.nextRun)}
+          </span>
+        </div>
+      )}
+
+      {/* Run button */}
+      {onRun && job.enabled && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRun(job.id);
+          }}
+          className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 px-2 rounded text-[0.65rem] font-medium"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
+            color: "var(--accent)",
+            border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+            cursor: "pointer",
+          }}
+        >
+          <Play className="w-3 h-3" />
+          Run
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CompactSystemCronCard({
+  job,
+  onRun,
+}: {
+  job: SystemCronJob;
+  onRun: (id: string) => Promise<void>;
+}) {
+  return (
+    <div
+      style={{
+        border: "1px solid color-mix(in srgb, var(--info) 30%, var(--border))",
+        borderRadius: "0.5rem",
+        backgroundColor: "color-mix(in srgb, var(--info) 5%, var(--card))",
+        cursor: "pointer",
+        transition: "all 0.15s",
+        padding: "0.5rem 0.625rem",
+      }}
+      className="hover:border-info"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-sm">🖥️</span>
+        <span
+          className="text-xs font-medium truncate flex-1"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {job.name}
+        </span>
+        <span
+          className="text-[0.55rem] px-1 py-0.25 rounded"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--info) 20%, transparent)",
+            color: "var(--info)",
+            fontWeight: 600,
+          }}
+        >
+          SYS
+        </span>
+      </div>
+
+      {/* Schedule */}
+      <div className="flex items-center gap-1 mb-1">
+        <Clock className="w-3 h-3" style={{ color: "var(--info)" }} />
+        <code
+          className="text-[0.6rem] px-1 py-0.25 rounded"
+          style={{
+            backgroundColor: "var(--card-elevated)",
+            color: "var(--text-secondary)",
+            fontFamily: "monospace",
+          }}
+        >
+          {job.scheduleDisplay}
+        </code>
+      </div>
+
+      {/* Command preview */}
+      <div className="flex items-center gap-1 mb-1">
+        <span
+          className="text-[0.6rem] truncate"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {job.command.split(" ")[0]}
+        </span>
+      </div>
+
+      {/* Run button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRun(job.id);
+        }}
+        className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 px-2 rounded text-[0.65rem] font-medium"
+        style={{
+          backgroundColor: "var(--info)",
+          color: "#000",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        <Play className="w-3 h-3" />
+        Run
+      </button>
     </div>
   );
 }

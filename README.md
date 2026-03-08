@@ -61,7 +61,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | Feature | Description |
 |---------|-------------|
 | **Cron Manager** | OpenClaw + system cron jobs with weekly timeline |
-| **Heartbeat** | Configure HEARTBEAT.md and active hours |
+| **Heartbeat** | Per-agent heartbeat config (interval, target) + HEARTBEAT.md editor |
 
 ### 🏢 3D Visualization
 
@@ -125,7 +125,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 ├─────────────────────────────────────────────────────────────┤
 │                    Next.js 16 App Router                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  17 Pages   │  │ 103 APIs    │  │    Auth Middleware   │  │
+│  │  20 Pages   │  │ 102 APIs    │  │    Auth Middleware   │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Data Sources                            │
@@ -303,10 +303,10 @@ superbotijo/
 ├── src/
 │   ├── app/
 │   │   ├── (dashboard)/     # 17 dashboard pages
-│   │   ├── api/             # 103 API endpoints
+│   │   ├── api/             # 102 API endpoints
 │   │   ├── login/           # Login page
 │   │   └── office/          # 3D office (public)
-│   ├── components/          # ~100 React components
+│   ├── components/          # ~117 React components
 │   │   ├── SuperBotijo/     # OS-style UI shell
 │   │   ├── Office3D/        # 3D office scene
 │   │   ├── charts/          # Recharts wrappers
@@ -368,7 +368,7 @@ superbotijo/
 | **Kanban** | 8 | CRUD, columns, move tasks, task dependencies, blocked/waiting states |
 | **Kanban Agent API** | 5 | Agent task creation, claim, update, delete |
 | **OpenClaw Agents** | 2 | GET agents, POST sync to projects |
-| Other | 30+ | Weather, git, logs, notifications, etc. |
+| Other | 27 | Weather, git, logs, notifications, etc. |
 
 **See [ARCHITECTURE.md](./ARCHITECTURE.md#api-reference) for complete API documentation.**
 

@@ -119,7 +119,7 @@
   "cron": {
     "title": "Gestor de Tareas",
     "subtitle": "Tareas programadas del Sistema, OpenClaw y Heartbeat",
-    "cards": "Tarjetas",
+    "compact": "Compacto",
     "timeline": "Línea de tiempo",
     "totalJobs": "Total de tareas",
     "active": "Activas",
@@ -130,7 +130,7 @@
     "all": "Todas",
     "systemJobs": "Tareas del sistema",
     "agentJobs": "Tareas del agente",
-    "heartbeat": "Heartbeat",
+    "heartbeat": "Latido",
     "scheduleOverview": "Vista de 7 días",
     "triggered": "activada",
     "failedToTrigger": "Error al activar",
@@ -438,5 +438,26 @@
     "periodDay": "Hoy",
     "periodWeek": "Semana",
     "periodMonth": "Mes"
+  },
+  "heartbeat": {
+    "statusTitle": "Estado del Latido",
+    "status": "Estado",
+    "active": "✅ Activo",
+    "notConfigured": "⚪ No configurado",
+    "interval": "Intervalo",
+    "every": "Cada {interval}",
+    "target": "Objetivo",
+    "activeHours": "Horas activas",
+    "viewDocs": "Ver documentación de Latido",
+    "saving": "Guardando...",
+    "agentHeartbeatsTitle": "Heartbeats por Agente",
+    "editor": {
+      "title": "HEARTBEAT.md",
+      "preview": "Vista previa",
+      "edit": "Editar",
+      "noFile": "No se encontró archivo HEARTBEAT.md. Creá uno para habilitar los chequeos de latido.",
+      "useTemplate": "Usar Plantilla",
+      "saved": "¡Guardado!"
+    }
   }
 }

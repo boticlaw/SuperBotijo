@@ -34,6 +34,7 @@ export const HARDCODED_DEFAULTS: Record<string, AgentDefaults> = {
   superbotijo: { emoji: "🫙", color: "#6366f1", department: "INFRASTRUCTURE" },
   extractor: { emoji: "📄", color: "#ef4444", department: "DATA_EXTRACTION" },
   code: { emoji: "💻", color: "#06b6d4", department: "DEVELOPMENT" },
+  scout: { emoji: "🔍", color: "#f97316", department: "DATA_EXTRACTION" },
 };
 
 // Emoji suggestions based on keywords in agent name

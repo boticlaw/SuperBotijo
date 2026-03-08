@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listTasks } from "@/lib/kanban-db";
-import { getAutonomySettings } from "@/lib/autonomy-db";
 import { resolveDependencies, type ResolvedTask } from "@/lib/dependency-resolver";
 
 export const dynamic = "force-dynamic";
@@ -20,37 +19,33 @@ interface TaskResponse {
 /**
  * GET /api/heartbeat/tasks
  * Returns tasks assigned to the agent with status 'in_progress'
- * Requires agentName in query params or uses autonomy settings
+ * Requires agentName in query params
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const agentName = searchParams.get("agentName");
 
-    // Get agent name from settings if not provided
-    const settings = getAutonomySettings();
-    const effectiveAgentName = agentName || settings.agentName;
-
-    if (!effectiveAgentName) {
+    if (!agentName) {
       // Return empty tasks list instead of error - page should still render
       return NextResponse.json({
         agentName: null,
         count: 0,
         tasks: [],
-        message: "No agent name configured. Set agentName in autonomy settings.",
+        message: "No agent name provided. Use ?agentName=xxx",
       });
     }
 
     // Get tasks where assignee = agentName AND status = 'in_progress'
     const tasks = listTasks({
-      assignee: effectiveAgentName,
+      assignee: agentName as string,
       status: "in_progress",
     });
 
     // Filter out tasks claimed by other agents
     const availableTasks = tasks.filter((task) => {
       if (!task.claimedBy) return true;
-      return task.claimedBy === effectiveAgentName;
+      return task.claimedBy === agentName;
     });
 
     // Resolve dependencies to compute executability
@@ -70,7 +65,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({
-      agentName: effectiveAgentName,
+      agentName,
       count: response.length,
       tasks: response,
     });
