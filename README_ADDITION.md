@@ -1,5 +1,55 @@
 # Activity Sync & Service Configuration (Optional)
 
+## Heartbeat Setup for Autonomous Agents
+
+SuperBotijo supports **heartbeat-driven task polling** for OpenClaw agents. This enables agents to autonomously check for new or updated tasks on the Kanban board - similar to how Vikunja or other task queue systems work.
+
+### What It Does
+
+When heartbeat is configured:
+1. Agent periodically polls `GET /api/heartbeat/tasks?agentName=<id>`
+2. API returns tasks assigned to the agent with `status="in_progress"`
+3. Agent claims unclaimed tasks and processes them
+4. Agent updates task status as work progresses
+
+### Quick Setup
+
+**1. Configure heartbeat in openclaw.json:**
+```json
+{
+  "agents": {
+    "list": [{
+      "id": "developer",
+      "heartbeat": { "every": "15m", "target": "none" },
+      "skills": ["kanban-tasks"]
+    }]
+  }
+}
+```
+
+**2. Create HEARTBEAT.md in agent workspace:**
+```markdown
+# HEARTBEAT.md
+
+## Every 15 minutes:
+
+1. GET /api/heartbeat/tasks?agentName=developer
+2. Claim and process assigned tasks
+3. Update status: PATCH /api/kanban/tasks/{id}
+
+If no tasks: HEARTBEAT_OK
+```
+
+**3. Generate API keys and configure:**
+```bash
+# In .env.local
+KANBAN_AGENT_KEYS=developer:sk-developer-secret-2026,...
+```
+
+📖 **Complete guide with role-based templates:** [docs/HEARTBEAT-SETUP.md](./docs/HEARTBEAT-SETUP.md)
+
+---
+
 ## Activity Sync
 
 The Activities dashboard shows real-time agent activity. By default, it's empty because SuperBotijo uses its own database. To populate it with real OpenClaw message data:

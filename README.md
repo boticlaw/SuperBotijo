@@ -16,6 +16,8 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | [AGENTS.md](./AGENTS.md) | AI coding agent instructions |
 | [docs/COST-TRACKING.md](./docs/COST-TRACKING.md) | Cost tracking guide |
 | [docs/agent-integration.md](./docs/agent-integration.md) | Agent Kanban API setup |
+| [docs/HEARTBEAT-SETUP.md](./docs/HEARTBEAT-SETUP.md) | **Heartbeat setup for autonomous agents** |
+| [docs/CRON-SYSTEMS.md](./docs/CRON-SYSTEMS.md) | Cron vs Heartbeat decision guide |
 
 ---
 
@@ -511,7 +513,7 @@ echo -e "*Role:* <Your Role>\n*Domain:* <work|general|finance|personal>\n*agent-
 
 **Step 3: Configure SuperBotijo**
 ```bash
-# Add to superbotijo/.env
+# Add to superbotijo/.env.local
 KANBAN_AGENT_KEYS=<agent-id>:sk-<agent-id>-secret-2026,...
 ```
 
@@ -539,6 +541,52 @@ curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
 ```
 
 📖 **Full documentation:** [docs/agent-integration.md](./docs/agent-integration.md)
+
+---
+
+## 💓 Heartbeat: Autonomous Task Polling
+
+Agents can autonomously poll for tasks from the Kanban board - similar to how Vikunja or task queue systems work.
+
+### How It Works
+
+1. Agent configures `heartbeat` in `openclaw.json` with polling interval
+2. Agent creates `HEARTBEAT.md` with instructions on what to do
+3. When heartbeat fires, agent calls `GET /api/heartbeat/tasks?agentName=<id>`
+4. Agent claims and processes assigned tasks
+5. Agent updates task status as work progresses
+
+### Quick Setup
+
+**Step 1: Configure heartbeat in openclaw.json**
+```json
+{
+  "agents": {
+    "list": [{
+      "id": "boti",
+      "heartbeat": { "every": "15m", "target": "none" },
+      "skills": ["kanban-tasks"]
+    }]
+  }
+}
+```
+
+**Step 2: Create HEARTBEAT.md**
+```markdown
+# HEARTBEAT.md
+
+## Every 15 minutes, execute:
+
+1. Check assigned tasks: GET /api/heartbeat/tasks?agentName=boti
+2. For each task with status="in_progress" and assignee="boti":
+   - If claimedBy === null → CLAIM and process
+   - If claimedBy === "boti" → continue processing
+3. On completion: PATCH /api/kanban/tasks/{id} with status: "done"
+
+If no tasks: respond with HEARTBEAT_OK
+```
+
+📖 **Complete guide with templates:** [docs/HEARTBEAT-SETUP.md](./docs/HEARTBEAT-SETUP.md)
 
 ---
 
