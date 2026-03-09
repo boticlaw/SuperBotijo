@@ -343,16 +343,16 @@ export default function SystemMonitorPage() {
           <div className="p-6 rounded-xl" style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
               <Server className="w-5 h-5" style={{ color: "var(--accent)" }} />
-              Services ({activeServices}/{systemData.systemd.length} active)
+              {t("system.services")} ({activeServices}/{systemData.systemd.length} {t("system.activeStatus").toLowerCase()})
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Service</th>
-                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Description</th>
-                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Status</th>
-                    <th className="text-right py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Actions</th>
+                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("system.service")}</th>
+                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("system.description")}</th>
+                    <th className="text-left py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("system.status")}</th>
+                    <th className="text-right py-2 px-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("system.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -372,10 +372,10 @@ export default function SystemMonitorPage() {
                             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{svc.description || "—"}</span>
                             {svc.uptime != null && svc.status === "active" && (
                               <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                up {formatUptime(svc.uptime)}
-                                {svc.restarts != null && svc.restarts > 0 && ` · ${svc.restarts} restarts`}
+                                {t("system.up")} {formatUptime(svc.uptime)}
+                                {svc.restarts != null && svc.restarts > 0 && ` · ${svc.restarts} ${t("system.restarts")}`}
                                 {svc.mem != null && ` · ${formatBytes(svc.mem)}`}
-                                {svc.cpu != null && ` · ${svc.cpu.toFixed(1)}% CPU`}
+                                {svc.cpu != null && ` · ${svc.cpu.toFixed(1)}% ${t("system.cpuLabel")}`}
                               </span>
                             )}
                           </div>
@@ -404,7 +404,7 @@ export default function SystemMonitorPage() {
                                   svc.status === "failed" ? "var(--error)" : "var(--text-muted)",
                               }}
                             >
-                              {svc.status === "not_deployed" ? "not deployed" : svc.status}
+                              {svc.status === "not_deployed" ? t("system.notDeployed") : svc.status}
                             </span>
                             {svc.backend && svc.backend !== "none" && (
                               <span
@@ -481,19 +481,19 @@ export default function SystemMonitorPage() {
                   <Wifi className="w-5 h-5" style={{ color: systemData.tailscale.active ? "var(--success)" : "var(--error)" }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Tailscale VPN</h3>
+                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.tailscaleVpn")}</h3>
                   <p className="text-sm" style={{ color: systemData.tailscale.active ? "var(--success)" : "var(--error)" }}>
-                    {systemData.tailscale.active ? "Active" : "Inactive"}
+                    {systemData.tailscale.active ? t("system.activeStatus") : t("system.inactiveStatus")}
                   </p>
                 </div>
               </div>
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: "var(--text-secondary)" }}>This server</span>
+                  <span style={{ color: "var(--text-secondary)" }}>{t("system.thisServer")}</span>
                   <span className="font-mono" style={{ color: "var(--text-primary)" }}>{systemData.tailscale.ip}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: "var(--text-secondary)" }}>Devices connected</span>
+                  <span style={{ color: "var(--text-secondary)" }}>{t("system.devicesConnected")}</span>
                   <span style={{ color: "var(--text-primary)" }}>{systemData.tailscale.devices.length}</span>
                 </div>
               </div>
@@ -523,9 +523,9 @@ export default function SystemMonitorPage() {
                   <ShieldCheck className="w-5 h-5" style={{ color: systemData.firewall.active ? "var(--success)" : "var(--error)" }} />
                 </div>
                 <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Firewall (UFW)</h3>
+                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("system.firewall")}</h3>
                   <p className="text-sm" style={{ color: systemData.firewall.active ? "var(--success)" : "var(--error)" }}>
-                    {systemData.firewall.active ? "Active" : "Inactive"}
+                    {systemData.firewall.active ? t("system.activeStatus") : t("system.inactiveStatus")}
                   </p>
                 </div>
               </div>
@@ -580,7 +580,7 @@ export default function SystemMonitorPage() {
             }}>
               <Terminal className="w-4 h-4" style={{ color: "var(--accent)" }} />
               <span style={{ color: "#c9d1d9", fontFamily: "monospace", fontSize: "0.9rem" }}>
-                {logsModal.name} logs
+                {logsModal.name} {t("system.logs")}
               </span>
               <span style={{ fontSize: "0.75rem", color: "#8b949e", marginLeft: "0.5rem" }}>
                 ({logsModal.backend})
@@ -605,7 +605,7 @@ export default function SystemMonitorPage() {
                   color: "#c9d1d9", whiteSpace: "pre-wrap", wordBreak: "break-all",
                   lineHeight: 1.6,
                 }}>
-                  {logsModal.content || "No log output"}
+                  {logsModal.content || t("system.noLogOutput")}
                 </pre>
               )}
             </div>
