@@ -15,6 +15,7 @@
     "docs:check:staged": "npx tsx scripts/check-docs-sync.ts --staged",
     "docs:check:changed": "npx tsx scripts/check-docs-sync.ts --changed",
     "docs:init": "npx tsx scripts/init-docs-i18n.ts",
+    "docs:translate": "npx tsx scripts/translate-docs.ts",
     "prepare": "husky"
   },
   "dependencies": {

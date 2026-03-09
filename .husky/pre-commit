@@ -1,9 +1,22 @@
 #!/usr/bin/env sh
 
-# Documentation i18n sync check
+# Documentation i18n auto-translate
 echo ""
-echo "📚 Checking documentation sync..."
-npm run docs:check:staged
+echo "📚 Checking and translating documentation..."
 
-# If the check fails, the script exits with error code
-# and the commit is blocked
+# Check if TRANSLATE_API_KEY is set
+if [ -n "$TRANSLATE_API_KEY" ]; then
+  echo "🔑 API key found, auto-translating..."
+  npm run docs:translate -- --staged 2>/dev/null
+  
+  # Add any translated files to staging
+  git add README.*.md 2>/dev/null
+else
+  echo "⚠️  TRANSLATE_API_KEY not set, skipping auto-translate"
+  echo "   Set it to enable automatic translation:"
+  echo "   export TRANSLATE_API_KEY=your-api-key"
+  echo ""
+  
+  # Just check sync status
+  npm run docs:check:staged
+fi
