@@ -33,5 +33,5 @@ export const BRANDING = {
 
 // Helper to get full agent display name
 export function getAgentDisplayName(): string {
-  return `${BRANDING.agentName} ${BRANDING.agentEmoji}`;
+  return BRANDING.agentName;
 }

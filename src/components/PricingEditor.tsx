@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, RotateCcw, Save, Check, X, RefreshCw, Loader2 } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 interface ModelPricingEntry {
   id: string;
@@ -106,9 +107,10 @@ interface ModelCardProps {
   model: ModelPricingEntry;
   localChanges: LocalChanges[string];
   onChange: (field: string, value: number) => void;
+  t: (key: string) => string;
 }
 
-function ModelCard({ model, localChanges, onChange }: ModelCardProps) {
+function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
   const hasCache = model.cacheReadPricePerMillion !== undefined || model.cacheWritePricePerMillion !== undefined;
   const currentInput = localChanges?.inputPricePerMillion ?? model.inputPricePerMillion;
   const currentOutput = localChanges?.outputPricePerMillion ?? model.outputPricePerMillion;
@@ -147,20 +149,20 @@ function ModelCard({ model, localChanges, onChange }: ModelCardProps) {
           )}
         </div>
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {(model.contextWindow / 1000).toFixed(0)}k context
+          {(model.contextWindow / 1000).toFixed(0)}k {t("pricing.context")}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <PriceInput
-          label="Input Price (per 1M tokens)"
+          label={t("pricing.inputPrice")}
           value={currentInput}
           defaultValue={model.defaults?.inputPricePerMillion}
           onChange={(v) => onChange("inputPricePerMillion", v)}
           hasOverride={model.isCustomized || hasLocalChanges}
         />
         <PriceInput
-          label="Output Price (per 1M tokens)"
+          label={t("pricing.outputPrice")}
           value={currentOutput}
           defaultValue={model.defaults?.outputPricePerMillion}
           onChange={(v) => onChange("outputPricePerMillion", v)}
@@ -172,7 +174,7 @@ function ModelCard({ model, localChanges, onChange }: ModelCardProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
           {model.cacheReadPricePerMillion !== undefined && (
             <PriceInput
-              label="Cache Read Price (per 1M tokens)"
+              label={t("pricing.cacheReadPrice")}
               value={currentCacheRead ?? 0}
               defaultValue={model.defaults?.cacheReadPricePerMillion}
               onChange={(v) => onChange("cacheReadPricePerMillion", v)}
@@ -181,7 +183,7 @@ function ModelCard({ model, localChanges, onChange }: ModelCardProps) {
           )}
           {model.cacheWritePricePerMillion !== undefined && (
             <PriceInput
-              label="Cache Write Price (per 1M tokens)"
+              label={t("pricing.cacheWritePrice")}
               value={currentCacheWrite ?? 0}
               defaultValue={model.defaults?.cacheWritePricePerMillion}
               onChange={(v) => onChange("cacheWritePricePerMillion", v)}
@@ -246,6 +248,7 @@ function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, isLoading 
 }
 
 export function PricingEditor() {
+  const { t } = useI18n();
   const [pricing, setPricing] = useState<PricingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -261,7 +264,7 @@ export function PricingEditor() {
       setPricing(data);
     } catch (error) {
       console.error("Failed to fetch pricing:", error);
-      showToast("error", "Failed to load pricing data");
+      showToast("error", t("pricing.loadError"));
     } finally {
       setLoading(false);
     }
@@ -315,11 +318,11 @@ export function PricingEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", "Pricing saved successfully");
+      showToast("success", t("pricing.saved"));
       fetchPricing();
     } catch (error) {
       console.error("Failed to save pricing:", error);
-      showToast("error", error instanceof Error ? error.message : "Failed to save pricing");
+      showToast("error", t("pricing.saveError"));
     } finally {
       setSaving(false);
     }
@@ -336,11 +339,11 @@ export function PricingEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", "All pricing overrides reset to defaults");
+      showToast("success", t("pricing.resetSuccess"));
       fetchPricing();
     } catch (error) {
       console.error("Failed to reset pricing:", error);
-      showToast("error", error instanceof Error ? error.message : "Failed to reset pricing");
+      showToast("error", t("pricing.resetError"));
     } finally {
       setResetting(false);
       setShowResetDialog(false);
@@ -349,7 +352,7 @@ export function PricingEditor() {
 
   const handleDiscard = () => {
     setLocalChanges({});
-    showToast("success", "Changes discarded");
+    showToast("success", t("pricing.discardSuccess"));
   };
 
   if (loading) return <PricingSkeleton />;
@@ -400,10 +403,9 @@ export function PricingEditor() {
       >
         <DollarSign className="w-5 h-5 text-info mt-0.5 flex-shrink-0" />
         <div>
-          <p className="font-medium text-info">Model Pricing Configuration</p>
+          <p className="font-medium text-info">{t("pricing.title")}</p>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            Customize pricing per model. Changes affect cost calculations in the dashboard.
-            {customizedCount > 0 && ` ${customizedCount} model${customizedCount > 1 ? "s" : ""} currently customized.`}
+            {t("pricing.description")}
           </p>
         </div>
       </div>
@@ -414,6 +416,7 @@ export function PricingEditor() {
           model={model}
           localChanges={localChanges[model.id]}
           onChange={(field, value) => handleChange(model.id, field, value)}
+          t={t}
         />
       ))}
 
@@ -427,7 +430,7 @@ export function PricingEditor() {
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? t("pricing.saving") : t("pricing.saveChanges")}
         </button>
 
         <button
@@ -441,7 +444,7 @@ export function PricingEditor() {
           }}
         >
           {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-          Reset All to Defaults
+          {t("pricing.resetAll")}
         </button>
 
         {hasChanges && (

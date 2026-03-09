@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 interface ConfigSection {
   editable: boolean;
@@ -77,6 +78,7 @@ interface ConfigSectionCardProps {
   onToggle: () => void;
   localChanges: Record<string, unknown>;
   onChange: (path: string, value: unknown) => void;
+  t: (key: string) => string;
 }
 
 function ConfigSectionCard({
@@ -86,6 +88,7 @@ function ConfigSectionCard({
   onToggle,
   localChanges,
   onChange,
+  t,
 }: ConfigSectionCardProps) {
   const mergedData = { ...section.data, ...localChanges };
 
@@ -114,7 +117,7 @@ function ConfigSectionCard({
           )}
         </div>
         <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-          {section.editable ? "Editable" : "Read-only"}
+          {section.editable ? t("config.editable") : t("config.readOnly")}
         </span>
       </button>
 
@@ -288,6 +291,7 @@ function ConfigDataViewer({ data, editable, path, onChange, depth = 0 }: ConfigD
 }
 
 export function ConfigEditor() {
+  const { t } = useI18n();
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -482,9 +486,9 @@ export function ConfigEditor() {
       >
         <AlertTriangle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
         <div>
-          <p className="font-medium text-warning">Be careful when editing configuration</p>
+          <p className="font-medium text-warning">{t("config.warningTitle")}</p>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            Changes may affect how OpenClaw works. A backup is created automatically before each save.
+            {t("config.warningDescription")}
           </p>
         </div>
       </div>
@@ -510,6 +514,7 @@ export function ConfigEditor() {
           onToggle={() => toggleSection(key)}
           localChanges={localChanges[key] || {}}
           onChange={handleChange}
+          t={t}
         />
       ))}
 
@@ -523,7 +528,7 @@ export function ConfigEditor() {
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-success transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? t("config.saving") : t("config.saveChanges")}
         </button>
 
         <button
@@ -541,7 +546,7 @@ export function ConfigEditor() {
           ) : (
             <RotateCcw className="w-4 h-4" />
           )}
-          {restoring ? "Restoring..." : "Restore Backup"}
+          {restoring ? t("config.saving") : t("config.restoreBackup")}
         </button>
 
         {hasChanges && (

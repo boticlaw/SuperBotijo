@@ -25,7 +25,6 @@ import {
   GitFork,
   SquareTerminal,
   Bot,
-  Beaker,
   GitBranch,
   Calendar,
   Bell,
@@ -77,7 +76,6 @@ const navGroups = [
   {
     title: "Tools",
     items: [
-      { href: "/playground", label: "Playground", icon: Beaker },
       { href: "/terminal", label: "Terminal", icon: SquareTerminal },
       { href: "/git", label: "Git", icon: GitFork },
     ],

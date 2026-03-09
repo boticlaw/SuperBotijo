@@ -15,7 +15,6 @@ import {
   Bell,
   BarChart3,
   FileBarChart,
-  Beaker,
   SquareTerminal,
   GitFork,
   Server,
@@ -137,14 +136,6 @@ export const NAV_COMMANDS: Command[] = [
   },
 
   // Tools
-  {
-    id: "nav-playground",
-    label: "Playground",
-    icon: Beaker,
-    href: "/playground",
-    group: "Tools",
-    keywords: ["test", "pruebas", "experiment"],
-  },
   {
     id: "nav-terminal",
     label: "Terminal",

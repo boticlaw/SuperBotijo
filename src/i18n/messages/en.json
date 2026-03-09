@@ -303,7 +303,34 @@
   },
   "about": {
     "title": "About",
-    "description": "Learn more about your AI assistant"
+    "description": "Learn more about your AI assistant",
+    "online": "Online",
+    "born": "Born",
+    "uptime": "uptime",
+    "activities": "activities",
+    "successRate": "success rate",
+    "skills": "skills",
+    "aboutSection": "About",
+    "aboutText1": "I am {name}, an AI agent running on {openclaw} with {model} as my brain.",
+    "aboutText2": "My purpose is to assist {owner} with daily tasks: managing communications, scheduling, research, file management, and acting as a digital co-pilot.",
+    "personality": "Personality",
+    "capabilities": "Capabilities ({count} skills)",
+    "noSkills": "No skills configured. Add skills to your workspace to see them here.",
+    "philosophy": "Working Philosophy",
+    "builtWith": "Built with {heart} on {link}",
+    "builtWithSimple": "Built with ♥ on",
+    "coPilot": "Your AI co-pilot"
+  },
+  "systemInfo": {
+    "title": "System Information",
+    "agentName": "Agent Name",
+    "uptime": "Uptime",
+    "nodeVersion": "Node.js Version",
+    "currentModel": "Current Model",
+    "workspace": "Workspace",
+    "memory": "Memory",
+    "free": "free",
+    "provider": "provider"
   },
   "system": {
     "title": "System Monitor",
