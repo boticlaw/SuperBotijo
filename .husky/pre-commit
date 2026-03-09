@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Documentation i18n sync check
+echo ""
+echo "📚 Checking documentation sync..."
+npm run docs:check:staged
+
+# If the check fails, the script exits with error code
+# and the commit is blocked

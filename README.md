@@ -1,5 +1,8 @@
 # SuperBotijo — OpenClaw Dashboard
 
+[![English](https://img.shields.io/badge/lang-English-blue)](README.md)
+[![Español](https://img.shields.io/badge/lang-Español-red)](README.es.md)
+
 > **Based on [TenecitOS](https://github.com/carlosazaustre/tenecitOS)** by [Carlos Azaustre](https://github.com/carlosazaustre)
 
 A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI agent instances. Built with Next.js 16, React 19, and Tailwind CSS v4.
@@ -615,6 +618,68 @@ If no tasks: respond with HEARTBEAT_OK
 ```
 
 📖 **Complete guide with templates:** [docs/HEARTBEAT-SETUP.md](./docs/HEARTBEAT-SETUP.md)
+
+---
+
+---
+
+## Documentation i18n Sync
+
+SuperBotijo documentation is maintained in multiple languages. A sync checker ensures translations stay up-to-date.
+
+### How It Works
+
+The **structure-based** checker compares:
+- **Section count**: Same number of headers in both files
+- **Header hierarchy**: Same H1/H2/H3 pattern at each position
+
+It does NOT compare text content (translations are expected to differ).
+
+### Configuration
+
+```json
+// docs-i18n.config.json
+{
+  "documents": {
+    "README.md": {
+      "required": true,
+      "translations": { "es": "README.es.md" }
+    }
+  },
+  "checkLevel": "warn"
+}
+```
+
+### Commands
+
+```bash
+npm run docs:check          # Check all configured docs
+npm run docs:check:staged   # Check only staged files (pre-commit)
+npm run docs:check:changed  # Check changed files
+npm run docs:init           # Initialize config file
+```
+
+### Pre-commit Hook
+
+The checker runs automatically on every commit via Husky:
+
+```bash
+# .husky/pre-commit
+npm run docs:check:staged
+```
+
+### Adding a New Document
+
+1. Add entry to `docs-i18n.config.json`:
+   ```json
+   "ARCHITECTURE.md": {
+     "required": false,
+     "translations": { "es": "ARCHITECTURE.es.md" }
+   }
+   ```
+
+2. Create the translation file (e.g., `ARCHITECTURE.es.md`)
+3. Translate content maintaining the same structure
 
 ---
 

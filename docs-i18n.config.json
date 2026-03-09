@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "baseLanguage": "en",
+  "languages": ["en", "es"],
+  "documents": {
+    "README.md": {
+      "required": true,
+      "translations": {
+        "es": "README.es.md"
+      }
+    }
+  },
+  "ignoredPaths": ["node_modules", ".git", "dist", "build"],
+  "checkLevel": "warn",
+  "checkOn": ["pre-commit", "manual"]
+}

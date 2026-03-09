@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Docs i18n Configuration",
+  "description": "Configuration for documentation internationalization sync checking",
+  "type": "object",
+  "required": ["version", "baseLanguage", "languages", "documents"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "baseLanguage": {
+      "type": "string",
+      "description": "The primary/source language code"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "List of supported language codes"
+    },
+    "documents": {
+      "type": "object",
+      "description": "Mapping of base documents to their translations",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["translations"],
+        "properties": {
+          "required": {
+            "type": "boolean",
+            "description": "Whether translation is required for this document",
+            "default": false
+          },
+          "translations": {
+            "type": "object",
+            "description": "Map of language code to translation filename",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ignoredPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Paths to ignore when checking for markdown files"
+    },
+    "checkLevel": {
+      "type": "string",
+      "enum": ["warn", "error"],
+      "default": "warn",
+      "description": "Whether to warn or error when translations are out of sync"
+    },
+    "checkOn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["pre-commit", "ci", "manual"]
+      },
+      "default": ["pre-commit", "ci"],
+      "description": "When to run the sync check"
+    }
+  }
+}
