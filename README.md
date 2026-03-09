@@ -86,13 +86,15 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ## Screenshots
 
+### Core Monitoring
+
 **Dashboard** — activity overview, agent status, and weather widget
 
 ![Dashboard](./docs/screenshots/dashboard.jpg)
 
-**Analytics** — daily cost trends, efficiency metrics, and breakdown per agent
+**Agents** — multi-agent overview with hierarchy and communication graph
 
-![Analytics](./docs/screenshots/costs.jpg)
+![Agents](./docs/screenshots/agents.jpg)
 
 **Sessions** — all OpenClaw sessions with token usage and context tracking
 
@@ -101,6 +103,32 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 **System Monitor** — real-time CPU, RAM, Disk, and Network metrics
 
 ![System Monitor](./docs/screenshots/system.jpg)
+
+### Analytics & Task Management
+
+**Analytics** — daily cost trends, efficiency metrics, and breakdown per agent
+
+![Analytics](./docs/screenshots/costs.jpg)
+
+**Kanban** — task management with columns, priorities, and agent assignment
+
+![Kanban](./docs/screenshots/kanban.jpg)
+
+### Data & Intelligence
+
+**Memory Browser** — edit MEMORY.md with live preview and word cloud
+
+![Memory Browser](./docs/screenshots/memory.jpg)
+
+**Sub-Agents** — real-time monitoring with spawn/completion timeline
+
+![Sub-Agents](./docs/screenshots/subagents.jpg)
+
+**Model Playground** — compare responses from multiple models side-by-side
+
+![Playground](./docs/screenshots/playground.jpg)
+
+### 3D Visualization
 
 **Office 3D** — interactive 3D office with one voxel avatar per agent
 
