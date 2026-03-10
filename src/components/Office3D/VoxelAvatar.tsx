@@ -36,6 +36,7 @@ interface VoxelAvatarProps {
   isWorking?: boolean;
   isThinking?: boolean;
   isError?: boolean;
+  isWalking?: boolean;
   scale?: number;
   idleAnimation?: IdleAnimation;
 }
@@ -46,6 +47,7 @@ export default function VoxelAvatar({
   isWorking = false,
   isThinking = false,
   isError = false,
+  isWalking = false,
   scale = 1,
   idleAnimation = IDLE_ANIMATIONS.breathing,
 }: VoxelAvatarProps) {
@@ -53,6 +55,8 @@ export default function VoxelAvatar({
   const leftArmRef = useRef<Group>(null);
   const rightArmRef = useRef<Group>(null);
   const headRef = useRef<Group>(null);
+  const leftLegRef = useRef<Group>(null);
+  const rightLegRef = useRef<Group>(null);
   const [currentIdle, setCurrentIdle] = useState<IdleAnimation>(idleAnimation);
 
   useEffect(() => {
@@ -138,8 +142,21 @@ export default function VoxelAvatar({
       targetHeadRotZ = Math.sin(time * 4) * 0.15;
     }
 
+    // Walking: leg swing + arm swing animation
+    let targetLeftLegRotX = 0;
+    let targetRightLegRotX = 0;
+    if (isWalking) {
+      targetLeftLegRotX = Math.sin(time * 6) * 0.5;
+      targetRightLegRotX = Math.sin(time * 6 + Math.PI) * 0.5;
+      // Arm swing (opposite to legs)
+      targetLeftArmRotX = Math.sin(time * 6 + Math.PI) * 0.3;
+      targetRightArmRotX = Math.sin(time * 6) * 0.3;
+      // Subtle body bob
+      targetGroupY = position[1] + Math.abs(Math.sin(time * 6)) * 0.015;
+    }
+
     // Idle behaviors
-    if (!isWorking && !isThinking && !isError) {
+    if (!isWorking && !isThinking && !isError && !isWalking) {
       if (currentIdle === IDLE_ANIMATIONS.breathing) {
         targetGroupY = position[1] + Math.sin(time) * 0.01;
       }
@@ -188,6 +205,13 @@ export default function VoxelAvatar({
       rightArmRef.current.rotation.x = MathUtils.lerp(rightArmRef.current.rotation.x, targetRightArmRotX, 0.15);
       rightArmRef.current.rotation.z = MathUtils.lerp(rightArmRef.current.rotation.z, targetRightArmRotZ, 0.15);
       rightArmRef.current.position.y = MathUtils.lerp(rightArmRef.current.position.y, targetRightArmY, 0.15);
+    }
+
+    if (leftLegRef.current) {
+      leftLegRef.current.rotation.x = MathUtils.lerp(leftLegRef.current.rotation.x, targetLeftLegRotX, 0.15);
+    }
+    if (rightLegRef.current) {
+      rightLegRef.current.rotation.x = MathUtils.lerp(rightLegRef.current.rotation.x, targetRightLegRotX, 0.15);
     }
   });
 
@@ -380,20 +404,22 @@ export default function VoxelAvatar({
       </group>
 
       {/* LEGS */}
-      <Box args={[0.09, 0.18, 0.09]} position={[-0.05, -0.09, 0]} castShadow>
-        <meshStandardMaterial color={pantsColor} />
-      </Box>
-      <Box args={[0.09, 0.18, 0.09]} position={[0.05, -0.09, 0]} castShadow>
-        <meshStandardMaterial color={pantsColor} />
-      </Box>
-
-      {/* SHOES */}
-      <Box args={[0.09, 0.04, 0.12]} position={[-0.05, -0.2, 0.015]} castShadow>
-        <meshStandardMaterial color="#1f2937" />
-      </Box>
-      <Box args={[0.09, 0.04, 0.12]} position={[0.05, -0.2, 0.015]} castShadow>
-        <meshStandardMaterial color="#1f2937" />
-      </Box>
+      <group ref={leftLegRef} position={[-0.05, 0, 0]}>
+        <Box args={[0.09, 0.18, 0.09]} position={[0, -0.09, 0]} castShadow>
+          <meshStandardMaterial color={pantsColor} />
+        </Box>
+        <Box args={[0.09, 0.04, 0.12]} position={[0, -0.2, 0.015]} castShadow>
+          <meshStandardMaterial color="#1f2937" />
+        </Box>
+      </group>
+      <group ref={rightLegRef} position={[0.05, 0, 0]}>
+        <Box args={[0.09, 0.18, 0.09]} position={[0, -0.09, 0]} castShadow>
+          <meshStandardMaterial color={pantsColor} />
+        </Box>
+        <Box args={[0.09, 0.04, 0.12]} position={[0, -0.2, 0.015]} castShadow>
+          <meshStandardMaterial color="#1f2937" />
+        </Box>
+      </group>
 
       {/* Error particles (sparks) */}
       {isError && (
