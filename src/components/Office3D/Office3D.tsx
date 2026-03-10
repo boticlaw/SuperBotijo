@@ -289,12 +289,12 @@ export default function Office3D() {
 
   // Obstáculos para visitors y walking avatars — memoized to avoid re-creating every render
   const obstacles = useMemo(() => [
-    // Archivador
-    { position: new Vector3(-8, 0, -5), radius: 0.8 },
-    // Pizarra
-    { position: new Vector3(0, 0, -8), radius: 1.5 },
-    // Máquina de café
-    { position: new Vector3(8, 0, -5), radius: 0.6 },
+    // Archivador (against back wall)
+    { position: new Vector3(-8, 0, -9.6), radius: 0.8 },
+    // Pizarra (against back wall)
+    { position: new Vector3(0, 0, -9.8), radius: 1.5 },
+    // Máquina de café (against back wall)
+    { position: new Vector3(8, 0, -9.7), radius: 0.6 },
     // Estanterías
     { position: new Vector3(-9.2, 0, 2.2), radius: 0.9 },
     { position: new Vector3(9.2, 0, 2.2), radius: 0.9 },
@@ -404,18 +404,18 @@ export default function Office3D() {
             );
           })}
 
-          {/* Mobiliario interactivo */}
+          {/* Mobiliario interactivo — flush against back wall (inner face z=-9.9) */}
           <FileCabinet
-            position={[-8, 0, -5]}
+            position={[-8, 0, -9.6]}
             onClick={handleFileCabinetClick}
           />
           <Whiteboard
-            position={[0, 0, -8]}
+            position={[0, 0, -9.8]}
             rotation={[0, 0, 0]}
             onClick={handleWhiteboardClick}
           />
           <CoffeeMachine
-            position={[8, 0.8, -5]}
+            position={[8, 0, -9.7]}
             onClick={handleCoffeeClick}
           />
 
@@ -440,7 +440,7 @@ export default function Office3D() {
             />
           ))}
           <WallClock
-            position={[0, 2.5, -8.4]}
+            position={[3, 2.5, -9.85]}
             rotation={[0, 0, 0]}
           />
 
