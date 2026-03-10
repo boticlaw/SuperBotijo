@@ -7,8 +7,10 @@ import type { Group } from 'three';
 import VoxelAvatar from './VoxelAvatar';
 import type { AgentConfig, AgentStatus } from './agentsConfig';
 
-// Agent Energy Dashboard (coffee machine) — against the back wall
-const COFFEE_MACHINE_POSITION: [number, number, number] = [8, 0, -9.7];
+// Agent Energy Dashboard (coffee machine) — against the back wall at [8, 0, -9.7]
+// Agents stop in front of it (within reachable bounds)
+const COFFEE_MACHINE_POSITION: [number, number, number] = [8, 0, -9];
+const COFFEE_ARRIVAL_RADIUS = 1.0;
 
 // Safe walking zone (inside office bounds, away from walls)
 const WALK_ZONE = { minX: -8, maxX: 8, minZ: -7, maxZ: 7 };
@@ -132,7 +134,8 @@ export default function WalkingAvatar({
       direction.y = 0; // Keep movement horizontal
       const distance = direction.length();
 
-      if (distance > 0.5) {
+      const arrivalDist = status === 'offline' ? COFFEE_ARRIVAL_RADIUS : 0.5;
+      if (distance > arrivalDist) {
         // Set rotation from raw direction BEFORE scaling by delta
         groupRef.current.rotation.y = Math.atan2(direction.x, direction.z);
 
@@ -140,16 +143,21 @@ export default function WalkingAvatar({
         direction.multiplyScalar(speed * delta);
         groupRef.current.position.add(direction);
 
-        // Check bounds
+        // Check bounds — offline agents heading to coffee machine get extended Z range
+        const minZ = status === 'offline' ? Math.min(officeBounds.minZ, COFFEE_MACHINE_POSITION[2] - 0.5) : officeBounds.minZ;
         groupRef.current.position.x = Math.max(officeBounds.minX, Math.min(officeBounds.maxX, groupRef.current.position.x));
-        groupRef.current.position.z = Math.max(officeBounds.minZ, Math.min(officeBounds.maxZ, groupRef.current.position.z));
+        groupRef.current.position.z = Math.max(minZ, Math.min(officeBounds.maxZ, groupRef.current.position.z));
 
-        // Check collisions with obstacles
-        for (const obstacle of obstacles) {
-          const distToObstacle = groupRef.current.position.distanceTo(obstacle.position);
-          if (distToObstacle < obstacle.radius) {
-            const bounceDirection = new Vector3().subVectors(groupRef.current.position, obstacle.position).normalize();
-            groupRef.current.position.add(bounceDirection.multiplyScalar(obstacle.radius - distToObstacle + 0.1));
+        // Check collisions with obstacles (skip when close to coffee machine target)
+        const nearCoffee = status === 'offline' &&
+          groupRef.current.position.distanceTo(new Vector3(...COFFEE_MACHINE_POSITION)) < COFFEE_ARRIVAL_RADIUS * 3;
+        if (!nearCoffee) {
+          for (const obstacle of obstacles) {
+            const distToObstacle = groupRef.current.position.distanceTo(obstacle.position);
+            if (distToObstacle < obstacle.radius) {
+              const bounceDirection = new Vector3().subVectors(groupRef.current.position, obstacle.position).normalize();
+              groupRef.current.position.add(bounceDirection.multiplyScalar(obstacle.radius - distToObstacle + 0.1));
+            }
           }
         }
 
