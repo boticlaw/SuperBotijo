@@ -127,10 +127,6 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ![Sub-Agents](./docs/screenshots/subagents.jpg)
 
-**Model Playground** — compare responses from multiple models side-by-side
-
-![Playground](./docs/screenshots/playground.jpg)
-
 ### Configuration
 
 **Config** — SuperBotijo settings, agent keys, and system configuration

@@ -127,10 +127,6 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 
 ![Sub-Agentes](./docs/screenshots/subagents.jpg)
 
-**Playground de Modelos** — compara respuestas de múltiples modelos lado a lado
-
-![Playground](./docs/screenshots/playground.jpg)
-
 ### Configuración
 
 **Config** — ajustes de SuperBotijo, claves de agentes y configuración del sistema
