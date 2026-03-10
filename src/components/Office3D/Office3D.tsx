@@ -304,7 +304,7 @@ export default function Office3D() {
       radius: plant.radius,
     })),
     // Escritorios (agent positions)
-    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 0.8 })),
+    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 1.5 })),
   ], [agents]);
 
   // Office bounds for walking avatars

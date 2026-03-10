@@ -39,7 +39,7 @@ export default function WalkingAvatar({
   otherAvatarPositions,
   onPositionUpdate 
 }: WalkingAvatarProps) {
-  const AVATAR_GROUND_Y = 0.22;
+  const AVATAR_GROUND_Y = 0.32;
  
   const getStableOffset = (id: string) => {
     let hash = 0;
@@ -78,26 +78,26 @@ export default function WalkingAvatar({
     }
   }, [agent.id, agent.position, offset, status]);
  
-  // Animation loop
-  useFrame((frameState) => {
+  // Animation loop — use R3F's delta parameter, NOT clock.getDelta() which is shared across callbacks
+  useFrame((_state, delta) => {
     if (!groupRef.current || !targetRef.current) return;
-    
-    const delta = frameState.clock.getDelta();
-    
+
     // Update position based on status
     if (status === 'idle' || status === 'offline') {
       // Idle/offline: slow walking animation
       const speed = status === 'idle' ? 0.8 : 0.6;
-      
+
       // Move towards target
       const direction = new Vector3().subVectors(targetRef.current, groupRef.current.position);
       const distance = direction.length();
-      
+
       if (distance > 0.5) {
+        // Set rotation from raw direction BEFORE scaling by delta
+        groupRef.current.rotation.y = Math.atan2(direction.x, direction.z);
+
         direction.normalize();
         direction.multiplyScalar(speed * delta);
         groupRef.current.position.add(direction);
-        groupRef.current.rotation.y = Math.atan2(direction.x, direction.z);
         
         // Check bounds
         groupRef.current.position.x = Math.max(officeBounds.minX, Math.min(officeBounds.maxX, groupRef.current.position.x));
@@ -133,7 +133,7 @@ export default function WalkingAvatar({
           WATER_STATION_POSITION[0] - groupRef.current.position.x,
           WATER_STATION_POSITION[2] - groupRef.current.position.z
         );
-        groupRef.current.position.y = Math.sin(frameState.clock.elapsedTime * 1.5 + idlePhase.current) * 0.015;
+        groupRef.current.position.y = Math.sin(_state.clock.elapsedTime * 1.5 + idlePhase.current) * 0.015;
         onPositionUpdate(agent.id, groupRef.current.position.clone());
       } else if (status === 'idle' && distance <= 0.5) {
         idleWaypointIndex.current =
@@ -141,7 +141,7 @@ export default function WalkingAvatar({
         targetRef.current = new Vector3(...IDLE_WAYPOINTS[idleWaypointIndex.current]);
  
         groupRef.current.position.y =
-          Math.sin(frameState.clock.elapsedTime * 1.2 + idlePhase.current) * 0.008;
+          Math.sin(_state.clock.elapsedTime * 1.2 + idlePhase.current) * 0.008;
         onPositionUpdate(agent.id, groupRef.current.position.clone());
       } else {
         groupRef.current.position.y = 0;
