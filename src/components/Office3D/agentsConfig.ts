@@ -76,13 +76,31 @@ export const AGENTS: AgentConfig[] = [
 
 export type AgentStatus = "idle" | "working" | "thinking" | "error" | "online" | "offline";
 
+export interface Activity {
+  id: string;
+  timestamp: string;
+  type: string;
+  description: string;
+  status: string;
+  tokens_used?: number;
+}
+
 export interface AgentState {
   id: string;
   status: AgentStatus;
   currentTask?: string;
-  model?: string; // opus, sonnet, haiku
+  model?: string;
+  tokensUsed?: number;
   tokensPerHour?: number;
+  sessionCount?: number;
   tasksInQueue?: number;
-  uptime?: number; // days
-  lastActivity?: string; // ISO timestamp
+  uptime?: number;
+  lastActivity?: string;
+  activities?: Activity[];
+  mood?: {
+    mood: string;
+    emoji: string;
+    streak: number;
+    energyLevel: number;
+  };
 }

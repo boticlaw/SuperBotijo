@@ -46,6 +46,7 @@
     "dashboard": "Dashboard",
     "agents": "Agents",
     "kanban": "Kanban",
+    "office": "Office",
     "memory": "Memory",
     "files": "Files",
     "analytics": "Analytics",
@@ -62,6 +63,10 @@
     "agents": {
       "title": "Agents",
       "description": "View and manage your AI agents. See hierarchy and spawn new subagents."
+    },
+    "office": {
+      "title": "3D Office",
+      "description": "Interactive 3D visualization of your agent workspace. A fun way to see your agents in action."
     },
     "kanban": {
       "title": "Kanban",

@@ -45,7 +45,8 @@ export default function Floor() {
 
     const texture = new CanvasTexture(canvas);
     texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.repeat.set(4, 4);
+    // ISSUE #69: Reducido de 4x4 a 2x2 para menos repetición obvia
+    texture.repeat.set(2, 2);
     
     return texture;
   }, []); // Array vacío = solo se crea una vez

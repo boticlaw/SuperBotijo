@@ -3,8 +3,8 @@
 export default function Lights() {
   return (
     <>
-      {/* Ambient light (general illumination) */}
-      <ambientLight intensity={0.3} />
+      {/* Ambient light (general illumination) - ISSUE #64: aumentado a 0.5 + color cálido */}
+      <ambientLight intensity={0.5} color="#fff5e6" />
 
       {/* Main directional light (sun) */}
       <directionalLight
@@ -20,16 +20,16 @@ export default function Lights() {
         shadow-camera-bottom={-20}
       />
 
-      {/* Point lights above each desk area */}
-      <pointLight position={[0, 4, 0]} intensity={0.5} color="#FFCC00" />
-      <pointLight position={[-4, 4, -3]} intensity={0.3} color="#4CAF50" />
-      <pointLight position={[4, 4, -3]} intensity={0.3} color="#E91E63" />
-      <pointLight position={[-4, 4, 3]} intensity={0.3} color="#0077B5" />
-      <pointLight position={[4, 4, 3]} intensity={0.3} color="#9C27B0" />
-      <pointLight position={[0, 4, 6]} intensity={0.3} color="#607D8B" />
+      {/* Point lights above each desk area - ISSUE #64: colores neutros cálidos */}
+      <pointLight position={[0, 4, 0]} intensity={0.6} color="#fff5e6" />
+      <pointLight position={[-4, 4, -3]} intensity={0.4} color="#fff5e6" />
+      <pointLight position={[4, 4, -3]} intensity={0.4} color="#fff5e6" />
+      <pointLight position={[-4, 4, 3]} intensity={0.4} color="#fff5e6" />
+      <pointLight position={[4, 4, 3]} intensity={0.4} color="#fff5e6" />
+      <pointLight position={[0, 4, 6]} intensity={0.4} color="#fff5e6" />
 
-      {/* Hemisphere light for soft fill */}
-      <hemisphereLight args={['#87CEEB', '#2d3748', 0.3]} />
+      {/* Hemisphere light for soft fill - ISSUE #64: aumentado a 0.5 */}
+      <hemisphereLight args={['#87CEEB', '#8b7355', 0.5]} />
     </>
   );
 }

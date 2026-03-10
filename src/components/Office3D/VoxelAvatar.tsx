@@ -12,6 +12,7 @@ interface VoxelAvatarProps {
   isWorking?: boolean;
   isThinking?: boolean;
   isError?: boolean;
+  scale?: number;
 }
 
 export default function VoxelAvatar({
@@ -20,6 +21,7 @@ export default function VoxelAvatar({
   isWorking = false,
   isThinking = false,
   isError = false,
+  scale = 1,
 }: VoxelAvatarProps) {
   const groupRef = useRef<Group>(null);
   const leftArmRef = useRef<Group>(null);
@@ -61,7 +63,7 @@ export default function VoxelAvatar({
   const pantsColor = '#4a5568';
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={position} scale={scale}>
       {/* HEAD */}
       <group ref={headRef} position={[0, 0.35, 0]}>
         {/* Head cube */}

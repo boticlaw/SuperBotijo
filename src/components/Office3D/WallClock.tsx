@@ -68,15 +68,21 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
         <meshStandardMaterial color="#1f2937" />
       </Cylinder>
 
-      {/* Hour markers (12, 3, 6, 9) */}
-      {[0, 3, 6, 9].map((hour) => {
-        const angle = (hour * Math.PI) / 6;
+      {/* ISSUE #68: Hour markers (12 markers) */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i * Math.PI) / 6;
         const x = Math.sin(angle) * 0.24;
         const y = Math.cos(angle) * 0.24;
+        const isMainHour = i % 3 === 0; // 12, 3, 6, 9 son más grandes
+        
         return (
           <Box
-            key={hour}
-            args={[0.04, 0.04, 0.02]}
+            key={i}
+            args={[
+              isMainHour ? 0.04 : 0.02,
+              isMainHour ? 0.04 : 0.025,
+              0.02
+            ]}
             position={[x, y, 0.035]}
             castShadow
           >

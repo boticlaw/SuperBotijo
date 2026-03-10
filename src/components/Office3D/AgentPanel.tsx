@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { AgentConfig, AgentState } from './agentsConfig';
+import type { AgentConfig, AgentState, Activity } from './agentsConfig';
 
 interface AgentPanelProps {
   agent: AgentConfig;
@@ -10,6 +11,28 @@ interface AgentPanelProps {
 }
 
 export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+  // Fetch activities when panel opens
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setLoadingActivities(true);
+      try {
+        const res = await fetch(`/api/agents/${agent.id}/activities`);
+        const data = await res.json();
+        setActivities(data.activities || []);
+      } catch (error) {
+        console.error('Failed to load activities:', error);
+        setActivities([]);
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [agent.id]);
+
   const getStatusColor = () => {
     switch (state.status) {
       case 'working': return 'text-success';
@@ -52,10 +75,18 @@ export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
     return date.toLocaleDateString();
   };
 
+  // Format model name (extract model name from full path)
+  const formatModel = (model?: string): string => {
+    if (!model || model === 'unknown') return 'N/A';
+    // Extract just the model name from paths like "anthropic/claude-sonnet-4-20250514"
+    const parts = model.split('/');
+    return parts[parts.length - 1] || model;
+  };
+
   return (
-    <div className="absolute right-0 top-0 h-full w-96 bg-black/90 backdrop-blur-md text-white p-6 shadow-2xl border-l border-white/10">
+    <div className="absolute right-0 top-0 h-full w-96 bg-black/90 backdrop-blur-md text-white p-6 shadow-2xl border-l border-white/10 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <span className="text-4xl">{agent.emoji}</span>
@@ -81,7 +112,7 @@ export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
 
       {/* Last Activity */}
       {state.lastActivity && (
-        <div className="mb-6 text-sm">
+        <div className="mb-4 text-sm">
           <span className="text-neutral-400">Last activity: </span>
           <span className="text-white font-medium">{formatLastActivity(state.lastActivity)}</span>
         </div>
@@ -89,79 +120,95 @@ export default function AgentPanel({ agent, state, onClose }: AgentPanelProps) {
 
       {/* Current task */}
       {state.currentTask && (
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-neutral-400 mb-2">Current Task</h3>
-          <p className="text-base">{state.currentTask}</p>
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-neutral-400 mb-1">Current Task</h3>
+          <p className="text-sm bg-white/5 p-2 rounded">{state.currentTask}</p>
         </div>
       )}
 
       {/* Stats */}
-      <div className="space-y-4 mb-6">
-        <h3 className="text-sm font-semibold text-neutral-400">Stats</h3>
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-neutral-400 mb-2">Stats</h3>
         
-        <div className="grid grid-cols-2 gap-4">
-          {/* Model */}
-          <div className="bg-white/5 p-3 rounded-lg">
-            <p className="text-xs text-neutral-400 mb-1">Model</p>
-            <p className="text-lg font-bold capitalize">{state.model || 'N/A'}</p>
-          </div>
-
-          {/* Tokens/hour */}
-          <div className="bg-white/5 p-3 rounded-lg">
-            <p className="text-xs text-neutral-400 mb-1">Tokens/hour</p>
-            <p className="text-lg font-bold">{state.tokensPerHour?.toLocaleString() || '0'}</p>
-          </div>
-
-          {/* Tasks in queue */}
-          <div className="bg-white/5 p-3 rounded-lg">
-            <p className="text-xs text-neutral-400 mb-1">Queue</p>
-            <p className="text-lg font-bold">{state.tasksInQueue || 0} tasks</p>
-          </div>
-
-          {/* Uptime */}
-          <div className="bg-white/5 p-3 rounded-lg">
-            <p className="text-xs text-neutral-400 mb-1">Uptime</p>
-            <p className="text-lg font-bold">{state.uptime || 0} days</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Activity Feed (placeholder) */}
-      <div>
-        <h3 className="text-sm font-semibold text-neutral-400 mb-3">Recent Activity</h3>
-        <div className="space-y-2">
-          <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-neutral-400 text-xs mb-1">2 minutes ago</p>
-            <p>Completed task: Generate report</p>
-          </div>
-          <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-neutral-400 text-xs mb-1">15 minutes ago</p>
-            <p>Started: {state.currentTask || 'Processing data'}</p>
-          </div>
-          <div className="bg-white/5 p-3 rounded-lg text-sm">
-            <p className="text-neutral-400 text-xs mb-1">1 hour ago</p>
-            <p>Switched model to {state.model}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mt-6 pt-6 border-t border-white/10">
-        <h3 className="text-sm font-semibold text-neutral-400 mb-3">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-2">
-          <button className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
-            Send Message
-          </button>
-          <button className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
-            View History
-          </button>
-          <button className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
-            Change Model
-          </button>
-          <button className="px-3 py-2 bg-error/20 hover:bg-error/30 rounded-lg text-sm transition-colors text-error">
-            Kill Task
-          </button>
+          {/* Model */}
+          <div className="bg-white/5 p-2 rounded-lg">
+            <p className="text-xs text-neutral-400">Model</p>
+            <p className="text-sm font-bold truncate" title={state.model}>{formatModel(state.model)}</p>
+          </div>
+
+          {/* Tokens used */}
+          <div className="bg-white/5 p-2 rounded-lg">
+            <p className="text-xs text-neutral-400">Tokens</p>
+            <p className="text-sm font-bold">{state.tokensUsed?.toLocaleString() || '0'}</p>
+          </div>
+
+          {/* Sessions */}
+          <div className="bg-white/5 p-2 rounded-lg">
+            <p className="text-xs text-neutral-400">Sessions</p>
+            <p className="text-sm font-bold">{state.sessionCount || 0}</p>
+          </div>
+
+          {/* Mood */}
+          {state.mood && (
+            <div className="bg-white/5 p-2 rounded-lg">
+              <p className="text-xs text-neutral-400">Mood</p>
+              <p className="text-sm font-bold">{state.mood.emoji} {state.mood.mood}</p>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Quick Actions - moved up */}
+      <div className="mb-4 pb-4 border-b border-white/10">
+        <h3 className="text-sm font-semibold text-neutral-400 mb-2">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <a 
+            href={`/memory?agent=${agent.id}`}
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors text-center"
+          >
+            View Memory
+          </a>
+          <a 
+            href={`/sessions?agent=${agent.id}`}
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors text-center"
+          >
+            View History
+          </a>
+        </div>
+      </div>
+
+      {/* Activity Feed - Real data */}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-400 mb-2">Recent Activity</h3>
+        
+        {loadingActivities ? (
+          <div className="text-neutral-400 text-sm py-4 text-center">
+            Loading...
+          </div>
+        ) : activities.length > 0 ? (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {activities.slice(0, 5).map((activity) => (
+              <div key={activity.id} className="bg-white/5 p-2 rounded-lg text-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-neutral-400">{formatLastActivity(activity.timestamp)}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    activity.status === 'success' ? 'bg-success/20 text-success' :
+                    activity.status === 'error' ? 'bg-error/20 text-error' :
+                    'bg-neutral-500/20 text-neutral-400'
+                  }`}>
+                    {activity.type}
+                  </span>
+                </div>
+                <p className="text-neutral-200 line-clamp-2">{activity.description}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-neutral-500 text-sm py-4 text-center">
+            No recent activity
+          </div>
+        )}
       </div>
     </div>
   );

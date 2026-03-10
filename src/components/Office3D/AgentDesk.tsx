@@ -2,13 +2,13 @@
 
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Box } from '@react-three/drei';
+import { Box } from '@react-three/drei';
 import type { Mesh } from 'three';
 import type { AgentConfig, AgentState } from './agentsConfig';
-import VoxelAvatar from './VoxelAvatar';
 import VoxelChair from './VoxelChair';
 import VoxelKeyboard from './VoxelKeyboard';
 import VoxelMacMini from './VoxelMacMini';
+import { ClickableAvatar } from './ClickableAvatar';
 
 interface AgentDeskProps {
   agent: AgentConfig;
@@ -125,7 +125,16 @@ export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDe
         position={[0.5, 0.825, -0.5]}
       />
 
-      {/* Avatar now rendered separately as MovingAvatar */}
+      {/* Seated avatar with click and label - only when working/online/thinking */}
+      {(state.status === 'working' || state.status === 'online' || state.status === 'thinking') && (
+        <ClickableAvatar
+          agent={agent}
+          status={state.status}
+          onClick={onClick}
+          isSelected={isSelected}
+          scale={1.5}
+        />
+      )}
 
       {/* Office Chair - 2x size, rotated 180°, moved back and right */}
       <group scale={2}>
@@ -135,31 +144,6 @@ export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDe
           color="#1f2937"
         />
       </group>
-
-      {/* Nameplate */}
-      <Text
-        position={[0, 2.5, 0]}
-        fontSize={0.15}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.01}
-        outlineColor="#000000"
-      >
-        {agent.emoji} {agent.name}
-      </Text>
-
-      {/* Status indicator text */}
-      <Text
-        position={[0, 2.2, 0]}
-        fontSize={0.1}
-        color={getStatusColor()}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {state.status.toUpperCase()}
-        {state.model && ` • ${state.model}`}
-      </Text>
 
       {/* Desk legs */}
       {[-0.8, 0.8].map((x, i) =>

@@ -4,8 +4,8 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
 import { Suspense, useState, useEffect } from 'react';
 import { Vector3 } from 'three';
-import type { AgentState, AgentStatus } from './agentsConfig';
-import AgentDesk from './AgentDesk';
+import type { AgentState, AgentStatus } from "./agentsConfig";
+import AgentDesk from "./AgentDesk";
 import Floor from './Floor';
 import Walls from './Walls';
 import Lights from './Lights';
@@ -16,9 +16,11 @@ import CoffeeMachine from './CoffeeMachine';
 import PlantPot from './PlantPot';
 import WallClock from './WallClock';
 import FirstPersonControls from './FirstPersonControls';
-import MovingAvatar from './MovingAvatar';
 import VisitorAvatar from './VisitorAvatar';
-import AgentTrail from './AgentTrail';
+import { MemoryModal } from './MemoryModal';
+import { RoadmapModal } from './RoadmapModal';
+import { EnergyModal } from './EnergyModal';
+import WalkingAvatar from './WalkingAvatar';
 
 interface Agent {
   id: string;
@@ -33,6 +35,15 @@ interface Agent {
   status?: string;
   lastActivity?: string;
   activeSessions?: number;
+  tokensUsed?: number;
+  sessionCount?: number;
+  currentTask?: string;
+  mood?: {
+    mood: string;
+    emoji: string;
+    streak: number;
+    energyLevel: number;
+  };
 }
 
 interface AgentStatusResponse {
@@ -90,11 +101,20 @@ export default function Office3D() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [interactionModal, setInteractionModal] = useState<string | null>(null);
   const [controlMode, setControlMode] = useState<'orbit' | 'fps'>('orbit');
-  const [avatarPositions, setAvatarPositions] = useState<Map<string, Vector3>>(new Map());
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
   const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [walkingAvatarPositions, setWalkingAvatarPositions] = useState<Map<string, Vector3>>(new Map());
   const [loading, setLoading] = useState(true);
+
+  // Update walking avatar position
+  const handleWalkingPositionUpdate = (id: string, pos: Vector3) => {
+    setWalkingAvatarPositions(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, pos);
+      return newMap;
+    });
+  };
 
   // Get agent state with fallback
   const getAgentState = (agentId: string): AgentState => {
@@ -108,15 +128,59 @@ export default function Office3D() {
     };
   };
 
-  // Load static agent configs (every 5 minutes)
+  // Load agent configs (every 5 minutes)
   useEffect(() => {
     const fetchAgentConfigs = async () => {
       try {
-        const res = await fetch('/api/agents');
-        const data = await res.json();
-        const realAgents = data.agents || [];
+        // Fetch full agent data from /api/agents
+        const agentsRes = await fetch('/api/agents');
+        const agentsData = await agentsRes.json();
+        
+        // Fetch dynamic statuses from /api/agents/status
+        const statusRes = await fetch('/api/agents/status');
+        const statusData = await statusRes.json();
+        
+        // Build status map for quick lookup
+        const statusMap = new Map<string, AgentStatusResponse>();
+        for (const s of statusData.agents || []) {
+          statusMap.set(s.id, s as AgentStatusResponse);
+        }
+        
+        // Combine data
+        const realAgents = (agentsData.agents || []).map((agent: Agent) => {
+          const statusInfo = statusMap.get(agent.id);
+          return {
+            ...agent,
+            status: statusInfo?.status || agent.status || 'offline',
+            currentTask: statusInfo?.currentTask || agent.currentTask,
+            activeSessions: statusInfo?.activeSessions ?? agent.activeSessions ?? 0,
+            lastActivity: statusInfo?.lastActivity || agent.lastActivity,
+          };
+        });
+        
         const configs = generateAgentPositions(realAgents);
         setAgents(configs);
+        
+        // Build states with all the data
+        const states: Record<string, AgentState> = {};
+        realAgents.forEach((agent: Agent) => {
+          const validStatuses: AgentStatus[] = ['idle', 'working', 'thinking', 'error', 'online', 'offline'];
+          const agentStatus: AgentStatus = validStatuses.includes(agent.status as AgentStatus) 
+            ? (agent.status as AgentStatus) 
+            : 'offline';
+            
+          states[agent.id] = {
+            id: agent.id,
+            status: agentStatus,
+            currentTask: agent.currentTask,
+            model: agent.model,
+            tokensUsed: agent.tokensUsed,
+            sessionCount: agent.sessionCount,
+            lastActivity: agent.lastActivity,
+            mood: agent.mood,
+          };
+        });
+        setAgentStates(states);
       } catch (error) {
         console.error('Failed to load agent configs:', error);
         // Fallback to main agent only
@@ -135,45 +199,6 @@ export default function Office3D() {
 
     fetchAgentConfigs();
     const interval = setInterval(fetchAgentConfigs, 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
-  }, []);
-
-  // Load dynamic agent statuses (every 10 seconds)
-  useEffect(() => {
-    const fetchAgentStatuses = async () => {
-      try {
-        const res = await fetch('/api/agents/status');
-        const data = await res.json();
-        
-        if (data.agents) {
-          const states: Record<string, AgentState> = {};
-          data.agents.forEach((agent: AgentStatusResponse) => {
-            const validStatuses: AgentStatus[] = ['idle', 'working', 'thinking', 'error', 'online', 'offline'];
-            const agentStatus: AgentStatus = validStatuses.includes(agent.status as AgentStatus) 
-              ? (agent.status as AgentStatus) 
-              : 'offline';
-            states[agent.id] = {
-              id: agent.id,
-              status: agentStatus,
-              currentTask: agent.currentTask || 
-                (agent.activeSessions && agent.activeSessions > 0 ? `${agent.activeSessions} active sessions` : undefined),
-              model: 'unknown',
-              tokensPerHour: 0,
-              tasksInQueue: agent.activeSessions || 0,
-              uptime: 0,
-              lastActivity: agent.lastActivity,
-            };
-          });
-          setAgentStates(states);
-        }
-      } catch (error) {
-        console.error('Failed to load agent statuses:', error);
-        // Don't crash, keep previous states
-      }
-    };
-
-    fetchAgentStatuses();
-    const interval = setInterval(fetchAgentStatuses, 10000); // 10 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -201,17 +226,8 @@ export default function Office3D() {
     setInteractionModal(null);
   };
 
-  const handleAvatarPositionUpdate = (id: string, position: Vector3) => {
-    setAvatarPositions(prev => new Map(prev).set(id, position));
-  };
-
-  // Definir obstáculos (muebles)
+  // Obstáculos para visitors y walking avatars
   const obstacles = [
-    // Escritorios
-    ...agents.map(agent => ({
-      position: new Vector3(agent.position[0], 0, agent.position[2]),
-      radius: 1.5
-    })),
     // Archivador
     { position: new Vector3(-8, 0, -5), radius: 0.8 },
     // Pizarra
@@ -223,7 +239,17 @@ export default function Office3D() {
     { position: new Vector3(7, 0, 6), radius: 0.5 },
     { position: new Vector3(-9, 0, 0), radius: 0.4 },
     { position: new Vector3(9, 0, 0), radius: 0.4 },
+    // Escritorios (agent positions)
+    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 1.2 })),
   ];
+
+  // Office bounds for walking avatars
+  const officeBounds = {
+    minX: -10,
+    maxX: 10,
+    minZ: -8,
+    maxZ: 8,
+  };
 
   if (loading) {
     return (
@@ -263,7 +289,7 @@ export default function Office3D() {
           {/* Paredes */}
           <Walls />
 
-          {/* Escritorios de agentes (sin avatares) */}
+          {/* Escritorios de agentes */}
           {agents.map((agent) => (
             <AgentDesk
               key={agent.id}
@@ -274,19 +300,23 @@ export default function Office3D() {
             />
           ))}
 
-          {/* Avatares móviles */}
-          {agents.map((agent) => (
-            <MovingAvatar
-              key={`avatar-${agent.id}`}
-              agent={agent}
-              state={getAgentState(agent.id)}
-              officeBounds={{ minX: -8, maxX: 8, minZ: -7, maxZ: 7 }}
-              obstacles={obstacles}
-              otherAvatarPositions={avatarPositions}
-              onPositionUpdate={handleAvatarPositionUpdate}
-            />
-          ))}
-
+          {/* Walking avatars for idle/offline agents */}
+          {agents
+            .filter(agent => {
+              const status = getAgentState(agent.id).status;
+              return status === 'idle' || status === 'offline';
+            })
+            .map((agent) => (
+              <WalkingAvatar
+                key={`walking-${agent.id}`}
+                agent={agent}
+                status={getAgentState(agent.id).status}
+                officeBounds={officeBounds}
+                obstacles={obstacles}
+                otherAvatarPositions={walkingAvatarPositions}
+                onPositionUpdate={handleWalkingPositionUpdate}
+              />
+            ))}
 
           {/* Visitors (sub-agents) */}
           {visitors.map((visitor) => {
@@ -294,26 +324,16 @@ export default function Office3D() {
             if (!parentAgent) return null;
             
             return (
-              <group key={visitor.id}>
-                <AgentTrail
-                  start={parentAgent.position}
-                  end={[
-                    parentAgent.position[0] + Math.cos((visitors.filter(v => v.parentId === visitor.parentId).indexOf(visitor) / 5) * Math.PI * 2) * 1.5,
-                    0.8,
-                    parentAgent.position[2] + Math.sin((visitors.filter(v => v.parentId === visitor.parentId).indexOf(visitor) / 5) * Math.PI * 2) * 1.5
-                  ]}
-                  color="#60a5fa"
-                />
-                <VisitorAvatar
-                  id={visitor.id}
-                  task={visitor.task}
-                  model={visitor.model}
-                  tokens={visitor.tokens}
-                  status={visitor.status}
-                  parentPosition={parentAgent.position}
-                  index={visitors.filter(v => v.parentId === visitor.parentId).indexOf(visitor)}
-                />
-              </group>
+              <VisitorAvatar
+                key={visitor.id}
+                id={visitor.id}
+                task={visitor.task}
+                model={visitor.model}
+                tokens={visitor.tokens}
+                status={visitor.status}
+                parentPosition={parentAgent.position}
+                index={visitors.filter(v => v.parentId === visitor.parentId).indexOf(visitor)}
+              />
             );
           })}
 
@@ -366,99 +386,15 @@ export default function Office3D() {
         />
       )}
 
-      {/* Modal de interacciones con objetos */}
-      {interactionModal && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-neutral-900 border border-warning rounded-lg p-8 max-w-2xl w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-warning">
-                {interactionModal === 'memory' && '📁 Memory Browser'}
-                {interactionModal === 'roadmap' && '📋 Roadmap & Planning'}
-                {interactionModal === 'energy' && '☕ Agent Energy Dashboard'}
-              </h2>
-              <button
-                onClick={handleCloseModal}
-                className="text-neutral-400 hover:text-white text-3xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="text-neutral-300 space-y-4">
-              {interactionModal === 'memory' && (
-                <>
-                  <p className="text-lg">🧠 Access to workspace memories and files</p>
-                  <div className="bg-neutral-800 p-4 rounded border border-neutral-700">
-                    <p className="text-sm text-neutral-400 mb-2">Quick links:</p>
-                    <ul className="space-y-2">
-                      <li><a href="/memory" className="text-warning hover:underline">→ Full Memory Browser</a></li>
-                      <li><a href="/files" className="text-warning hover:underline">→ File Explorer</a></li>
-                    </ul>
-                  </div>
-                  <p className="text-sm text-neutral-500 italic">
-                    This would show a file tree of memory/*.md and workspace files
-                  </p>
-                </>
-              )}
-
-              {interactionModal === 'roadmap' && (
-                <>
-                  <p className="text-lg">🗺️ Project roadmap and planning board</p>
-                  <div className="bg-neutral-800 p-4 rounded border border-neutral-700">
-                    <p className="text-sm text-neutral-400 mb-2">Active phases:</p>
-                    <ul className="space-y-2">
-                      <li className="flex items-center gap-2">
-                        <span className="text-success">✓</span>
-                        <span>Phase 0: SuperBotijo Shell</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-warning">●</span>
-                        <span>Phase 8: The Office 3D (MVP)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-neutral-500">○</span>
-                        <span>Phase 2: File Browser Pro</span>
-                      </li>
-                    </ul>
-                  </div>
-                  <p className="text-sm text-neutral-500 italic">
-                    Full roadmap available at workspace/superbotijo/ROADMAP.md
-                  </p>
-                </>
-              )}
-
-              {interactionModal === 'energy' && (
-                <>
-                  <p className="text-lg">⚡ Agent activity and energy levels</p>
-                  <div className="bg-neutral-800 p-4 rounded border border-neutral-700 space-y-3">
-                    <div>
-                      <p className="text-sm text-neutral-400">Tokens consumed today:</p>
-                      <p className="text-2xl font-bold text-warning">47,000</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-400">Active agents:</p>
-                      <p className="text-2xl font-bold text-success">3 / 6</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-400">System uptime:</p>
-                      <p className="text-2xl font-bold text-info">12h 34m</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-neutral-500 italic">
-                    This would show real-time agent mood/productivity metrics
-                  </p>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={handleCloseModal}
-              className="mt-6 w-full bg-warning hover:bg-warning text-black font-bold py-3 rounded transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+      {/* Modales de interacciones con objetos */}
+      {interactionModal === 'memory' && (
+        <MemoryModal onClose={handleCloseModal} />
+      )}
+      {interactionModal === 'roadmap' && (
+        <RoadmapModal onClose={handleCloseModal} />
+      )}
+      {interactionModal === 'energy' && (
+        <EnergyModal onClose={handleCloseModal} />
       )}
 
       {/* Controles UI overlay */}
