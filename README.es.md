@@ -137,6 +137,12 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 
 ![Config](./docs/screenshots/config.jpg)
 
+### Visualización 3D
+
+**Oficina 3D** — oficina 3D interactiva con un avatar voxel por agente
+
+![Oficina 3D](./docs/screenshots/office3d.jpg)
+
 ---
 
 ## Requisitos

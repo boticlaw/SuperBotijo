@@ -137,6 +137,12 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ![Config](./docs/screenshots/config.jpg)
 
+### 3D Visualization
+
+**Office 3D** — interactive 3D office with one voxel avatar per agent
+
+![Office 3D](./docs/screenshots/office3d.jpg)
+
 ---
 
 ## Requirements
