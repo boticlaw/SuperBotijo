@@ -131,11 +131,11 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 ![Playground](./docs/screenshots/playground.jpg)
 
-### 3D Visualization
+### Configuration
 
-**Office 3D** — interactive 3D office with one voxel avatar per agent
+**Config** — SuperBotijo settings, agent keys, and system configuration
 
-![Office 3D](./docs/screenshots/office3d.jpg)
+![Config](./docs/screenshots/config.jpg)
 
 ---
 

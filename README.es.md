@@ -131,11 +131,11 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 
 ![Playground](./docs/screenshots/playground.jpg)
 
-### Visualización 3D
+### Configuración
 
-**Oficina 3D** — oficina 3D interactiva con un avatar voxel por agente
+**Config** — ajustes de SuperBotijo, claves de agentes y configuración del sistema
 
-![Oficina 3D](./docs/screenshots/office3d.jpg)
+![Config](./docs/screenshots/config.jpg)
 
 ---
 
