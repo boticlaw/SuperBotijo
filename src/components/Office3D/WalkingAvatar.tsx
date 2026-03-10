@@ -27,7 +27,7 @@ interface WalkingAvatarProps {
     maxZ: number;
   };
   obstacles: Array<{ position: Vector3; radius: number }>;
-  otherAvatarPositions: Map<string, Vector3>;
+  otherAvatarPositions: { current: Map<string, Vector3> };
   onPositionUpdate: (id: string, pos: Vector3) => void;
 }
  
@@ -114,7 +114,7 @@ export default function WalkingAvatar({
         }
         
         // Check collisions with other avatars
-        for (const [otherId, otherPos] of otherAvatarPositions) {
+        for (const [otherId, otherPos] of otherAvatarPositions.current) {
           if (otherId === agent.id) continue;
           const distToOther = groupRef.current.position.distanceTo(otherPos);
           if (distToOther < 1.2) {
@@ -154,10 +154,10 @@ export default function WalkingAvatar({
       {/* Avatar */}
       <VoxelAvatar
         agent={agent}
-        position={[1, AVATAR_GROUND_Y, 0]}
-        isWorking={status === 'working'}
-        isThinking={status === 'thinking'}
-        isError={status === 'error'}
+        position={[0, AVATAR_GROUND_Y, 0]}
+        isWorking={false}
+        isThinking={false}
+        isError={false}
         scale={1.5}
       />
     </group>

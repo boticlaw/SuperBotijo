@@ -3,7 +3,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef, useMemo, useCallback  } from 'react';
 import { Vector3 } from 'three';
 import { AVATAR_HAIR_TYPES, AVATAR_HAT_TYPES, type AgentState, type AgentStatus, type AvatarAccessories } from "./agentsConfig";
 import AgentDesk from "./AgentDesk";
@@ -166,17 +166,13 @@ export default function Office3D() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
   const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [walkingAvatarPositions, setWalkingAvatarPositions] = useState<Map<string, Vector3>>(new Map());
+  const walkingAvatarPositionsRef = useRef<Map<string, Vector3>>(new Map());
   const [loading, setLoading] = useState(true);
 
-  // Update walking avatar position
-  const handleWalkingPositionUpdate = (id: string, pos: Vector3) => {
-    setWalkingAvatarPositions(prev => {
-      const newMap = new Map(prev);
-      newMap.set(id, pos);
-      return newMap;
-    });
-  };
+  // Update walking avatar position — use ref to avoid triggering re-renders every frame
+  const handleWalkingPositionUpdate = useCallback((id: string, pos: Vector3) => {
+    walkingAvatarPositionsRef.current.set(id, pos);
+  }, []);
 
   // Get agent state with fallback
   const getAgentState = (agentId: string): AgentState => {
@@ -291,8 +287,8 @@ export default function Office3D() {
     setInteractionModal(null);
   };
 
-  // Obstáculos para visitors y walking avatars
-  const obstacles = [
+  // Obstáculos para visitors y walking avatars — memoized to avoid re-creating every render
+  const obstacles = useMemo(() => [
     // Archivador
     { position: new Vector3(-8, 0, -5), radius: 0.8 },
     // Pizarra
@@ -309,7 +305,7 @@ export default function Office3D() {
     })),
     // Escritorios (agent positions)
     ...agents.map(a => ({ position: new Vector3(...a.position), radius: 0.8 })),
-  ];
+  ], [agents]);
 
   // Office bounds for walking avatars
   const officeBounds = {
@@ -384,7 +380,7 @@ export default function Office3D() {
                 status={getAgentState(agent.id).status}
                 officeBounds={officeBounds}
                 obstacles={obstacles}
-                otherAvatarPositions={walkingAvatarPositions}
+                otherAvatarPositions={walkingAvatarPositionsRef}
                 onPositionUpdate={handleWalkingPositionUpdate}
               />
             ))}
