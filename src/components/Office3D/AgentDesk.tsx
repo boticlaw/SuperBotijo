@@ -2,22 +2,36 @@
 
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Box } from '@react-three/drei';
+import { Box, Text } from '@react-three/drei';
 import type { Mesh } from 'three';
 import type { AgentConfig, AgentState } from './agentsConfig';
 import VoxelChair from './VoxelChair';
 import VoxelKeyboard from './VoxelKeyboard';
 import VoxelMacMini from './VoxelMacMini';
 import { ClickableAvatar } from './ClickableAvatar';
+import CoffeeMug from './CoffeeMug';
+import DeskPlant from './DeskPlant';
+import Notepad from './Notepad';
+import DeskPhoto from './DeskPhoto';
+import { DESK_DECOR_TYPES, getDeskDecorPreset, type DeskDecorItem } from './deskDecorPresets';
 
 interface AgentDeskProps {
   agent: AgentConfig;
   state: AgentState;
   onClick: () => void;
   isSelected: boolean;
+  rotation?: [number, number, number];
+  useSharedTable?: boolean;
 }
 
-export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDeskProps) {
+export default function AgentDesk({
+  agent,
+  state,
+  onClick,
+  isSelected,
+  rotation = [0, 0, 0],
+  useSharedTable = false,
+}: AgentDeskProps) {
   const deskRef = useRef<Mesh>(null);
   const monitorRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -65,54 +79,143 @@ export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDe
     }
   };
 
+  const getMonitorLines = () => {
+    switch (state.status) {
+      case 'working':
+        return [
+          '> npm run build',
+          'Compiling...',
+          '████████░░ 80%',
+          '',
+          '✓ modules: 1234',
+        ];
+      case 'thinking':
+        return [
+          'Analyzing context...',
+          '',
+          'function solve() {',
+          '  // thinking...',
+          '}',
+        ];
+      case 'error':
+        return [
+          'Error!',
+          '',
+          'TypeError: undefined',
+          'at line 42',
+          'Retrying...',
+        ];
+      case 'online':
+        return [
+          'Ready',
+          '',
+          `Agent: ${agent.name}`,
+          'Listening events...',
+          '',
+        ];
+      case 'offline':
+        return [
+          'Standby mode',
+          '',
+          `Agent: ${agent.name}`,
+          'Status: offline',
+          '',
+        ];
+      case 'idle':
+      default:
+        return [
+          'Ready',
+          '',
+          `Agent: ${agent.name}`,
+          'Status: idle',
+          '',
+        ];
+    }
+  };
+
+  const decorItems = getDeskDecorPreset(agent.id).slice(0, 3);
+
+  const renderDecorItem = (item: DeskDecorItem, index: number) => {
+    const key = `decor-${agent.id}-${item.type}-${index}`;
+
+    switch (item.type) {
+      case DESK_DECOR_TYPES.coffeeMug:
+        return <CoffeeMug key={key} position={item.position} rotation={item.rotation} />;
+      case DESK_DECOR_TYPES.deskPlant:
+        return <DeskPlant key={key} position={item.position} rotation={item.rotation} />;
+      case DESK_DECOR_TYPES.notepad:
+        return <Notepad key={key} position={item.position} rotation={item.rotation} />;
+      case DESK_DECOR_TYPES.deskPhoto:
+        return <DeskPhoto key={key} position={item.position} rotation={item.rotation} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <group position={agent.position}>
-      {/* Desk surface */}
-      <Box
-        ref={deskRef}
-        args={[2, 0.1, 1.5]}
-        position={[0, 0.75, 0]}
-        castShadow
-        receiveShadow
-        onClick={onClick}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-      >
-        <meshStandardMaterial
-          color={hovered || isSelected ? agent.color : '#8B4513'}
-          emissive={hovered || isSelected ? agent.color : '#000000'}
-          emissiveIntensity={hovered || isSelected ? 0.2 : 0}
-        />
-      </Box>
+    <group position={agent.position} rotation={rotation}>
+      {!useSharedTable && (
+        <Box
+          ref={deskRef}
+          args={[2, 0.1, 1.5]}
+          position={[0, 0.75, 0]}
+          castShadow
+          receiveShadow
+          onClick={onClick}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <meshStandardMaterial
+            color={hovered || isSelected ? agent.color : '#8B4513'}
+            emissive={hovered || isSelected ? agent.color : '#000000'}
+            emissiveIntensity={hovered || isSelected ? 0.2 : 0}
+          />
+        </Box>
+      )}
 
       {/* Monitor */}
-      <Box
-        ref={monitorRef}
-        args={[1.2, 0.8, 0.05]}
-        position={[0, 1.5, -0.5]}
-        castShadow
-        onClick={onClick}
-      >
-        <meshStandardMaterial
-          color={getStatusColor()}
-          emissive={getMonitorEmissive()}
-          emissiveIntensity={
-            state.status === 'offline' ? 0.05 :
-            state.status === 'idle' ? 0.15 :
-            state.status === 'online' ? 0.3 :
-            0.5 // working, thinking, error
-          }
-        />
-      </Box>
+      <group position={[0, 1.5, -0.5]} onClick={onClick}>
+        <Box
+          ref={monitorRef}
+          args={[1.2, 0.8, 0.05]}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial color="#1f2937" roughness={0.6} metalness={0.2} />
+        </Box>
 
-      {/* Monitor stand */}
-      <Box
-        args={[0.1, 0.4, 0.1]}
-        position={[0, 1, -0.5]}
-        castShadow
-      >
-        <meshStandardMaterial color="#2d2d2d" />
-      </Box>
+        <Box args={[1.1, 0.68, 0.015]} position={[0, 0, 0.03]}>
+          <meshStandardMaterial
+            color="#05070d"
+            emissive={getMonitorEmissive()}
+            emissiveIntensity={
+              state.status === 'offline' ? 0.22 :
+              state.status === 'idle' ? 0.3 :
+              state.status === 'online' ? 0.45 :
+              0.62
+            }
+            toneMapped={false}
+          />
+        </Box>
+
+        {getMonitorLines().map((line, index) => (
+          <Text
+            key={`monitor-line-${agent.id}-${index}`}
+            position={[-0.5, 0.23 - index * 0.11, 0.04]}
+            fontSize={0.06}
+            color={getStatusColor()}
+            anchorX="left"
+            anchorY="middle"
+          >
+            {line}
+          </Text>
+        ))}
+
+        {/* Monitor stand */}
+        <Box args={[0.1, 0.4, 0.1]} position={[0, -0.5, 0]} castShadow>
+          <meshStandardMaterial color="#2d2d2d" />
+        </Box>
+      </group>
 
       {/* Keyboard */}
       <VoxelKeyboard
@@ -125,6 +228,11 @@ export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDe
         position={[0.5, 0.825, -0.5]}
       />
 
+      {/* Decorative desk objects - deterministic preset per agent */}
+      <group onClick={onClick}>
+        {decorItems.map((item, index) => renderDecorItem(item, index))}
+      </group>
+
       {/* Seated avatar with click and label - only when working/online/thinking */}
       {(state.status === 'working' || state.status === 'online' || state.status === 'thinking') && (
         <ClickableAvatar
@@ -136,28 +244,28 @@ export default function AgentDesk({ agent, state, onClick, isSelected }: AgentDe
         />
       )}
 
-      {/* Office Chair - 2x size, rotated 180°, moved back and right */}
-      <group scale={2}>
+      {/* Office Chair */}
+      <group scale={1.7}>
         <VoxelChair
-          position={[0, 0, 0.9]}
+          position={[0, 0, 0.95]}
           rotation={[0, Math.PI, 0]}
           color="#1f2937"
         />
       </group>
 
-      {/* Desk legs */}
-      {[-0.8, 0.8].map((x, i) =>
-        [-0.6, 0.6].map((z, j) => (
-          <Box
-            key={`leg-${i}-${j}`}
-            args={[0.05, 0.7, 0.05]}
-            position={[x, 0.35, z]}
-            castShadow
-          >
-            <meshStandardMaterial color="#5d4037" />
-          </Box>
-        ))
-      )}
+      {!useSharedTable &&
+        [-0.8, 0.8].map((x, i) =>
+          [-0.6, 0.6].map((z, j) => (
+            <Box
+              key={`leg-${i}-${j}`}
+              args={[0.05, 0.7, 0.05]}
+              position={[x, 0.35, z]}
+              castShadow
+            >
+              <meshStandardMaterial color="#5d4037" />
+            </Box>
+          ))
+        )}
 
       {/* Subtle floor glow when selected */}
       {isSelected && (

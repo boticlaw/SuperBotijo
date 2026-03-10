@@ -21,6 +21,28 @@ export interface AgentConfig {
   position: [number, number, number]; // x, y, z
   color: string;
   role: string;
+  accessories?: AvatarAccessories;
+}
+
+export const AVATAR_HAT_TYPES = {
+  none: "none",
+  cap: "cap",
+  beanie: "beanie",
+} as const;
+
+export const AVATAR_HAIR_TYPES = {
+  none: "none",
+  short: "short",
+  long: "long",
+  spiky: "spiky",
+} as const;
+
+export interface AvatarAccessories {
+  glasses?: boolean;
+  hat?: (typeof AVATAR_HAT_TYPES)[keyof typeof AVATAR_HAT_TYPES];
+  hair?: (typeof AVATAR_HAIR_TYPES)[keyof typeof AVATAR_HAIR_TYPES];
+  beard?: boolean;
+  earrings?: boolean;
 }
 
 export const AGENTS: AgentConfig[] = [

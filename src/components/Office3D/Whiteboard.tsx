@@ -9,6 +9,37 @@ interface WhiteboardProps {
   onClick?: () => void;
 }
 
+const KANBAN_COLUMNS = [
+  {
+    title: 'TODO',
+    color: '#3b82f6',
+    x: -0.75,
+    items: [
+      { text: 'Windows + natural light', color: '#6b7280' },
+      { text: 'Bloom pass', color: '#6b7280' },
+    ],
+  },
+  {
+    title: 'DOING',
+    color: '#f59e0b',
+    x: 0,
+    items: [
+      { text: 'Office 3D polish', color: '#22c55e' },
+      { text: 'Avatar idle routes', color: '#22c55e' },
+    ],
+  },
+  {
+    title: 'DONE',
+    color: '#22c55e',
+    x: 0.75,
+    items: [
+      { text: 'Ceiling', color: '#16a34a' },
+      { text: 'Desk decor', color: '#16a34a' },
+      { text: 'Monitor content', color: '#16a34a' },
+    ],
+  },
+] as const;
+
 export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: WhiteboardProps) {
   const [hovered, setHovered] = useState(false);
 
@@ -58,14 +89,54 @@ export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: 
 
       {/* "ROADMAP" text on board */}
       <Text
-        position={[0, 2.0, 0.06]}
-        fontSize={0.2}
+        position={[0, 2.08, 0.06]}
+        fontSize={0.13}
         color="#1f2937"
         anchorX="center"
         anchorY="middle"
       >
-        ROADMAP
+        ROADMAP Q1 - OFFICE 3D
       </Text>
+
+      {/* Kanban-like content */}
+      {KANBAN_COLUMNS.map((column) => (
+        <group key={column.title} position={[column.x, 1.48, 0.06]}>
+          <Text
+            position={[0, 0.42, 0]}
+            fontSize={0.065}
+            color={column.color}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {column.title}
+          </Text>
+
+          <Box args={[0.55, 0.01, 0.01]} position={[0, 0.37, 0]}>
+            <meshStandardMaterial color={column.color} />
+          </Box>
+
+          {column.items.map((item, index) => (
+            <Text
+              key={`${column.title}-item-${index}`}
+              position={[-0.24, 0.24 - index * 0.13, 0]}
+              fontSize={0.047}
+              color={item.color}
+              anchorX="left"
+              anchorY="middle"
+            >
+              • {item.text}
+            </Text>
+          ))}
+        </group>
+      ))}
+
+      {/* Progress arrows */}
+      <Box args={[0.18, 0.008, 0.01]} position={[-0.38, 1.35, 0.06]}>
+        <meshStandardMaterial color="#9ca3af" />
+      </Box>
+      <Box args={[0.18, 0.008, 0.01]} position={[0.38, 1.35, 0.06]}>
+        <meshStandardMaterial color="#9ca3af" />
+      </Box>
 
       {/* Hover label */}
       {hovered && (

@@ -13,7 +13,7 @@ const BOUNDARIES = {
   minX: -9,
   maxX: 9,
   minY: 1,
-  maxY: 8,
+  maxY: 5.8,
   minZ: -8,
   maxZ: 8,
 };

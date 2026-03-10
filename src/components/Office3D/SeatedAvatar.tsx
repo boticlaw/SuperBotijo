@@ -1,7 +1,6 @@
 "use client";
 
 import VoxelAvatar from "./VoxelAvatar";
-import { AgentLabel } from "./AgentLabel";
 import type { AgentConfig, AgentStatus } from "./agentsConfig";
 
 interface SeatedAvatarProps {
@@ -38,8 +37,6 @@ export function SeatedAvatar({ agent, status, scale = 1.5 }: SeatedAvatarProps) 
         isThinking={animations.isThinking}
         isError={animations.isError}
       />
-      {/* Label follows avatar position and rotation (counter-rotate to face camera) */}
-      <AgentLabel agent={agent} status={status} />
     </group>
   );
 }

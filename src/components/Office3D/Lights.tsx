@@ -20,6 +20,21 @@ export default function Lights() {
         shadow-camera-bottom={-20}
       />
 
+      {/* Natural light from windows */}
+      <directionalLight
+        position={[6, 7, -14]}
+        intensity={0.35}
+        color="#fff5e6"
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+      <directionalLight
+        position={[-18, 6, 2]}
+        intensity={0.25}
+        color="#fff7eb"
+      />
+
       {/* Point lights above each desk area - ISSUE #64: colores neutros cálidos */}
       <pointLight position={[0, 4, 0]} intensity={0.6} color="#fff5e6" />
       <pointLight position={[-4, 4, -3]} intensity={0.4} color="#fff5e6" />

@@ -58,7 +58,7 @@ export function ClickableAvatar({
         </mesh>
       )}
 
-      {/* Seated avatar (includes AgentLabel inside) */}
+      {/* Seated avatar */}
       <SeatedAvatar agent={agent} status={status} scale={scale} />
     </group>
   );

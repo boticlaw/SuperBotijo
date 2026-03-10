@@ -2,19 +2,23 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { Suspense, useState, useEffect } from 'react';
 import { Vector3 } from 'three';
-import type { AgentState, AgentStatus } from "./agentsConfig";
+import { AVATAR_HAIR_TYPES, AVATAR_HAT_TYPES, type AgentState, type AgentStatus, type AvatarAccessories } from "./agentsConfig";
 import AgentDesk from "./AgentDesk";
 import Floor from './Floor';
 import Walls from './Walls';
+import Ceiling from './Ceiling';
 import Lights from './Lights';
 import AgentPanel from './AgentPanel';
 import FileCabinet from './FileCabinet';
 import Whiteboard from './Whiteboard';
 import CoffeeMachine from './CoffeeMachine';
 import PlantPot from './PlantPot';
+import Bookshelf from './Bookshelf';
 import WallClock from './WallClock';
+import Window from './Window';
 import FirstPersonControls from './FirstPersonControls';
 import VisitorAvatar from './VisitorAvatar';
 import { MemoryModal } from './MemoryModal';
@@ -70,21 +74,78 @@ interface AgentConfig {
   name: string;
   emoji: string;
   position: [number, number, number];
+  deskRotation?: [number, number, number];
+  tableId?: string;
   color: string;
   role: string;
+  department?: string;
+  accessories?: AvatarAccessories;
 }
+
+interface PlantDecoration {
+  position: [number, number, number];
+  size: "small" | "medium" | "large";
+  type: "bush" | "tree" | "succulent";
+  radius: number;
+}
+
+const DEFAULT_AGENT_ACCESSORIES: Record<string, AvatarAccessories> = {
+  main: { glasses: true, hair: AVATAR_HAIR_TYPES.short },
+  infra: { hat: AVATAR_HAT_TYPES.cap, hair: AVATAR_HAIR_TYPES.spiky },
+  developer: { beard: true, hair: AVATAR_HAIR_TYPES.long },
+  studio: { earrings: true, hair: AVATAR_HAIR_TYPES.long },
+};
+
+const ACCESSORY_PRESETS: AvatarAccessories[] = [
+  { glasses: true, hair: AVATAR_HAIR_TYPES.short },
+  { hat: AVATAR_HAT_TYPES.beanie, hair: AVATAR_HAIR_TYPES.short },
+  { beard: true, hair: AVATAR_HAIR_TYPES.long },
+  { hat: AVATAR_HAT_TYPES.cap, glasses: true, hair: AVATAR_HAIR_TYPES.none },
+  { earrings: true, hair: AVATAR_HAIR_TYPES.spiky },
+];
+
+function getStringHash(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function getDefaultAccessories(agentId: string): AvatarAccessories {
+  if (DEFAULT_AGENT_ACCESSORIES[agentId]) {
+    return DEFAULT_AGENT_ACCESSORIES[agentId];
+  }
+
+  const presetIndex = getStringHash(agentId) % ACCESSORY_PRESETS.length;
+  return ACCESSORY_PRESETS[presetIndex];
+}
+
+const PLANT_DECORATIONS: PlantDecoration[] = [
+  // Entrada/frente: árboles en esquinas para enmarcar la escena
+  { position: [-8.7, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
+  { position: [8.7, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
+
+  // Zona de servicios: verdes cerca de muebles grandes
+  { position: [-6.9, 0, -4.7], size: "medium", type: "bush", radius: 0.5 },
+  { position: [6.9, 0, -4.7], size: "medium", type: "bush", radius: 0.5 },
+
+  // Toques de detalle en laterales de pizarra
+  { position: [-2.6, 0, -7.1], size: "small", type: "succulent", radius: 0.38 },
+  { position: [2.6, 0, -7.1], size: "small", type: "succulent", radius: 0.38 },
+];
 
 // Generate positions dynamically based on number of agents
 function generateAgentPositions(agents: Agent[]): AgentConfig[] {
   const positions: [number, number, number][] = [
-    [0, 0, 0],     // Center
-    [-4, 0, -3],   // Back left
-    [4, 0, -3],    // Back right
-    [-4, 0, 3],    // Front left
-    [4, 0, 3],     // Front right
-    [0, 0, 6],     // Front center
-    [-6, 0, 0],    // Far left
-    [6, 0, 0],     // Far right
+    [0, 0, 0],
+    [-4, 0, -3],
+    [4, 0, -3],
+    [-4, 0, 3],
+    [4, 0, 3],
+    [0, 0, 6],
+    [-6, 0, 0],
+    [6, 0, 0],
   ];
 
   return agents.map((agent, index) => ({
@@ -94,6 +155,7 @@ function generateAgentPositions(agents: Agent[]): AgentConfig[] {
     position: positions[index % positions.length],
     color: agent.color || '#666666',
     role: agent.id === 'main' ? 'Main Agent' : 'Agent',
+    accessories: getDefaultAccessories(agent.id),
   }));
 }
 
@@ -189,8 +251,11 @@ export default function Office3D() {
           name: 'Main Agent',
           emoji: '🤖',
           position: [0, 0, 0],
+          deskRotation: [0, 0, 0],
+          tableId: 'core-1',
           color: '#ff6b35',
           role: 'Main Agent',
+          department: 'core',
         }]);
       } finally {
         setLoading(false);
@@ -234,13 +299,16 @@ export default function Office3D() {
     { position: new Vector3(0, 0, -8), radius: 1.5 },
     // Máquina de café
     { position: new Vector3(8, 0, -5), radius: 0.6 },
+    // Estanterías
+    { position: new Vector3(-9.2, 0, 2.2), radius: 0.9 },
+    { position: new Vector3(9.2, 0, 2.2), radius: 0.9 },
     // Plantas
-    { position: new Vector3(-7, 0, 6), radius: 0.5 },
-    { position: new Vector3(7, 0, 6), radius: 0.5 },
-    { position: new Vector3(-9, 0, 0), radius: 0.4 },
-    { position: new Vector3(9, 0, 0), radius: 0.4 },
+    ...PLANT_DECORATIONS.map((plant) => ({
+      position: new Vector3(...plant.position),
+      radius: plant.radius,
+    })),
     // Escritorios (agent positions)
-    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 1.2 })),
+    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 0.8 })),
   ];
 
   // Office bounds for walking avatars
@@ -288,6 +356,9 @@ export default function Office3D() {
 
           {/* Paredes */}
           <Walls />
+
+          {/* Techo: visible solo en modo FPS para no bloquear la vista cenital */}
+          {controlMode === 'fps' && <Ceiling />}
 
           {/* Escritorios de agentes */}
           {agents.map((agent) => (
@@ -352,11 +423,26 @@ export default function Office3D() {
             onClick={handleCoffeeClick}
           />
 
-          {/* Decoración */}
-          <PlantPot position={[-7, 0, 6]} size="large" />
-          <PlantPot position={[7, 0, 6]} size="medium" />
-          <PlantPot position={[-9, 0, 0]} size="small" />
-          <PlantPot position={[9, 0, 0]} size="small" />
+          {/* Ventanas */}
+          <Window position={[5.2, 2.5, -9.85]} size={[2.6, 1.8]} />
+          <Window
+            position={[-14.85, 2.5, 0.4]}
+            rotation={[0, Math.PI / 2, 0]}
+            size={[2.2, 1.6]}
+          />
+
+          <Bookshelf position={[-9.2, 0, 2.2]} rotation={[0, Math.PI / 2, 0]} />
+          <Bookshelf position={[9.2, 0, 2.2]} rotation={[0, -Math.PI / 2, 0]} />
+
+          {/* Decoración verde */}
+          {PLANT_DECORATIONS.map((plant, index) => (
+            <PlantPot
+              key={`plant-${index}`}
+              position={plant.position}
+              size={plant.size}
+              type={plant.type}
+            />
+          ))}
           <WallClock
             position={[0, 2.5, -8.4]}
             rotation={[0, 0, 0]}
@@ -372,8 +458,18 @@ export default function Office3D() {
               maxPolarAngle={Math.PI / 2.2}
             />
           ) : (
-            <FirstPersonControls moveSpeed={5} />
-          )}
+              <FirstPersonControls moveSpeed={5} />
+            )}
+
+          {/* Post-processing */}
+          <EffectComposer>
+            <Bloom
+              intensity={0.42}
+              luminanceThreshold={0.82}
+              luminanceSmoothing={0.9}
+              mipmapBlur
+            />
+          </EffectComposer>
         </Suspense>
       </Canvas>
 
