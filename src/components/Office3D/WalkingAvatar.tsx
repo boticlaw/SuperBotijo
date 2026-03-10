@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import type { Group } from 'three';
 import VoxelAvatar from './VoxelAvatar';
 import type { AgentConfig, AgentStatus } from './agentsConfig';
 
-const WATER_STATION_POSITION: [number, number, number] = [7.1, 0, -4.3];
+// Agent Energy Dashboard (coffee machine) — against the back wall
+const COFFEE_MACHINE_POSITION: [number, number, number] = [8, 0, -9.7];
 
 // Safe walking zone (inside office bounds, away from walls)
 const WALK_ZONE = { minX: -8, maxX: 8, minZ: -7, maxZ: 7 };
@@ -63,6 +64,7 @@ export default function WalkingAvatar({
   const pauseTimerRef = useRef(0);
   const isPausedRef = useRef(false);
   const idlePhase = useRef(((seed % 200) / 100 - 1) * Math.PI);
+  const [arrivedAtCoffee, setArrivedAtCoffee] = useState(false);
 
   /** Pick a random point in the walking zone, biased toward the agent's home desk */
   const pickRandomTarget = () => {
@@ -100,7 +102,7 @@ export default function WalkingAvatar({
     if (status === 'idle') {
       targetRef.current = pickRandomTarget();
     } else if (status === 'offline') {
-      targetRef.current = new Vector3(...WATER_STATION_POSITION);
+      targetRef.current = new Vector3(...COFFEE_MACHINE_POSITION);
     }
   }, [agent.id, agent.position, status]);
 
@@ -115,7 +117,7 @@ export default function WalkingAvatar({
         if (pauseTimerRef.current <= 0) {
           isPausedRef.current = false;
           targetRef.current = status === 'offline'
-            ? new Vector3(...WATER_STATION_POSITION)
+            ? new Vector3(...COFFEE_MACHINE_POSITION)
             : pickRandomTarget();
         }
         // Gentle idle sway while paused
@@ -167,10 +169,11 @@ export default function WalkingAvatar({
         const rng = rngRef.current;
 
         if (status === 'offline') {
-          // Stay at water station, face it
+          // Arrived at coffee machine — stop walking, face it
+          if (!arrivedAtCoffee) setArrivedAtCoffee(true);
           groupRef.current.rotation.y = Math.atan2(
-            WATER_STATION_POSITION[0] - groupRef.current.position.x,
-            WATER_STATION_POSITION[2] - groupRef.current.position.z,
+            COFFEE_MACHINE_POSITION[0] - groupRef.current.position.x,
+            COFFEE_MACHINE_POSITION[2] - groupRef.current.position.z,
           );
           groupRef.current.position.y =
             Math.sin(_state.clock.elapsedTime * 1.5 + idlePhase.current) * 0.015;
@@ -197,7 +200,7 @@ export default function WalkingAvatar({
         isWorking={false}
         isThinking={false}
         isError={false}
-        isWalking={true}
+        isWalking={!(status === 'offline' && arrivedAtCoffee)}
         scale={1.5}
       />
     </group>
