@@ -5,8 +5,8 @@ import { Cpu, HardDrive, MemoryStick, ShieldCheck, Clock, LucideIcon } from "luc
 import { useI18n } from "@/i18n/provider";
 
 interface SystemStats {
-  cpu: number;
-  ram: { used: number; total: number };
+  cpu: { load: number; loadAvg1: number; loadAvg5: number; loadAvg15: number };
+  memory: { used: number; total: number; free: number };
   disk: { used: number; total: number };
   vpnActive: boolean;
   firewallActive: boolean;
@@ -75,8 +75,8 @@ function StatusMetric({ icon: Icon, label, value, barPercent, color }: StatusMet
 export function StatusBar() {
   const { t } = useI18n();
   const [stats, setStats] = useState<SystemStats>({
-    cpu: 0,
-    ram: { used: 0, total: 4 },
+    cpu: { load: 0, loadAvg1: 0, loadAvg5: 0, loadAvg15: 0 },
+    memory: { used: 0, total: 4, free: 4 },
     disk: { used: 0, total: 100 },
     vpnActive: false,
     firewallActive: true,
@@ -104,8 +104,8 @@ export function StatusBar() {
     return () => clearInterval(interval);
   }, []);
 
-  const cpuColor = stats.cpu < 60 ? "var(--positive)" : stats.cpu < 85 ? "var(--warning)" : "var(--negative)";
-  const ramPercent = (stats.ram.used / stats.ram.total) * 100;
+  const cpuColor = stats.cpu.load < 60 ? "var(--positive)" : stats.cpu.load < 85 ? "var(--warning)" : "var(--negative)";
+  const ramPercent = (stats.memory.used / stats.memory.total) * 100;
   const ramColor = ramPercent < 60 ? "var(--positive)" : ramPercent < 85 ? "var(--warning)" : "var(--negative)";
   const diskPercent = (stats.disk.used / stats.disk.total) * 100;
   const diskColor = diskPercent < 60 ? "var(--positive)" : diskPercent < 85 ? "var(--warning)" : "var(--negative)";
@@ -129,13 +129,13 @@ export function StatusBar() {
       }}
     >
       {/* CPU */}
-      <StatusMetric icon={Cpu} label="CPU" value={`${stats.cpu}%`} barPercent={stats.cpu} color={cpuColor} />
+      <StatusMetric icon={Cpu} label="CPU" value={`${stats.cpu.load}%`} barPercent={stats.cpu.load} color={cpuColor} />
 
       {/* RAM */}
       <StatusMetric
         icon={MemoryStick}
         label="RAM"
-        value={`${stats.ram.used.toFixed(1)}/${stats.ram.total}GB`}
+        value={`${stats.memory.used.toFixed(1)}/${stats.memory.total}GB`}
         barPercent={ramPercent}
         color={ramColor}
       />
