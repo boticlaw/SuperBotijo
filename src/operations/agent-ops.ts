@@ -38,9 +38,58 @@ export interface AgentMood {
   lastCalculated: string;
 }
 
+const AGENT_STATUS = {
+  working: "working",
+  idle: "idle",
+  online: "online",
+  offline: "offline",
+} as const;
+
+export type AgentStatusValue = (typeof AGENT_STATUS)[keyof typeof AGENT_STATUS];
+
+export interface AgentStatusEntry {
+  id: string;
+  name: string;
+  status: AgentStatusValue;
+  lastActivity?: string;
+  activeSessions: number;
+  currentTask?: string;
+}
+
 // In-memory agent registry (would be DB in production)
 const agentRegistry = new Map<string, AgentInfo>();
 const agentMoods = new Map<string, AgentMood>();
+
+// Status classification windows:
+// - < 2 min ago → "online" (actively working right now, sitting at desk)
+// - 2 min - 30 min → "idle" (available, walking around office)
+// - > 30 min → "offline" (not in office)
+const ONLINE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes - active right now
+const IDLE_WINDOW_MS = 30 * 60 * 1000; // 30 minutes - still available
+
+function classifyAgentStatus(lastActivity: string | undefined, activeSessions: number): AgentStatusValue {
+  if (activeSessions > 0) {
+    console.log(`[agent-ops] ${lastActivity ? 'agent' : 'unknown'}: working (activeSessions=${activeSessions})`);
+    return AGENT_STATUS.working;
+  }
+
+  if (lastActivity) {
+    const lastActivityTime = new Date(lastActivity).getTime();
+    if (!Number.isNaN(lastActivityTime)) {
+      const ageMs = Date.now() - lastActivityTime;
+      console.log(`[agent-ops] ${lastActivity}: age=${ageMs}ms, onlineWindow=${ONLINE_WINDOW_MS}ms`);
+      if (ageMs < ONLINE_WINDOW_MS) {
+        return AGENT_STATUS.online;
+      }
+      if (ageMs < IDLE_WINDOW_MS) {
+        return AGENT_STATUS.idle;
+      }
+    }
+  }
+
+  console.log(`[agent-ops] agent: offline (no activity)`);
+  return AGENT_STATUS.offline;
+}
 
 /**
  * Load agents from openclaw.json configuration
@@ -167,6 +216,52 @@ export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to get agents",
+    };
+  }
+}
+
+/**
+ * Get normalized agent status list for UI polling
+ */
+export async function getAgentStatusList(): Promise<OperationResult<AgentStatusEntry[]>> {
+  try {
+    const configAgents = loadAgentsFromConfig();
+    const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
+    const recentActivities = activitiesResult.activities;
+
+    console.log(`[agent-ops] getAgentStatusList: ${configAgents.length} agents loaded, ${recentActivities.length} activities found`);
+    console.log(`[agent-ops] Agent IDs from config:`, configAgents.map(a => a.id));
+    if (recentActivities.length > 0) {
+      console.log(`[agent-ops] Recent activity agents:`, [...new Set(recentActivities.map(a => a.agent))].filter(Boolean));
+    }
+
+    const statuses = configAgents.map((agent) => {
+      const agentActivities = recentActivities.filter(
+        (activity) => activity.agent === agent.id || activity.agent?.toLowerCase().includes(agent.id.toLowerCase())
+      );
+      const activeSessions = agentActivities.filter((activity) => activity.status === "running").length;
+      const lastActivity = agentActivities.length > 0 ? agentActivities[0].timestamp : undefined;
+
+      console.log(`[agent-ops] ${agent.id}: ${agentActivities.length} activities, lastActivity=${lastActivity}, activeSessions=${activeSessions}`);
+
+      const status = classifyAgentStatus(lastActivity, activeSessions);
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        status,
+        lastActivity,
+        activeSessions,
+      };
+    });
+
+    console.log(`[agent-ops] Final statuses:`, statuses.map(s => `${s.id}:${s.status}`).join(', '));
+
+    return { success: true, data: statuses };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to get agent statuses",
     };
   }
 }

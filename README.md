@@ -58,7 +58,6 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | Feature | Description |
 |---------|-------------|
 | **Sub-Agents** | Real-time monitoring with spawn/completion timeline |
-| **Model Playground** | Compare responses from multiple models side-by-side |
 | **Kanban** | Task management with columns, priorities, and agent assignment |
 
 ### ⏰ Scheduling
@@ -372,7 +371,6 @@ superbotijo/
 | `/system` | System | Hardware & services monitor |
 | `/cron` | Cron | Job scheduler |
 | `/subagents` | Subagents | Sub-agent monitoring |
-| `/playground` | Playground | Model comparison |
 | `/reports` | Reports | Generated reports |
 | `/skills` | Skills | Skills manager |
 | `/terminal` | Terminal | Browser terminal |
@@ -505,7 +503,6 @@ Compared to the original TenecitOS:
 |---------|-------------|
 | Word Cloud | Frequent terms from memories |
 | 3D File Tree | Navigate files in 3D space |
-| Model Playground | Side-by-side model comparison |
 | Smart Suggestions | AI-powered optimization tips |
 | Shareable Reports | Export and share reports |
 | Multi-floor Office | 4-floor building + rooftop |

@@ -218,5 +218,5 @@ curl -X PATCH http://localhost:3000/api/kanban/agent/tasks/{taskId} \
 
 ## See Also
 
-- **Skill:** `/home/daniel/.openclaw/skills/kanban-tasks/SKILL.md`
+- **Skill:** `/home/daniel/.openclaw/workspace/skills/kanban-tasks/SKILL.md`
 - **API Docs:** `/home/daniel/.openclaw/workspace/superbotijo/docs/AGENT_KANBAN_API.md`

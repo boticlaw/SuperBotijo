@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState } from "react";
 import { OperationsJournalEntry, CreateJournalEntryInput, UpdateJournalEntryInput } from "@/lib/mission-types";
 import { X, Plus, Trash2, Save } from "lucide-react";
 
@@ -35,7 +35,7 @@ function getInitialState(entry?: OperationsJournalEntry | null) {
 }
 
 function JournalForm({ onClose, onSave, entry, isSaving }: JournalFormProps) {
-  const initialState = useMemo(() => getInitialState(entry), [entry]);
+  const initialState = getInitialState(entry);
   const [date, setDate] = useState(initialState.date);
   const [narrative, setNarrative] = useState(initialState.narrative);
   const [highlights, setHighlights] = useState<string[]>(initialState.highlights);
@@ -241,22 +241,7 @@ export function JournalEditorModal({
   entry,
   isSaving,
 }: JournalEditorModalProps) {
-  // Track opens to generate unique key for form reset
-  const [openCount, setOpenCount] = useState(0);
-  const prevIsOpenRef = useRef(isOpen);
-
-  // Update counter when modal opens (transitions from closed to open)
-  // This is intentional: we need to reset the form when modal opens
-  // eslint-disable-next-line react-compiler/react-compiler
-  useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      setOpenCount((c) => c + 1);
-    }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen]);
-
-  // Key changes when modal opens, forcing form to remount with fresh state
-  const formKey = `${openCount}-${entry?.id || "new"}`;
+  const formKey = entry?.id || "new";
 
   if (!isOpen) return null;
 

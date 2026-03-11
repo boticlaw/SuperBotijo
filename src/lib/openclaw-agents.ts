@@ -5,6 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { logActivity } from "@/lib/activity-logger";
+import { OPENCLAW_DIR } from "@/lib/paths";
 import {
   listProjects,
   createProject,
@@ -17,8 +18,6 @@ import type {
   CreateAgentIdentityInput,
   UpdateAgentIdentityInput,
 } from "@/lib/mission-types";
-
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
 
 export interface OpenClawAgentConfig {
   id: string;

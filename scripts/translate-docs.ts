@@ -216,7 +216,7 @@ async function callGemini(prompt: string): Promise<string> {
           } else {
             reject(new Error(`Unexpected Gemini response: ${data.slice(0, 300)}`));
           }
-        } catch (e) {
+        } catch {
           reject(new Error(`Failed to parse Gemini response: ${data.slice(0, 300)}`));
         }
       });
@@ -284,7 +284,7 @@ async function callOpenAICompatible(prompt: string): Promise<string> {
           } else {
             reject(new Error(`Unexpected response: ${data.slice(0, 200)}`));
           }
-        } catch (e) {
+        } catch {
           reject(new Error(`Failed to parse response: ${data.slice(0, 200)}`));
         }
       });
@@ -406,7 +406,7 @@ async function translateDocument(
     console.log(`  🔄 Translating ${missing.length} missing sections...`);
 
     // Read existing translation content
-    let translationContent = fs.readFileSync(translationPath, "utf-8");
+    const translationContent = fs.readFileSync(translationPath, "utf-8");
     const lines = translationContent.split("\n");
 
     // Insert translated sections at the right positions
@@ -414,7 +414,7 @@ async function translateDocument(
       const translatedSection = await translateSection(section);
 
       // Find insertion point (before next header in translation)
-      let insertLine = translationSections.length > 0
+      const insertLine = translationSections.length > 0
         ? translationSections[translationSections.length - 1].lineEnd
         : lines.length;
 

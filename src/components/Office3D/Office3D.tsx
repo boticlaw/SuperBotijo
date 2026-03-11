@@ -2,8 +2,9 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
-import { Suspense, useState, useEffect } from 'react';
+import { Bloom, EffectComposer, Vignette, ToneMapping } from '@react-three/postprocessing';
+import { ToneMappingMode } from 'postprocessing';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Vector3 } from 'three';
 import { AVATAR_HAIR_TYPES, AVATAR_HAT_TYPES, type AgentState, type AgentStatus, type AvatarAccessories } from "./agentsConfig";
 import AgentDesk from "./AgentDesk";
@@ -57,6 +58,8 @@ interface AgentStatusResponse {
   activeSessions?: number;
   lastActivity?: string;
 }
+
+const VALID_STATUSES: AgentStatus[] = ["idle", "working", "thinking", "error", "online", "offline"];
 
 
 interface Visitor {
@@ -166,16 +169,14 @@ export default function Office3D() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
   const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [walkingAvatarPositions, setWalkingAvatarPositions] = useState<Map<string, Vector3>>(new Map());
+  // Use ref instead of state to avoid re-renders on every frame
+  // WalkingAvatar will update this directly via callback
+  const walkingAvatarPositionsRef = useRef<Map<string, Vector3>>(new Map());
   const [loading, setLoading] = useState(true);
 
-  // Update walking avatar position
+  // Update walking avatar position - writes to ref, no re-renders
   const handleWalkingPositionUpdate = (id: string, pos: Vector3) => {
-    setWalkingAvatarPositions(prev => {
-      const newMap = new Map(prev);
-      newMap.set(id, pos);
-      return newMap;
-    });
+    walkingAvatarPositionsRef.current.set(id, pos.clone());
   };
 
   // Get agent state with fallback
@@ -226,8 +227,7 @@ export default function Office3D() {
         // Build states with all the data
         const states: Record<string, AgentState> = {};
         realAgents.forEach((agent: Agent) => {
-          const validStatuses: AgentStatus[] = ['idle', 'working', 'thinking', 'error', 'online', 'offline'];
-          const agentStatus: AgentStatus = validStatuses.includes(agent.status as AgentStatus) 
+          const agentStatus: AgentStatus = VALID_STATUSES.includes(agent.status as AgentStatus) 
             ? (agent.status as AgentStatus) 
             : 'offline';
             
@@ -265,6 +265,56 @@ export default function Office3D() {
     fetchAgentConfigs();
     const interval = setInterval(fetchAgentConfigs, 5 * 60 * 1000); // 5 minutes
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStatuses = async () => {
+      try {
+        const statusRes = await fetch("/api/agents/status");
+        if (!statusRes.ok) {
+          throw new Error(`Status fetch failed: ${statusRes.status}`);
+        }
+        const statusData = await statusRes.json();
+        const statuses = statusData.agents || [];
+
+        if (!isMounted) return;
+        setAgentStates((prev) => {
+          const next: Record<string, AgentState> = { ...prev };
+          statuses.forEach((statusInfo: AgentStatusResponse) => {
+            const nextStatus: AgentStatus = VALID_STATUSES.includes(statusInfo.status as AgentStatus)
+              ? (statusInfo.status as AgentStatus)
+              : "offline";
+            const current = next[statusInfo.id] || {
+              id: statusInfo.id,
+              status: "offline",
+              model: "unknown",
+              tokensPerHour: 0,
+              tasksInQueue: 0,
+              uptime: 0,
+            };
+
+            next[statusInfo.id] = {
+              ...current,
+              status: nextStatus,
+              currentTask: statusInfo.currentTask || current.currentTask,
+              lastActivity: statusInfo.lastActivity || current.lastActivity,
+            };
+          });
+          return next;
+        });
+      } catch (error) {
+        console.error("Failed to refresh agent statuses:", error);
+      }
+    };
+
+    fetchStatuses();
+    const interval = setInterval(fetchStatuses, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleDeskClick = (agentId: string) => {
@@ -311,12 +361,12 @@ export default function Office3D() {
     ...agents.map(a => ({ position: new Vector3(...a.position), radius: 0.8 })),
   ];
 
-  // Office bounds for walking avatars
+  // Office bounds for walking avatars - expanded for more walking area
   const officeBounds = {
-    minX: -10,
-    maxX: 10,
-    minZ: -8,
-    maxZ: 8,
+    minX: -12,
+    maxX: 12,
+    minZ: -9,
+    maxZ: 9,
   };
 
   if (loading) {
@@ -371,23 +421,24 @@ export default function Office3D() {
             />
           ))}
 
-          {/* Walking avatars for idle/offline agents */}
-          {agents
-            .filter(agent => {
-              const status = getAgentState(agent.id).status;
-              return status === 'idle' || status === 'offline';
-            })
-            .map((agent) => (
+          {/* Walking avatars - only idle agents walk around the office */}
+          {/* offline agents are NOT in the office, working/thinking are at their desks */}
+          {agents.map((agent) => {
+            const status = getAgentState(agent.id).status;
+            const shouldWalk = status === 'idle';
+            return (
               <WalkingAvatar
                 key={`walking-${agent.id}`}
                 agent={agent}
-                status={getAgentState(agent.id).status}
+                status={status}
+                visible={shouldWalk}
                 officeBounds={officeBounds}
                 obstacles={obstacles}
-                otherAvatarPositions={walkingAvatarPositions}
+                otherAvatarPositions={walkingAvatarPositionsRef.current}
                 onPositionUpdate={handleWalkingPositionUpdate}
               />
-            ))}
+            );
+          })}
 
           {/* Visitors (sub-agents) */}
           {visitors.map((visitor) => {
@@ -419,7 +470,7 @@ export default function Office3D() {
             onClick={handleWhiteboardClick}
           />
           <CoffeeMachine
-            position={[8, 0.8, -5]}
+            position={[8, 0, -5]}
             onClick={handleCoffeeClick}
           />
 
@@ -444,7 +495,7 @@ export default function Office3D() {
             />
           ))}
           <WallClock
-            position={[0, 2.5, -8.4]}
+            position={[0, 2.8, -7.6]}
             rotation={[0, 0, 0]}
           />
 
@@ -461,13 +512,22 @@ export default function Office3D() {
               <FirstPersonControls moveSpeed={5} />
             )}
 
-          {/* Post-processing */}
+          {/* Post-processing - cinematic look with bloom, vignette, and tone mapping */}
           <EffectComposer>
             <Bloom
-              intensity={0.42}
-              luminanceThreshold={0.82}
+              intensity={0.35}
+              luminanceThreshold={0.85}
               luminanceSmoothing={0.9}
               mipmapBlur
+            />
+            <Vignette
+              offset={0.4}
+              darkness={0.4}
+              eskil={false}
+            />
+            <ToneMapping
+              mode={ToneMappingMode.ACES_FILMIC}
+              resolution={256}
             />
           </EffectComposer>
         </Suspense>

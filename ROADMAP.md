@@ -264,10 +264,11 @@
 - [x] Modos especiales (Focus, God Mode, Cinematic)
 - **Archivos:** `src/components/Office3D/Building.tsx`, `src/components/Office3D/floors/*.tsx`
 
-**Temas alternativos disponibles:**
-- Habbo Room style (`src/components/office/HabboRoom.tsx`)
-- Zelda Room style (`src/components/office/ZeldaRoom.tsx`)
-- Stardew Valley style (`src/components/office/StardewRoom.tsx`)
+**Temas alternativos (planeados pero no implementados):**
+- Habbo Room style (prototipo abandonado)
+- Zelda Room style (prototipo abandonado)
+- Stardew Valley style (prototipo abandonado)
+- Estos fueron reemplazados por la versión 3D completa en Office3D/
 
 **Datos en tiempo real:**
 - `/api/agents/status` - estado de cada agente ✅

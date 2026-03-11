@@ -58,7 +58,6 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 | Característica | Descripción |
 |----------------|-------------|
 | **Sub-Agentes** | Monitoreo en tiempo real con timeline de spawn/completado |
-| **Playground de Modelos** | Compara respuestas de múltiples modelos lado a lado |
 | **Kanban** | Gestión de tareas con columnas, prioridades y asignación a agentes |
 
 ### ⏰ Programación
@@ -372,7 +371,6 @@ superbotijo/
 | `/system` | Sistema | Monitor de hardware y servicios |
 | `/cron` | Cron | Programador de jobs |
 | `/subagents` | Subagentes | Monitoreo de sub-agentes |
-| `/playground` | Playground | Comparación de modelos |
 | `/reports` | Reportes | Reportes generados |
 | `/skills` | Skills | Gestor de skills |
 | `/terminal` | Terminal | Terminal en navegador |
@@ -505,7 +503,6 @@ Comparado con el TenecitOS original:
 |----------------|-------------|
 | Nube de Palabras | Términos frecuentes de memorias |
 | Árbol de Archivos 3D | Navegar archivos en espacio 3D |
-| Playground de Modelos | Comparación de modelos lado a lado |
 | Sugerencias Inteligentes | Tips de optimización basados en IA |
 | Reportes Compartibles | Exportar y compartir reportes |
 | Oficina Multi-piso | Edificio de 4 pisos + terraza |
