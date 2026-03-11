@@ -581,28 +581,6 @@ export default function Office3D() {
         </button>
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-black/70 text-white p-4 rounded-lg backdrop-blur-sm">
-        <h3 className="text-sm font-bold mb-2">Estados</h3>
-        <div className="text-xs space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-success rounded-full"></div>
-            <span>Working</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-info rounded-full animate-pulse"></div>
-            <span>Thinking</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-neutral-500 rounded-full"></div>
-            <span>Idle</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-error rounded-full"></div>
-            <span>Error</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
