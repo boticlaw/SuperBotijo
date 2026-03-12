@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Box, Text } from '@react-three/drei';
 import type { Mesh } from 'three';
-import type { AgentConfig, AgentState } from './agentsConfig';
+import type { AvatarState, AvatarAccessories } from './agentsConfig';
 import VoxelChair from './VoxelChair';
 import VoxelKeyboard from './VoxelKeyboard';
 import VoxelMacMini from './VoxelMacMini';
@@ -15,21 +15,37 @@ import Notepad from './Notepad';
 import DeskPhoto from './DeskPhoto';
 import { DESK_DECOR_TYPES, getDeskDecorPreset, type DeskDecorItem } from './deskDecorPresets';
 
-interface AgentDeskProps {
-  agent: AgentConfig;
-  state: AgentState;
+export type AvatarType = 'WalkingAvatar' | 'SeatedAvatar' | 'VoxelAvatar' | 'none';
+
+export interface AgentDeskProps {
+  agentId: string;
+  agentName: string;
+  agentColor: string;
+  agentEmoji?: string;
+  agentRole?: string;
+  agentAccessories?: AvatarAccessories;
+  deskPosition: [number, number, number];
+  deskRotation?: [number, number, number];
+  avatarState: AvatarState;
+  avatarType?: AvatarType;
+  currentTask?: string;
   onClick: () => void;
   isSelected: boolean;
-  rotation?: [number, number, number];
   useSharedTable?: boolean;
 }
 
 export default function AgentDesk({
-  agent,
-  state,
+  agentId,
+  agentName,
+  agentColor,
+  agentEmoji = '🤖',
+  agentRole = 'Agent',
+  agentAccessories,
+  deskPosition,
+  deskRotation = [0, 0, 0],
+  avatarState,
   onClick,
   isSelected,
-  rotation = [0, 0, 0],
   useSharedTable = false,
 }: AgentDeskProps) {
   const deskRef = useRef<Mesh>(null);
@@ -38,13 +54,13 @@ export default function AgentDesk({
 
   // Animación de pulsación para estado "thinking"
   useFrame((frameState) => {
-    if (monitorRef.current && state.status === 'thinking') {
+    if (monitorRef.current && avatarState === 'thinking') {
       monitorRef.current.scale.setScalar(1 + Math.sin(frameState.clock.elapsedTime * 2) * 0.05);
     }
   });
 
   const getStatusColor = () => {
-    switch (state.status) {
+    switch (avatarState) {
       case 'working':
         return '#22c55e'; // green-500
       case 'online':
@@ -62,7 +78,7 @@ export default function AgentDesk({
   };
 
   const getMonitorEmissive = () => {
-    switch (state.status) {
+    switch (avatarState) {
       case 'working':
         return '#15803d'; // darker green
       case 'online':
@@ -80,7 +96,7 @@ export default function AgentDesk({
   };
 
   const getMonitorLines = () => {
-    switch (state.status) {
+    switch (avatarState) {
       case 'working':
         return [
           '> npm run build',
@@ -109,7 +125,7 @@ export default function AgentDesk({
         return [
           'Ready',
           '',
-          `Agent: ${agent.name}`,
+          `Agent: ${agentName}`,
           'Listening events...',
           '',
         ];
@@ -117,7 +133,7 @@ export default function AgentDesk({
         return [
           'Standby mode',
           '',
-          `Agent: ${agent.name}`,
+          `Agent: ${agentName}`,
           'Status: offline',
           '',
         ];
@@ -126,17 +142,17 @@ export default function AgentDesk({
         return [
           'Ready',
           '',
-          `Agent: ${agent.name}`,
+          `Agent: ${agentName}`,
           'Status: idle',
           '',
         ];
     }
   };
 
-  const decorItems = getDeskDecorPreset(agent.id).slice(0, 3);
+  const decorItems = getDeskDecorPreset(agentId).slice(0, 3);
 
   const renderDecorItem = (item: DeskDecorItem, index: number) => {
-    const key = `decor-${agent.id}-${item.type}-${index}`;
+    const key = `decor-${agentId}-${item.type}-${index}`;
 
     switch (item.type) {
       case DESK_DECOR_TYPES.coffeeMug:
@@ -153,7 +169,8 @@ export default function AgentDesk({
   };
 
   return (
-    <group position={agent.position} rotation={rotation}>
+    <group position={deskPosition} rotation={deskRotation}>
+      {/* Clickable desk surface */}
       {!useSharedTable && (
         <Box
           ref={deskRef}
@@ -161,20 +178,37 @@ export default function AgentDesk({
           position={[0, 0.75, 0]}
           castShadow
           receiveShadow
-          onClick={onClick}
-          onPointerOver={() => setHovered(true)}
-          onPointerOut={() => setHovered(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log("[AgentDesk] Click on desk for agent:", agentId, "state:", avatarState);
+            onClick();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+          }}
+          onPointerOut={(e) => {
+            e.stopPropagation();
+            setHovered(false);
+          }}
         >
           <meshStandardMaterial
-            color={hovered || isSelected ? agent.color : '#8B4513'}
-            emissive={hovered || isSelected ? agent.color : '#000000'}
+            color={hovered || isSelected ? agentColor : '#8B4513'}
+            emissive={hovered || isSelected ? agentColor : '#000000'}
             emissiveIntensity={hovered || isSelected ? 0.2 : 0}
           />
         </Box>
       )}
 
       {/* Monitor */}
-      <group position={[0, 1.5, -0.5]} onClick={onClick}>
+      <group 
+        position={[0, 1.5, -0.5]} 
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log("[AgentDesk] Monitor clicked for agent:", agentId, "state:", avatarState);
+          onClick();
+        }}
+      >
         <Box
           ref={monitorRef}
           args={[1.2, 0.8, 0.05]}
@@ -189,9 +223,9 @@ export default function AgentDesk({
             color="#05070d"
             emissive={getMonitorEmissive()}
             emissiveIntensity={
-              state.status === 'offline' ? 0.22 :
-              state.status === 'idle' ? 0.3 :
-              state.status === 'online' ? 0.45 :
+              avatarState === 'offline' ? 0.22 :
+              avatarState === 'idle' ? 0.3 :
+              avatarState === 'online' ? 0.45 :
               0.62
             }
             toneMapped={false}
@@ -200,7 +234,7 @@ export default function AgentDesk({
 
         {getMonitorLines().map((line, index) => (
           <Text
-            key={`monitor-line-${agent.id}-${index}`}
+            key={`monitor-line-${agentId}-${index}`}
             position={[-0.5, 0.23 - index * 0.11, 0.04]}
             fontSize={0.06}
             color={getStatusColor()}
@@ -233,11 +267,19 @@ export default function AgentDesk({
         {decorItems.map((item, index) => renderDecorItem(item, index))}
       </group>
 
-      {/* Seated avatar with click and label - only when working/online/thinking */}
-      {(state.status === 'working' || state.status === 'online' || state.status === 'thinking') && (
+      {/* Dynamic avatar rendering based on avatarState */}
+      {(avatarState === 'working' || avatarState === 'thinking' || avatarState === 'online') && (
         <ClickableAvatar
-          agent={agent}
-          status={state.status}
+          agent={{
+            id: agentId,
+            name: agentName,
+            emoji: agentEmoji,
+            color: agentColor,
+            role: agentRole || 'Agent',
+            position: [0, 0, 0],
+            accessories: agentAccessories,
+          }}
+          status={avatarState}
           onClick={onClick}
           isSelected={isSelected}
           scale={1.5}
@@ -271,9 +313,30 @@ export default function AgentDesk({
       {isSelected && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[1.5, 32]} />
-          <meshBasicMaterial color={agent.color} transparent opacity={0.3} />
+          <meshBasicMaterial color={agentColor} transparent opacity={0.3} />
         </mesh>
       )}
     </group>
   );
+}
+
+/**
+ * Calculate avatar type based on agent state
+ * This maps the agent's current status to the appropriate avatar type
+ */
+export function calculateAvatarType(state: AvatarState): AvatarType {
+  switch (state) {
+    case 'offline':
+      return 'none';
+    case 'idle':
+      return 'WalkingAvatar';
+    case 'working':
+    case 'thinking':
+    case 'error':
+      return 'SeatedAvatar';
+    case 'online':
+      return 'SeatedAvatar';
+    default:
+      return 'none';
+  }
 }

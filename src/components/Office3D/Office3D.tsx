@@ -1,12 +1,13 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sky, Environment } from '@react-three/drei';
+import { OrbitControls, Sky, Environment, Box } from '@react-three/drei';
 import { Bloom, EffectComposer, Vignette, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { Vector3 } from 'three';
-import { AVATAR_HAIR_TYPES, AVATAR_HAT_TYPES, type AgentState, type AgentStatus, type AvatarAccessories } from "./agentsConfig";
+import { type AgentState, type AgentStatus, type AvatarAccessories } from "./agentsConfig";
+import { fetchOfficeAgents, fetchAgentStatuses, getDefaultAccessories } from "@/lib/office-agents";
 import AgentDesk from "./AgentDesk";
 import Floor from './Floor';
 import Walls from './Walls';
@@ -21,55 +22,59 @@ import Bookshelf from './Bookshelf';
 import WallClock from './WallClock';
 import Window from './Window';
 import FirstPersonControls from './FirstPersonControls';
-import VisitorAvatar from './VisitorAvatar';
+import { AgentConnection } from './AgentConnection';
 import { MemoryModal } from './MemoryModal';
 import { RoadmapModal } from './RoadmapModal';
 import { EnergyModal } from './EnergyModal';
 import WalkingAvatar from './WalkingAvatar';
+import { CollabTable } from './CollabTable';
+import { LoungeChair } from './LoungeChair';
 
-interface Agent {
+interface Visitor {
   id: string;
+  parentId: string;
+  subagentId: string;
   name: string;
-  emoji: string;
-  color: string;
+  task: string;
+  model: string;
+  tokens: number;
+  status: 'active' | 'idle' | 'offline';
+  ageMs: number;
+}
+
+interface AgentApiResponse {
+  agents: AgentApiItem[];
+}
+
+interface AgentApiItem {
+  id: string;
   model?: string;
-  workspace?: string;
-  dmPolicy?: string;
-  allowAgents?: string[];
-  botToken?: string;
-  status?: string;
-  lastActivity?: string;
-  activeSessions?: number;
   tokensUsed?: number;
   sessionCount?: number;
-  currentTask?: string;
   mood?: {
     mood: string;
     emoji: string;
     streak: number;
     energyLevel: number;
   };
+  allowAgents?: string[];
+  allowAgentsDetails?: AllowedSubagent[];
 }
 
-interface AgentStatusResponse {
+interface AllowedSubagent {
   id: string;
-  status: string;
-  currentTask?: string;
-  activeSessions?: number;
-  lastActivity?: string;
+  name: string;
+  emoji: string;
+  color: string;
 }
 
-const VALID_STATUSES: AgentStatus[] = ["idle", "working", "thinking", "error", "online", "offline"];
-
-
-interface Visitor {
+interface ConfiguredSubagent {
   id: string;
   parentId: string;
-  parentName: string;
-  task: string;
-  model: string;
-  tokens: number;
-  status: 'active' | 'idle';
+  subagentId: string;
+  name: string;
+  emoji: string;
+  color: string;
 }
 
 interface AgentConfig {
@@ -83,6 +88,8 @@ interface AgentConfig {
   role: string;
   department?: string;
   accessories?: AvatarAccessories;
+  parentId?: string;
+  currentTask?: string;
 }
 
 interface PlantDecoration {
@@ -92,74 +99,114 @@ interface PlantDecoration {
   radius: number;
 }
 
-const DEFAULT_AGENT_ACCESSORIES: Record<string, AvatarAccessories> = {
-  main: { glasses: true, hair: AVATAR_HAIR_TYPES.short },
-  infra: { hat: AVATAR_HAT_TYPES.cap, hair: AVATAR_HAIR_TYPES.spiky },
-  developer: { beard: true, hair: AVATAR_HAIR_TYPES.long },
-  studio: { earrings: true, hair: AVATAR_HAIR_TYPES.long },
-};
-
-const ACCESSORY_PRESETS: AvatarAccessories[] = [
-  { glasses: true, hair: AVATAR_HAIR_TYPES.short },
-  { hat: AVATAR_HAT_TYPES.beanie, hair: AVATAR_HAIR_TYPES.short },
-  { beard: true, hair: AVATAR_HAIR_TYPES.long },
-  { hat: AVATAR_HAT_TYPES.cap, glasses: true, hair: AVATAR_HAIR_TYPES.none },
-  { earrings: true, hair: AVATAR_HAIR_TYPES.spiky },
-];
-
-function getStringHash(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
-function getDefaultAccessories(agentId: string): AvatarAccessories {
-  if (DEFAULT_AGENT_ACCESSORIES[agentId]) {
-    return DEFAULT_AGENT_ACCESSORIES[agentId];
-  }
-
-  const presetIndex = getStringHash(agentId) % ACCESSORY_PRESETS.length;
-  return ACCESSORY_PRESETS[presetIndex];
+interface WalkwayLane {
+  id: string;
+  position: [number, number, number];
+  size: [number, number];
+  rotationY?: number;
+  color: string;
+  emissive?: string;
 }
 
 const PLANT_DECORATIONS: PlantDecoration[] = [
-  // Entrada/frente: árboles en esquinas para enmarcar la escena
-  { position: [-8.7, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
-  { position: [8.7, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
+  // Entrada: árboles en esquinas para marcar recepción
+  { position: [-8.8, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
+  { position: [8.8, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
 
-  // Zona de servicios: verdes cerca de muebles grandes
-  { position: [-6.9, 0, -4.7], size: "medium", type: "bush", radius: 0.5 },
-  { position: [6.9, 0, -4.7], size: "medium", type: "bush", radius: 0.5 },
+  // Esquinas de servicio: un poco de verde en coffee/archive corners
+  { position: [-7.2, 0, -3.9], size: "medium", type: "bush", radius: 0.52 },
+  { position: [7.2, 0, -3.9], size: "medium", type: "bush", radius: 0.52 },
 
-  // Toques de detalle en laterales de pizarra
-  { position: [-2.6, 0, -7.1], size: "small", type: "succulent", radius: 0.38 },
-  { position: [2.6, 0, -7.1], size: "small", type: "succulent", radius: 0.38 },
+  // Laterales de pizarra: plantas chicas de apoyo visual
+  { position: [-1.9, 0, -7.0], size: "small", type: "succulent", radius: 0.36 },
+  { position: [1.9, 0, -7.0], size: "small", type: "succulent", radius: 0.36 },
 ];
 
-// Generate positions dynamically based on number of agents
-function generateAgentPositions(agents: Agent[]): AgentConfig[] {
-  const positions: [number, number, number][] = [
-    [0, 0, 0],
-    [-4, 0, -3],
-    [4, 0, -3],
-    [-4, 0, 3],
-    [4, 0, 3],
-    [0, 0, 6],
-    [-6, 0, 0],
-    [6, 0, 0],
-  ];
+const FILE_CABINET_POSITION: [number, number, number] = [-8.6, 0, -5.4];
+const WHITEBOARD_POSITION: [number, number, number] = [0, 0, -8];
+const COFFEE_MACHINE_POSITION: [number, number, number] = [8.6, 0, -5.4];
 
-  return agents.map((agent, index) => ({
-    id: agent.id,
-    name: agent.name || agent.id,
-    emoji: agent.emoji || '🤖',
-    position: positions[index % positions.length],
-    color: agent.color || '#666666',
-    role: agent.id === 'main' ? 'Main Agent' : 'Agent',
-    accessories: getDefaultAccessories(agent.id),
-  }));
+const LEFT_BOOKSHELF_POSITION: [number, number, number] = [-10.1, 0, -1.8];
+const RIGHT_BOOKSHELF_POSITION: [number, number, number] = [10.1, 0, -1.8];
+
+const FRONT_WINDOW_POSITION: [number, number, number] = [5.2, 2.5, -9.85];
+const SIDE_WINDOW_POSITION: [number, number, number] = [-14.85, 2.5, 0.4];
+
+const COLLAB_ZONE_CENTER: [number, number, number] = [0, 0, -5.9];
+const FOCUS_ZONE_CENTER: [number, number, number] = [-10.5, 0, -3.2];
+const BREAK_ZONE_CENTER: [number, number, number] = [9.2, 0, -4.9];
+
+const WALKWAY_LANES: WalkwayLane[] = [
+  {
+    id: "main-corridor",
+    position: [0, 0.012, 1.3],
+    size: [14.5, 1.25],
+    color: "#2f394a",
+    emissive: "#1e3a8a",
+  },
+  {
+    id: "collab-connector",
+    position: [0, 0.012, -2.9],
+    size: [1.25, 6.2],
+    color: "#364152",
+    emissive: "#0f766e",
+  },
+  {
+    id: "left-focus-connector",
+    position: [-6.6, 0.012, -2.6],
+    size: [4.1, 1.1],
+    color: "#303949",
+    emissive: "#6b7280",
+  },
+  {
+    id: "right-break-connector",
+    position: [6.2, 0.012, -3.55],
+    size: [4.4, 0.95],
+    color: "#2f3d46",
+    emissive: "#0f766e",
+  },
+];
+
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const IDLE_WINDOW_MS = 30 * 60 * 1000;
+const SUBAGENT_DESK_BOUNDS = {
+  minX: -8.4,
+  maxX: 8.4,
+  minZ: -6.4,
+  maxZ: 6.4,
+} as const;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizeSubagentId(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isSameSubagent(configuredName: string, runtimeName: string): boolean {
+  const configured = normalizeSubagentId(configuredName);
+  const runtime = normalizeSubagentId(runtimeName);
+
+  if (!configured || !runtime) {
+    return false;
+  }
+
+  return configured === runtime || runtime.includes(configured) || configured.includes(runtime);
+}
+
+function buildSubagentOfficeId(parentId: string, subagentId: string): string {
+  return `${parentId}:${subagentId}`;
+}
+
+function getVisitorStatus(ageMs: number): Visitor["status"] {
+  if (ageMs < ONLINE_WINDOW_MS) {
+    return "active";
+  }
+  if (ageMs < IDLE_WINDOW_MS) {
+    return "idle";
+  }
+  return "offline";
 }
 
 export default function Office3D() {
@@ -169,6 +216,7 @@ export default function Office3D() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
   const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [configuredSubagents, setConfiguredSubagents] = useState<ConfiguredSubagent[]>([]);
   // Use ref instead of state to avoid re-renders on every frame
   // WalkingAvatar will update this directly via callback
   const walkingAvatarPositionsRef = useRef<Map<string, Vector3>>(new Map());
@@ -183,7 +231,7 @@ export default function Office3D() {
   const getAgentState = (agentId: string): AgentState => {
     return agentStates[agentId] || {
       id: agentId,
-      status: 'idle',
+      status: 'offline',
       model: 'unknown',
       tokensPerHour: 0,
       tasksInQueue: 0,
@@ -191,55 +239,117 @@ export default function Office3D() {
     };
   };
 
-  // Load agent configs (every 5 minutes)
+  // Load agent configs using fetchOfficeAgents (every 5 minutes)
   useEffect(() => {
     const fetchAgentConfigs = async () => {
       try {
-        // Fetch full agent data from /api/agents
-        const agentsRes = await fetch('/api/agents');
-        const agentsData = await agentsRes.json();
+        // Fetch agents with positions from the centralized function
+        const agentsWithDesks = await fetchOfficeAgents();
         
-        // Fetch dynamic statuses from /api/agents/status
-        const statusRes = await fetch('/api/agents/status');
-        const statusData = await statusRes.json();
-        
-        // Build status map for quick lookup
-        const statusMap = new Map<string, AgentStatusResponse>();
-        for (const s of statusData.agents || []) {
-          statusMap.set(s.id, s as AgentStatusResponse);
+        if (agentsWithDesks.length === 0) {
+          // Fallback to main agent only if no agents found
+          setAgents([{
+            id: 'main',
+            name: 'Main Agent',
+            emoji: '🤖',
+            position: [0, 0, 0],
+            deskRotation: [0, 0, 0],
+            tableId: 'core-1',
+            color: '#ff6b35',
+            role: 'Main Agent',
+            department: 'core',
+          }]);
+          setConfiguredSubagents([]);
+          setLoading(false);
+          return;
         }
         
-        // Combine data
-        const realAgents = (agentsData.agents || []).map((agent: Agent) => {
-          const statusInfo = statusMap.get(agent.id);
-          return {
-            ...agent,
-            status: statusInfo?.status || agent.status || 'offline',
-            currentTask: statusInfo?.currentTask || agent.currentTask,
-            activeSessions: statusInfo?.activeSessions ?? agent.activeSessions ?? 0,
-            lastActivity: statusInfo?.lastActivity || agent.lastActivity,
-          };
+        // Also fetch statuses separately for the state
+        const statusMap = await fetchAgentStatuses();
+
+        let agentsApiList: AgentApiItem[] = [];
+        const agentsRes = await fetch("/api/agents");
+        if (agentsRes.ok) {
+          const agentsApiData: AgentApiResponse = await agentsRes.json();
+          agentsApiList = agentsApiData.agents || [];
+        }
+
+        const agentDetailsById = new Map<string, AgentApiItem>();
+        agentsApiList.forEach((agent) => {
+          agentDetailsById.set(agent.id, agent);
         });
+
+        const configuredSubagentIds = new Set<string>();
+        agentsApiList.forEach((agent) => {
+          (agent.allowAgents || []).forEach((subagentId) => {
+            configuredSubagentIds.add(subagentId);
+          });
+        });
+
+        const primaryAgents = agentsWithDesks.filter((agent) => !configuredSubagentIds.has(agent.id));
+
+        // Map AgentWithDesk to AgentConfig format for rendering
+        const configs = primaryAgents.map((desk) => ({
+          id: desk.id,
+          name: desk.name,
+          emoji: desk.emoji,
+          color: desk.color,
+          role: desk.role,
+          position: [desk.deskPosition.x, desk.deskPosition.y, desk.deskPosition.z] as [number, number, number],
+          deskRotation: [0, desk.deskPosition.rotation, 0] as [number, number, number],
+          accessories: desk.accessories,
+        }));
         
-        const configs = generateAgentPositions(realAgents);
         setAgents(configs);
+
+        if (agentsApiList.length > 0) {
+          const nextConfiguredSubagents: ConfiguredSubagent[] = [];
+
+          agentsApiList.forEach((parentAgent) => {
+            const allowed = parentAgent.allowAgents || [];
+            allowed.forEach((subagentId) => {
+              const details = parentAgent.allowAgentsDetails?.find((entry) => entry.id === subagentId);
+              nextConfiguredSubagents.push({
+                id: buildSubagentOfficeId(parentAgent.id, subagentId),
+                parentId: parentAgent.id,
+                subagentId,
+                name: details?.name || subagentId,
+                emoji: details?.emoji || "🤖",
+                color: details?.color || "#60a5fa",
+              });
+            });
+          });
+
+          const uniqueConfiguredSubagents = new Map<string, ConfiguredSubagent>();
+          nextConfiguredSubagents.forEach((subagent) => {
+            uniqueConfiguredSubagents.set(subagent.id, subagent);
+          });
+
+          setConfiguredSubagents(Array.from(uniqueConfiguredSubagents.values()));
+        } else {
+          setConfiguredSubagents([]);
+        }
         
-        // Build states with all the data
+        // Build states with status data from the map (for ALL agents, including configured subagents)
         const states: Record<string, AgentState> = {};
-        realAgents.forEach((agent: Agent) => {
-          const agentStatus: AgentStatus = VALID_STATUSES.includes(agent.status as AgentStatus) 
-            ? (agent.status as AgentStatus) 
-            : 'offline';
-            
+        agentsWithDesks.forEach((agent) => {
+          const statusInfo = statusMap.get(agent.id);
+          const details = agentDetailsById.get(agent.id);
+          const agentStatus: AgentStatus = statusInfo?.status 
+            ? (["idle", "working", "thinking", "error", "online", "offline"].includes(statusInfo.status) 
+              ? statusInfo.status as AgentStatus 
+              : "offline")
+            : "offline";
+             
           states[agent.id] = {
             id: agent.id,
             status: agentStatus,
-            currentTask: agent.currentTask,
-            model: agent.model,
-            tokensUsed: agent.tokensUsed,
-            sessionCount: agent.sessionCount,
-            lastActivity: agent.lastActivity,
-            mood: agent.mood,
+            currentTask: statusInfo?.currentTask,
+            model: details?.model,
+            tokensUsed: details?.tokensUsed,
+            sessionCount: details?.sessionCount ?? statusInfo?.activeSessions,
+            lastActivity: statusInfo?.lastActivity,
+            mood: details?.mood,
           };
         });
         setAgentStates(states);
@@ -257,6 +367,7 @@ export default function Office3D() {
           role: 'Main Agent',
           department: 'core',
         }]);
+        setConfiguredSubagents([]);
       } finally {
         setLoading(false);
       }
@@ -267,27 +378,26 @@ export default function Office3D() {
     return () => clearInterval(interval);
   }, []);
 
+  // Poll agent statuses every 15 seconds using fetchAgentStatuses
   useEffect(() => {
     let isMounted = true;
 
     const fetchStatuses = async () => {
       try {
-        const statusRes = await fetch("/api/agents/status");
-        if (!statusRes.ok) {
-          throw new Error(`Status fetch failed: ${statusRes.status}`);
-        }
-        const statusData = await statusRes.json();
-        const statuses = statusData.agents || [];
+        // Use centralized fetch function
+        const statusMap = await fetchAgentStatuses();
 
         if (!isMounted) return;
         setAgentStates((prev) => {
           const next: Record<string, AgentState> = { ...prev };
-          statuses.forEach((statusInfo: AgentStatusResponse) => {
-            const nextStatus: AgentStatus = VALID_STATUSES.includes(statusInfo.status as AgentStatus)
-              ? (statusInfo.status as AgentStatus)
+          statusMap.forEach((statusInfo, agentId) => {
+            const nextStatus: AgentStatus = statusInfo?.status 
+              ? (["idle", "working", "thinking", "error", "online", "offline"].includes(statusInfo.status) 
+                ? statusInfo.status as AgentStatus 
+                : "offline")
               : "offline";
-            const current = next[statusInfo.id] || {
-              id: statusInfo.id,
+            const current = next[agentId] || {
+              id: agentId,
               status: "offline",
               model: "unknown",
               tokensPerHour: 0,
@@ -295,11 +405,11 @@ export default function Office3D() {
               uptime: 0,
             };
 
-            next[statusInfo.id] = {
+            next[agentId] = {
               ...current,
               status: nextStatus,
-              currentTask: statusInfo.currentTask || current.currentTask,
-              lastActivity: statusInfo.lastActivity || current.lastActivity,
+              currentTask: statusInfo?.currentTask || current.currentTask,
+              lastActivity: statusInfo?.lastActivity || current.lastActivity,
             };
           });
           return next;
@@ -317,7 +427,81 @@ export default function Office3D() {
     };
   }, []);
 
+  // Fetch visitors (subagents) from sessions API
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchVisitors = async () => {
+      try {
+        const res = await fetch("/api/sessions");
+        if (!res.ok) {
+          throw new Error(`Sessions fetch failed: ${res.status}`);
+        }
+        const data = await res.json();
+        const sessions = data.sessions || [];
+
+        if (!isMounted) return;
+
+        // Parse session key to extract parent agent
+        // Format: agent:<agentId>:subagent:<subagentId>
+        const parseParentFromKey = (key: string): string => {
+          const parts = key.split(":");
+          // parts[0] = "agent", parts[1] = parentId
+          return parts[1] || "main";
+        };
+
+        const visitorsById = new Map<string, Visitor>();
+
+        sessions
+          .filter((s: { type: string }) => s.type === "subagent")
+          .map((s: {
+            subagentId?: string;
+            key: string;
+            model: string;
+            inputTokens: number;
+            outputTokens: number;
+            totalTokens: number;
+            ageMs?: number;
+          }) => {
+            const parentId = parseParentFromKey(s.key);
+            const subagentId = s.subagentId || s.key;
+            const ageMs = typeof s.ageMs === "number" ? s.ageMs : Number.MAX_SAFE_INTEGER;
+
+            return {
+              id: buildSubagentOfficeId(parentId, subagentId),
+              parentId,
+              subagentId,
+              name: subagentId,
+              task: "Working...",
+              model: s.model || "unknown",
+              tokens: s.totalTokens || s.inputTokens + s.outputTokens,
+              status: getVisitorStatus(ageMs),
+              ageMs,
+            } as Visitor;
+          })
+          .forEach((visitor: Visitor) => {
+            const current = visitorsById.get(visitor.id);
+            if (!current || visitor.ageMs < current.ageMs) {
+              visitorsById.set(visitor.id, visitor);
+            }
+          });
+
+        setVisitors(Array.from(visitorsById.values()));
+      } catch (error) {
+        console.error("Failed to fetch visitors:", error);
+      }
+    };
+
+    fetchVisitors();
+    const interval = setInterval(fetchVisitors, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const handleDeskClick = (agentId: string) => {
+    console.log("[Office3D] handleDeskClick called for agent:", agentId);
     setSelectedAgent(agentId);
   };
 
@@ -341,24 +525,178 @@ export default function Office3D() {
     setInteractionModal(null);
   };
 
+  const runtimeSubagentByConfiguredId = new Map<string, Visitor>();
+  const usedRuntimeVisitorIds = new Set<string>();
+
+  // Pass 1: strict/fuzzy identifier match
+  configuredSubagents.forEach((subagent) => {
+    const runtime = visitors.find(
+      (visitor) =>
+        !usedRuntimeVisitorIds.has(visitor.id) &&
+        visitor.parentId === subagent.parentId &&
+        (isSameSubagent(subagent.subagentId, visitor.subagentId) ||
+          isSameSubagent(subagent.subagentId, visitor.name) ||
+          isSameSubagent(subagent.name, visitor.name))
+    );
+
+    if (runtime) {
+      runtimeSubagentByConfiguredId.set(subagent.id, runtime);
+      usedRuntimeVisitorIds.add(runtime.id);
+    }
+  });
+
+  // Pass 2: fallback by parent + recency order
+  configuredSubagents.forEach((subagent) => {
+    if (runtimeSubagentByConfiguredId.has(subagent.id)) {
+      return;
+    }
+
+    const runtime = visitors
+      .filter((visitor) => visitor.parentId === subagent.parentId && !usedRuntimeVisitorIds.has(visitor.id))
+      .sort((a, b) => a.ageMs - b.ageMs)[0];
+
+    if (runtime) {
+      runtimeSubagentByConfiguredId.set(subagent.id, runtime);
+      usedRuntimeVisitorIds.add(runtime.id);
+    }
+  });
+
+  const subagentConfigs: AgentConfig[] = (() => {
+    const configs: AgentConfig[] = [];
+    const parentSubagentCounts = new Map<string, number>();
+
+    configuredSubagents.forEach((subagent) => {
+      const parentAgent = agents.find((agent) => agent.id === subagent.parentId);
+      if (!parentAgent) return;
+
+      const count = parentSubagentCounts.get(subagent.parentId) || 0;
+      parentSubagentCounts.set(subagent.parentId, count + 1);
+
+      const laneIndex = count % 3;
+      const laneOffsets = [-3.2, 0, 3.2] as const;
+      const column = Math.floor(count / 3);
+
+      // Prefer inward placement so desks do not cross side walls.
+      const side = parentAgent.position[0] >= 0 ? -1 : 1;
+      const offsetX = side * (3.8 + column * 3.0);
+      const offsetZ = laneOffsets[laneIndex];
+
+      const subagentPosition: [number, number, number] = [
+        clamp(parentAgent.position[0] + offsetX, SUBAGENT_DESK_BOUNDS.minX, SUBAGENT_DESK_BOUNDS.maxX),
+        0,
+        clamp(parentAgent.position[2] + offsetZ, SUBAGENT_DESK_BOUNDS.minZ, SUBAGENT_DESK_BOUNDS.maxZ),
+      ];
+
+      const runtime = runtimeSubagentByConfiguredId.get(subagent.id);
+
+      configs.push({
+        id: subagent.id,
+        name: subagent.name,
+        emoji: subagent.emoji,
+        position: subagentPosition,
+        color: subagent.color,
+        role: "Sub-agent",
+        parentId: subagent.parentId,
+        currentTask: runtime?.task,
+      });
+    });
+
+    return configs;
+  })();
+
+  const subagentStateById = new Map<string, AgentStatus>(
+    configuredSubagents.map((subagent) => {
+      const configuredSubagentState = agentStates[subagent.subagentId];
+      if (configuredSubagentState) {
+        return [subagent.id, configuredSubagentState.status];
+      }
+
+      const runtime = runtimeSubagentByConfiguredId.get(subagent.id);
+      const status: AgentStatus =
+        runtime?.status === "active" ? "working" : runtime?.status === "idle" ? "idle" : "offline";
+      return [subagent.id, status];
+    })
+  );
+
+  const selectedAgentConfig = selectedAgent
+    ? agents.find((agent) => agent.id === selectedAgent) || subagentConfigs.find((agent) => agent.id === selectedAgent) || null
+    : null;
+
+  const selectedConfiguredSubagent = selectedAgent
+    ? configuredSubagents.find((subagent) => subagent.id === selectedAgent) || null
+    : null;
+
+  const selectedPanelAgent: AgentConfig | null = (() => {
+    if (!selectedAgentConfig) {
+      return null;
+    }
+
+    if (!selectedConfiguredSubagent) {
+      return selectedAgentConfig;
+    }
+
+    return {
+      ...selectedAgentConfig,
+      id: selectedConfiguredSubagent.subagentId,
+      name: selectedConfiguredSubagent.name,
+      emoji: selectedConfiguredSubagent.emoji,
+      color: selectedConfiguredSubagent.color,
+    };
+  })();
+
+  const selectedAgentState: AgentState | null = (() => {
+    if (!selectedAgent || !selectedAgentConfig) {
+      return null;
+    }
+
+    const primary = agents.find((agent) => agent.id === selectedAgent);
+    if (primary) {
+      return getAgentState(selectedAgent);
+    }
+
+    const runtime = runtimeSubagentByConfiguredId.get(selectedAgent);
+    const configuredState = selectedConfiguredSubagent
+      ? agentStates[selectedConfiguredSubagent.subagentId]
+      : undefined;
+    const status = subagentStateById.get(selectedAgent) || "offline";
+
+    return {
+      id: selectedAgent,
+      status,
+      currentTask: configuredState?.currentTask || runtime?.task,
+      model: configuredState?.model || runtime?.model,
+      tokensUsed: configuredState?.tokensUsed ?? runtime?.tokens,
+      sessionCount: configuredState?.sessionCount ?? (runtime ? 1 : 0),
+      lastActivity:
+        configuredState?.lastActivity ||
+        (runtime ? new Date(Date.now() - runtime.ageMs).toISOString() : undefined),
+      mood: configuredState?.mood,
+    };
+  })();
+
   // Obstáculos para visitors y walking avatars
   const obstacles = [
     // Archivador
-    { position: new Vector3(-8, 0, -5), radius: 0.8 },
+    { position: new Vector3(...FILE_CABINET_POSITION), radius: 0.85 },
     // Pizarra
-    { position: new Vector3(0, 0, -8), radius: 1.5 },
+    { position: new Vector3(...WHITEBOARD_POSITION), radius: 1.45 },
     // Máquina de café
-    { position: new Vector3(8, 0, -5), radius: 0.6 },
+    { position: new Vector3(...COFFEE_MACHINE_POSITION), radius: 0.8 },
     // Estanterías
-    { position: new Vector3(-9.2, 0, 2.2), radius: 0.9 },
-    { position: new Vector3(9.2, 0, 2.2), radius: 0.9 },
+    { position: new Vector3(...LEFT_BOOKSHELF_POSITION), radius: 0.95 },
+    { position: new Vector3(...RIGHT_BOOKSHELF_POSITION), radius: 0.95 },
+    // Zonas premium
+    { position: new Vector3(...COLLAB_ZONE_CENTER), radius: 1.85 },
+    { position: new Vector3(...FOCUS_ZONE_CENTER), radius: 1.25 },
+    { position: new Vector3(...BREAK_ZONE_CENTER), radius: 0.95 },
     // Plantas
     ...PLANT_DECORATIONS.map((plant) => ({
       position: new Vector3(...plant.position),
       radius: plant.radius,
     })),
     // Escritorios (agent positions)
-    ...agents.map(a => ({ position: new Vector3(...a.position), radius: 0.8 })),
+    ...agents.map((agent) => ({ position: new Vector3(...agent.position), radius: 0.8 })),
+    ...subagentConfigs.map((subagent) => ({ position: new Vector3(...subagent.position), radius: 0.8 })),
   ];
 
   // Office bounds for walking avatars - expanded for more walking area
@@ -387,6 +725,7 @@ export default function Office3D() {
         shadows
         gl={{ antialias: true, alpha: false }}
         style={{ width: '100%', height: '100%' }}
+        onPointerMissed={() => console.log("[Office3D] Pointer missed - no mesh was clicked")}
       >
         <Suspense fallback={
           <mesh>
@@ -410,12 +749,133 @@ export default function Office3D() {
           {/* Techo: visible solo en modo FPS para no bloquear la vista cenital */}
           {controlMode === 'fps' && <Ceiling />}
 
+          {/* Open Office Premium: circulation lanes */}
+          {WALKWAY_LANES.map((lane) => (
+            <mesh
+              key={lane.id}
+              position={lane.position}
+              rotation={[-Math.PI / 2, lane.rotationY || 0, 0]}
+              receiveShadow
+            >
+              <planeGeometry args={lane.size} />
+              <meshStandardMaterial
+                color={lane.color}
+                roughness={0.92}
+                metalness={0.06}
+                emissive={lane.emissive || "#000000"}
+                emissiveIntensity={0.12}
+              />
+            </mesh>
+          ))}
+
+          {/* Open Office Premium: collaboration zone near whiteboard */}
+          <group>
+            <mesh position={[COLLAB_ZONE_CENTER[0], 0.015, COLLAB_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <planeGeometry args={[4.8, 2.6]} />
+              <meshStandardMaterial color="#2b3445" roughness={0.9} metalness={0.05} />
+            </mesh>
+
+            <CollabTable position={[COLLAB_ZONE_CENTER[0], 0, COLLAB_ZONE_CENTER[2]]} />
+
+            {[
+              [-1.25, -0.8, 0],
+              [1.25, -0.8, 0],
+              [-1.25, 0.8, Math.PI],
+              [1.25, 0.8, Math.PI],
+            ].map(([x, z, rot], index) => (
+              <LoungeChair
+                key={`collab-chair-${index}`}
+                position={[COLLAB_ZONE_CENTER[0] + Number(x), 0, COLLAB_ZONE_CENTER[2] + Number(z)]}
+                rotation={[0, Number(rot), 0]}
+                variant="task"
+              />
+            ))}
+
+            <spotLight
+              position={[COLLAB_ZONE_CENTER[0], 4.2, COLLAB_ZONE_CENTER[2] + 0.5]}
+              angle={0.5}
+              penumbra={0.5}
+              intensity={0.4}
+              distance={11}
+              color="#f8fafc"
+              castShadow
+            />
+            <pointLight position={[COLLAB_ZONE_CENTER[0] - 1.8, 1.8, COLLAB_ZONE_CENTER[2] + 0.1]} intensity={0.14} distance={6} color="#93c5fd" />
+            <pointLight position={[COLLAB_ZONE_CENTER[0] + 1.9, 1.7, COLLAB_ZONE_CENTER[2] - 0.1]} intensity={0.12} distance={6} color="#fde68a" />
+          </group>
+
+          {/* Open Office Premium: focus zone by bookshelves */}
+          <group>
+            <mesh position={[FOCUS_ZONE_CENTER[0], 0.015, FOCUS_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <planeGeometry args={[2.8, 1.8]} />
+              <meshStandardMaterial color="#3f2f2f" roughness={0.92} metalness={0.02} />
+            </mesh>
+
+            <Box args={[1.5, 0.1, 0.7]} position={[FOCUS_ZONE_CENTER[0], 0.74, FOCUS_ZONE_CENTER[2] + 0.05]} castShadow>
+              <meshStandardMaterial color="#65473a" roughness={0.72} />
+            </Box>
+
+            <LoungeChair
+              position={[FOCUS_ZONE_CENTER[0] + 0.95, 0, FOCUS_ZONE_CENTER[2] + 0.15]}
+              rotation={[0, -Math.PI / 2, 0]}
+              variant="executive"
+              color="#0f172a"
+            />
+
+            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 1.25, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
+              <cylinderGeometry args={[0.04, 0.04, 0.9, 12]} />
+              <meshStandardMaterial color="#94a3b8" metalness={0.45} roughness={0.4} />
+            </mesh>
+            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 1.74, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
+              <sphereGeometry args={[0.16, 16, 16]} />
+              <meshStandardMaterial color="#fde68a" emissive="#d97706" emissiveIntensity={0.24} />
+            </mesh>
+
+            <pointLight position={[FOCUS_ZONE_CENTER[0] - 0.45, 1.8, FOCUS_ZONE_CENTER[2] - 0.2]} intensity={0.2} distance={4} color="#fde68a" />
+            <pointLight position={[FOCUS_ZONE_CENTER[0] + 1.2, 1.5, FOCUS_ZONE_CENTER[2] + 0.2]} intensity={0.08} distance={3.2} color="#60a5fa" />
+          </group>
+
+          {/* Open Office Premium: break accent around coffee point */}
+          <group>
+            <mesh position={[BREAK_ZONE_CENTER[0], 0.015, BREAK_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <planeGeometry args={[2.3, 1.6]} />
+              <meshStandardMaterial color="#1f3b3b" roughness={0.9} metalness={0.05} />
+            </mesh>
+
+            <mesh position={[BREAK_ZONE_CENTER[0] - 0.55, 0.42, BREAK_ZONE_CENTER[2] - 0.35]} castShadow>
+              <cylinderGeometry args={[0.23, 0.23, 0.82, 20]} />
+              <meshStandardMaterial color="#475569" />
+            </mesh>
+            <mesh position={[BREAK_ZONE_CENTER[0] - 0.55, 0.87, BREAK_ZONE_CENTER[2] - 0.35]} castShadow>
+              <cylinderGeometry args={[0.28, 0.28, 0.06, 20]} />
+              <meshStandardMaterial color="#e2e8f0" />
+            </mesh>
+
+            <LoungeChair
+              position={[BREAK_ZONE_CENTER[0] + 0.68, 0, BREAK_ZONE_CENTER[2] + 0.05]}
+              rotation={[0, -Math.PI / 2.8, 0]}
+              variant="lounge"
+              color="#334155"
+            />
+
+            <pointLight position={[BREAK_ZONE_CENTER[0] - 0.4, 1.4, BREAK_ZONE_CENTER[2] - 0.4]} intensity={0.12} distance={3.6} color="#fbbf24" />
+            <pointLight position={[BREAK_ZONE_CENTER[0] + 0.8, 1.2, BREAK_ZONE_CENTER[2] + 0.2]} intensity={0.08} distance={3.2} color="#a7f3d0" />
+          </group>
+
           {/* Escritorios de agentes */}
           {agents.map((agent) => (
             <AgentDesk
               key={agent.id}
-              agent={agent}
-              state={getAgentState(agent.id)}
+              agentId={agent.id}
+              agentName={agent.name}
+              agentColor={agent.color}
+              agentEmoji={agent.emoji}
+              agentRole={agent.role}
+              agentAccessories={agent.accessories}
+              deskPosition={agent.position}
+              deskRotation={agent.deskRotation}
+              avatarState={getAgentState(agent.id).status}
+              currentTask={getAgentState(agent.id).currentTask}
               onClick={() => handleDeskClick(agent.id)}
               isSelected={selectedAgent === agent.id}
             />
@@ -440,50 +900,84 @@ export default function Office3D() {
             );
           })}
 
-          {/* Visitors (sub-agents) */}
-          {visitors.map((visitor) => {
-            const parentAgent = agents.find(a => a.id === visitor.parentId);
-            if (!parentAgent) return null;
-            
+          {/* Subagent desks */}
+          {subagentConfigs.map((config) => {
+            const avatarState = subagentStateById.get(config.id) ?? "offline";
+            const parentAgent = agents.find((agent) => agent.id === config.parentId);
+            const parentPos: [number, number, number] = parentAgent
+              ? [parentAgent.position[0], 1.0, parentAgent.position[2]]
+              : [0, 1.0, 0];
+
             return (
-              <VisitorAvatar
-                key={visitor.id}
-                id={visitor.id}
-                task={visitor.task}
-                model={visitor.model}
-                tokens={visitor.tokens}
-                status={visitor.status}
-                parentPosition={parentAgent.position}
-                index={visitors.filter(v => v.parentId === visitor.parentId).indexOf(visitor)}
+              <group key={`subagent-group-${config.id}`}>
+                <AgentDesk
+                  agentId={config.id}
+                  agentName={config.name}
+                  agentColor={config.color}
+                  agentEmoji={config.emoji}
+                  agentRole={config.role}
+                  agentAccessories={getDefaultAccessories(config.id)}
+                  deskPosition={config.position}
+                  deskRotation={[0, 0, 0]}
+                  avatarState={avatarState}
+                  currentTask={config.currentTask}
+                  onClick={() => handleDeskClick(config.id)}
+                  isSelected={selectedAgent === config.id}
+                />
+                {parentAgent && avatarState !== "offline" && (
+                  <AgentConnection
+                    from={parentPos}
+                    to={[config.position[0], 1.0, config.position[2]]}
+                    status={avatarState === "idle" ? "idle" : "active"}
+                    taskName={config.currentTask}
+                  />
+                )}
+              </group>
+            );
+          })}
+
+          {/* Idle subagents walk around the office */}
+          {subagentConfigs.map((subagent) => {
+            const status = subagentStateById.get(subagent.id) ?? "offline";
+            return (
+              <WalkingAvatar
+                key={`subagent-walking-${subagent.id}`}
+                agent={subagent}
+                status={status}
+                visible={status === "idle"}
+                officeBounds={officeBounds}
+                obstacles={obstacles}
+                otherAvatarPositions={walkingAvatarPositionsRef.current}
+                onPositionUpdate={handleWalkingPositionUpdate}
               />
             );
           })}
 
           {/* Mobiliario interactivo */}
           <FileCabinet
-            position={[-8, 0, -5]}
+            position={FILE_CABINET_POSITION}
             onClick={handleFileCabinetClick}
           />
           <Whiteboard
-            position={[0, 0, -8]}
+            position={WHITEBOARD_POSITION}
             rotation={[0, 0, 0]}
             onClick={handleWhiteboardClick}
           />
           <CoffeeMachine
-            position={[8, 0, -5]}
+            position={COFFEE_MACHINE_POSITION}
             onClick={handleCoffeeClick}
           />
 
           {/* Ventanas */}
-          <Window position={[5.2, 2.5, -9.85]} size={[2.6, 1.8]} />
+          <Window position={FRONT_WINDOW_POSITION} size={[2.6, 1.8]} />
           <Window
-            position={[-14.85, 2.5, 0.4]}
+            position={SIDE_WINDOW_POSITION}
             rotation={[0, Math.PI / 2, 0]}
             size={[2.2, 1.6]}
           />
 
-          <Bookshelf position={[-9.2, 0, 2.2]} rotation={[0, Math.PI / 2, 0]} />
-          <Bookshelf position={[9.2, 0, 2.2]} rotation={[0, -Math.PI / 2, 0]} />
+          <Bookshelf position={LEFT_BOOKSHELF_POSITION} rotation={[0, Math.PI / 2, 0]} />
+          <Bookshelf position={RIGHT_BOOKSHELF_POSITION} rotation={[0, -Math.PI / 2, 0]} />
 
           {/* Decoración verde */}
           {PLANT_DECORATIONS.map((plant, index) => (
@@ -534,10 +1028,10 @@ export default function Office3D() {
       </Canvas>
 
       {/* Panel lateral cuando se selecciona un agente */}
-      {selectedAgent && agents.find(a => a.id === selectedAgent) && (
+      {selectedPanelAgent && selectedAgentState && (
         <AgentPanel
-          agent={agents.find(a => a.id === selectedAgent)!}
-          state={getAgentState(selectedAgent)}
+          agent={selectedPanelAgent}
+          state={selectedAgentState}
           onClose={handleClosePanel}
         />
       )}
