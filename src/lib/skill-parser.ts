@@ -241,13 +241,27 @@ function loadConfiguredSkills(): ConfiguredSkill[] {
 function autoDiscoverSkills(): ConfiguredSkill[] {
   const skills: ConfiguredSkill[] = [];
   const seenNames = new Set<string>();
-  
-  // Try multiple possible locations
-  const possiblePaths = [
+
+  // Try global workspace skills plus per-agent workspace skills
+  const possiblePaths = new Set<string>([
     path.join(OPENCLAW_DIR, 'workspace/skills'),
     path.join(OPENCLAW_DIR, 'workspace-infra/skills'),
-  ];
-  
+  ]);
+
+  try {
+    interface OpenClawAgent {
+      workspace?: string;
+    }
+    const openclawConfig = JSON.parse(fs.readFileSync(path.join(OPENCLAW_DIR, 'openclaw.json'), 'utf-8'));
+    const agentList = (openclawConfig?.agents?.list || []) as OpenClawAgent[];
+    for (const agent of agentList) {
+      const workspace = agent.workspace || path.join(OPENCLAW_DIR, 'workspace');
+      possiblePaths.add(path.join(workspace, 'skills'));
+    }
+  } catch {
+    // Best-effort discovery; keep defaults if config is unavailable
+  }
+
   for (const workspacePath of possiblePaths) {
     try {
       if (!fs.existsSync(workspacePath)) continue;
@@ -258,7 +272,7 @@ function autoDiscoverSkills(): ConfiguredSkill[] {
           const skillPath = path.join(workspacePath, entry.name);
           const skillMdPath = path.join(skillPath, 'SKILL.md');
           if (fs.existsSync(skillMdPath)) {
-            skills.push({ name: entry.name, location: 'workspace' });
+            skills.push({ name: entry.name, location: skillPath });
             seenNames.add(entry.name);
           }
         }

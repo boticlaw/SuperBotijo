@@ -4,6 +4,7 @@
 import type { OperationResult } from "./index";
 import { getActivities } from "@/lib/activities-db"
 import { getAgentDefaults } from "@/lib/agent-auto-config"
+import { execSync } from "child_process";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
@@ -66,6 +67,59 @@ const agentMoods = new Map<string, AgentMood>();
 // - > 30 min → "offline" (not in office)
 const ONLINE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes - active right now
 const IDLE_WINDOW_MS = 30 * 60 * 1000; // 30 minutes - still available
+
+interface SessionFreshness {
+  latestActivity?: string;
+  freshSessions: number;
+}
+
+interface OpenClawSession {
+  key: string;
+  updatedAt: number;
+  ageMs: number;
+}
+
+interface OpenClawSessionsOutput {
+  sessions?: OpenClawSession[];
+}
+
+function loadSessionFreshnessByAgent(): Map<string, SessionFreshness> {
+  const freshnessByAgent = new Map<string, SessionFreshness>();
+
+  try {
+    const output = execSync("openclaw sessions --json 2>/dev/null", {
+      timeout: 10000,
+      encoding: "utf-8",
+    });
+    const data = JSON.parse(output) as OpenClawSessionsOutput;
+    const sessions = data.sessions || [];
+
+    sessions.forEach((session) => {
+      const parts = session.key.split(":");
+      if (parts.length < 3 || parts[0] !== "agent") {
+        return;
+      }
+
+      const agentId = parts[1];
+      const current = freshnessByAgent.get(agentId) || { freshSessions: 0 };
+      const sessionTimestamp = new Date(session.updatedAt).toISOString();
+
+      if (!current.latestActivity || new Date(sessionTimestamp).getTime() > new Date(current.latestActivity).getTime()) {
+        current.latestActivity = sessionTimestamp;
+      }
+
+      if (session.ageMs < ONLINE_WINDOW_MS) {
+        current.freshSessions += 1;
+      }
+
+      freshnessByAgent.set(agentId, current);
+    });
+  } catch (error) {
+    console.warn("[agent-ops] Unable to read OpenClaw sessions for status freshness:", error);
+  }
+
+  return freshnessByAgent;
+}
 
 function classifyAgentStatus(lastActivity: string | undefined, activeSessions: number): AgentStatusValue {
   if (activeSessions > 0) {
@@ -228,6 +282,7 @@ export async function getAgentStatusList(): Promise<OperationResult<AgentStatusE
     const configAgents = loadAgentsFromConfig();
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
+    const sessionFreshnessByAgent = loadSessionFreshnessByAgent();
 
     console.log(`[agent-ops] getAgentStatusList: ${configAgents.length} agents loaded, ${recentActivities.length} activities found`);
     console.log(`[agent-ops] Agent IDs from config:`, configAgents.map(a => a.id));
@@ -239,8 +294,15 @@ export async function getAgentStatusList(): Promise<OperationResult<AgentStatusE
       const agentActivities = recentActivities.filter(
         (activity) => activity.agent === agent.id || activity.agent?.toLowerCase().includes(agent.id.toLowerCase())
       );
-      const activeSessions = agentActivities.filter((activity) => activity.status === "running").length;
-      const lastActivity = agentActivities.length > 0 ? agentActivities[0].timestamp : undefined;
+      const runningActivities = agentActivities.filter((activity) => activity.status === "running").length;
+      const sessionFreshness = sessionFreshnessByAgent.get(agent.id);
+      const activeSessions = Math.max(runningActivities, sessionFreshness?.freshSessions || 0);
+
+      const activityTimestamp = agentActivities.length > 0 ? agentActivities[0].timestamp : undefined;
+      const sessionTimestamp = sessionFreshness?.latestActivity;
+      const lastActivity = activityTimestamp && sessionTimestamp
+        ? (new Date(activityTimestamp).getTime() > new Date(sessionTimestamp).getTime() ? activityTimestamp : sessionTimestamp)
+        : activityTimestamp || sessionTimestamp;
 
       console.log(`[agent-ops] ${agent.id}: ${agentActivities.length} activities, lastActivity=${lastActivity}, activeSessions=${activeSessions}`);
 
