@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Lock, Clock, Play, CheckCircle, XCircle, PauseCircle } from "lucide-react";
+import { AlertCircle, Lock, Clock, Play, CheckCircle, XCircle, PauseCircle, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import type { KanbanTask as KanbanTaskType } from "@/lib/kanban-db";
 
@@ -198,6 +198,20 @@ export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }
                 >
                   {task.priority === "critical" && <AlertCircle className="h-2.5 w-2.5" />}
                   {task.priority.charAt(0).toUpperCase()}
+                </span>
+              )}
+
+              {/* Comment counter */}
+              {typeof task.commentCount === "number" && task.commentCount > 0 && (
+                <span
+                  className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium"
+                  style={{
+                    backgroundColor: "var(--card-elevated)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <MessageSquare className="h-2.5 w-2.5" />
+                  {task.commentCount}
                 </span>
               )}
             </div>

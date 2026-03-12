@@ -318,6 +318,7 @@ export default function KanbanPage() {
         onDelete={handleDeleteTask}
         columns={columns}
         editingTask={editingTask}
+        onCommentsUpdated={fetchData}
       />
 
       {/* Add Column Modal */}

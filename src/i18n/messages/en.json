@@ -575,5 +575,91 @@
       "useTemplate": "Use Template",
       "saved": "Saved!"
     }
+  },
+  "kanban": {
+    "comments": {
+      "title": "Comments",
+      "loading": "Loading comments...",
+      "empty": "No comments yet. Add context for humans and agents.",
+      "evidenceLabel": "Evidence",
+      "nextActionLabel": "Next action",
+      "author": {
+        "human": "Human",
+        "agent": "Agent",
+        "system": "System"
+      },
+      "authorWithId": {
+        "human": "Human ({id})",
+        "agent": "Agent ({id})",
+        "system": "System ({id})"
+      },
+      "types": {
+        "progress": "Progress",
+        "blocked": "Blocked",
+        "waiting": "Waiting",
+        "handoff": "Handoff",
+        "done": "Done",
+        "note": "Note"
+      },
+      "errors": {
+        "loadFailed": "Failed to load comments",
+        "postFailed": "Failed to send comment",
+        "rateLimited": "Too many comments sent. Wait a minute and retry.",
+        "invalidPayload": "Comment is invalid or contains sensitive content."
+      },
+      "validation": {
+        "contentRequired": "Content is required"
+      },
+      "form": {
+        "type": "Type",
+        "templates": "Templates",
+        "content": "Content",
+        "contentPlaceholder": "Write a clear update for the team",
+        "evidence": "Evidence",
+        "evidencePlaceholder": "Links, logs, PRs, screenshots",
+        "nextAction": "Next action",
+        "nextActionPlaceholder": "What should happen next?",
+        "submit": "Post comment",
+        "submitting": "Posting..."
+      },
+      "templates": {
+        "progress": {
+          "label": "Progress",
+          "content": "Progress update:",
+          "evidence": "Branch / PR:",
+          "nextAction": "Next step:"
+        },
+        "blocked": {
+          "label": "Blocked",
+          "content": "Blocked by:",
+          "evidence": "Error / blocker evidence:",
+          "nextAction": "Need support from:"
+        },
+        "waiting": {
+          "label": "Waiting",
+          "content": "Waiting for:",
+          "evidence": "Reference:",
+          "nextAction": "Follow-up date:"
+        },
+        "handoff": {
+          "label": "Handoff",
+          "content": "Handoff summary:",
+          "evidence": "Context package:",
+          "nextAction": "Receiving owner:"
+        },
+        "done": {
+          "label": "Done",
+          "content": "Completed:",
+          "evidence": "Delivery evidence:",
+          "nextAction": "Validation owner:"
+        },
+        "note": {
+          "label": "Note",
+          "content": "Note:",
+          "evidence": "Optional evidence:",
+          "nextAction": "Optional next action:"
+        }
+      }
+    }
   }
 }

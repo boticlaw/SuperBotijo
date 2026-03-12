@@ -396,5 +396,91 @@
     "up": "activo",
     "restarts": "reinicios",
     "cpuLabel": "CPU"
+  },
+  "kanban": {
+    "comments": {
+      "title": "Comentarios",
+      "loading": "Cargando comentarios...",
+      "empty": "Todavía no hay comentarios. Sumá contexto para humanos y agentes.",
+      "evidenceLabel": "Evidencia",
+      "nextActionLabel": "Próxima acción",
+      "author": {
+        "human": "Humano",
+        "agent": "Agente",
+        "system": "Sistema"
+      },
+      "authorWithId": {
+        "human": "Humano ({id})",
+        "agent": "Agente ({id})",
+        "system": "Sistema ({id})"
+      },
+      "types": {
+        "progress": "Progreso",
+        "blocked": "Bloqueado",
+        "waiting": "Esperando",
+        "handoff": "Handoff",
+        "done": "Hecho",
+        "note": "Nota"
+      },
+      "errors": {
+        "loadFailed": "No se pudieron cargar los comentarios",
+        "postFailed": "No se pudo enviar el comentario",
+        "rateLimited": "Mandaste demasiados comentarios. Esperá un minuto y reintentá.",
+        "invalidPayload": "El comentario es inválido o contiene información sensible."
+      },
+      "validation": {
+        "contentRequired": "El contenido es obligatorio"
+      },
+      "form": {
+        "type": "Tipo",
+        "templates": "Plantillas",
+        "content": "Contenido",
+        "contentPlaceholder": "Escribí una actualización clara para el equipo",
+        "evidence": "Evidencia",
+        "evidencePlaceholder": "Links, logs, PRs, capturas",
+        "nextAction": "Próxima acción",
+        "nextActionPlaceholder": "¿Qué debería pasar después?",
+        "submit": "Publicar comentario",
+        "submitting": "Publicando..."
+      },
+      "templates": {
+        "progress": {
+          "label": "Progreso",
+          "content": "Actualización de progreso:",
+          "evidence": "Branch / PR:",
+          "nextAction": "Próximo paso:"
+        },
+        "blocked": {
+          "label": "Bloqueado",
+          "content": "Bloqueado por:",
+          "evidence": "Evidencia del bloqueo:",
+          "nextAction": "Necesito soporte de:"
+        },
+        "waiting": {
+          "label": "Esperando",
+          "content": "Esperando a:",
+          "evidence": "Referencia:",
+          "nextAction": "Fecha de seguimiento:"
+        },
+        "handoff": {
+          "label": "Handoff",
+          "content": "Resumen de handoff:",
+          "evidence": "Paquete de contexto:",
+          "nextAction": "Responsable receptor:"
+        },
+        "done": {
+          "label": "Hecho",
+          "content": "Completado:",
+          "evidence": "Evidencia de entrega:",
+          "nextAction": "Responsable de validación:"
+        },
+        "note": {
+          "label": "Nota",
+          "content": "Nota:",
+          "evidence": "Evidencia opcional:",
+          "nextAction": "Próxima acción opcional:"
+        }
+      }
+    }
   }
 }
