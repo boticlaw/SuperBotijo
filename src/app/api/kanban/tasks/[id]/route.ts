@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  TASK_COMMENT_TYPE,
+  createTaskComment,
   getTask,
   updateTask,
   deleteTask,
   type TaskPriority,
   type UpdateTaskInput,
 } from "@/lib/kanban-db";
+import {
+  isRequireCommentOnStatusFeatureEnabled,
+  normalizeCommentBody,
+  shouldRequireTransitionComment,
+} from "@/lib/kanban-comments";
 import { emitKanbanTaskUpdated, emitKanbanTaskDeleted } from "@/lib/runtime-events";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +70,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const body: UpdateTaskInput = await request.json();
+    const existingTask = getTask(id);
+    if (!existingTask) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json() as UpdateTaskInput & {
+      comment?: unknown;
+      body?: unknown;
+      content?: unknown;
+    };
+    const transitionComment = normalizeCommentBody(body.comment ?? body.body ?? body.content);
+    const nextStatus = typeof body.status === "string" ? body.status : existingTask.status;
+    const hasStatusTransition = nextStatus !== existingTask.status;
 
     if (body.title !== undefined) {
       if (typeof body.title !== "string" || body.title.length === 0) {
@@ -97,6 +119,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    if (
+      isRequireCommentOnStatusFeatureEnabled()
+      && shouldRequireTransitionComment(existingTask.status, nextStatus)
+      && !transitionComment
+    ) {
+      return NextResponse.json(
+        { error: "A comment is required when moving this task to blocked, waiting, review, or done" },
+        { status: 400 }
+      );
+    }
+
     const task = updateTask(id, body);
 
     if (!task) {
@@ -104,6 +137,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         { error: "Task not found" },
         { status: 404 }
       );
+    }
+
+    if (transitionComment) {
+      createTaskComment({
+        taskId: id,
+        authorType: "human",
+        authorId: "user",
+        body: transitionComment,
+        commentType: hasStatusTransition ? TASK_COMMENT_TYPE.STATUS_CHANGE : TASK_COMMENT_TYPE.COMMENT,
+        statusFrom: hasStatusTransition ? existingTask.status : null,
+        statusTo: hasStatusTransition ? nextStatus : null,
+        metadata: {
+          source: "human-task-update",
+        },
+      });
     }
 
     // Emit real-time event

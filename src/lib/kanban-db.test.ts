@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
+  TASK_COMMENT_TYPE,
   createTask,
+  createTaskComment,
   getTask,
   updateTask,
   deleteTask,
   listTasks,
+  listTaskComments,
   getTasksByColumn,
   getTasksStats,
   getColumns,
@@ -288,6 +291,108 @@ describe("kanban-db", () => {
         const tasks = listTasks({ status: "backlog", priority: "high" });
         expect(tasks.length).toBe(1);
         expect(tasks[0].title).toBe("Bug in auth");
+      });
+    });
+
+    describe("task comments", () => {
+      it("creates and lists comments with latest-first deterministic order", async () => {
+        const task = createTask({ title: "Task with comments" });
+        const first = createTaskComment({
+          taskId: task.id,
+          authorType: "agent",
+          authorId: "boti",
+          body: "First comment",
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 5));
+
+        const second = createTaskComment({
+          taskId: task.id,
+          authorType: "human",
+          authorId: "user",
+          body: "Second comment",
+          commentType: TASK_COMMENT_TYPE.STATUS_CHANGE,
+          statusFrom: "in_progress",
+          statusTo: "review",
+        });
+
+        const comments = listTaskComments({ taskId: task.id, limit: 10 });
+
+        expect(comments.length).toBe(2);
+        expect(comments[0].id).toBe(second.id);
+        expect(comments[1].id).toBe(first.id);
+      });
+
+      it("supports legacy body fallback through parseCommentRow compatibility", () => {
+        const task = createTask({ title: "Legacy comment task" });
+        const created = createTaskComment({
+          taskId: task.id,
+          authorType: "agent",
+          authorId: "legacy-agent",
+          body: "Legacy-compatible comment",
+        });
+
+        const comments = listTaskComments({ taskId: task.id });
+        expect(comments[0].id).toBe(created.id);
+        expect(comments[0].body).toBe("Legacy-compatible comment");
+        expect(comments[0].authorId).toBe("legacy-agent");
+      });
+
+      it("validates required body and maximum length", () => {
+        const task = createTask({ title: "Invalid comment task" });
+
+        expect(() => {
+          createTaskComment({
+            taskId: task.id,
+            body: "",
+          });
+        }).toThrow("body is required");
+
+        expect(() => {
+          createTaskComment({
+            taskId: task.id,
+            body: "a".repeat(5001),
+          });
+        }).toThrow("body must be 5000 characters or less");
+      });
+
+      it("enforces list limit boundaries", () => {
+        const task = createTask({ title: "Comment limit task" });
+
+        for (let i = 0; i < 3; i++) {
+          createTaskComment({
+            taskId: task.id,
+            body: `Comment ${i}`,
+            authorType: "human",
+            authorId: "user",
+          });
+        }
+
+        const comments = listTaskComments({ taskId: task.id, limit: 1 });
+        expect(comments.length).toBe(1);
+      });
+
+      it("includes commentCount in listTasks rows", () => {
+        const task = createTask({ title: "Comment counter task" });
+
+        createTaskComment({
+          taskId: task.id,
+          body: "First",
+          authorType: "human",
+          authorId: "user",
+        });
+
+        createTaskComment({
+          taskId: task.id,
+          body: "Second",
+          authorType: "agent",
+          authorId: "boti",
+        });
+
+        const tasks = listTasks();
+        const withComments = tasks.find((candidate) => candidate.id === task.id);
+
+        expect(withComments?.commentCount).toBe(2);
       });
     });
 

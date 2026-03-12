@@ -9,9 +9,20 @@
  * DELETE /api/kanban/agent/tasks/[id] - Delete a task
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getTask, updateTask, deleteTask } from "@/lib/kanban-db";
+import {
+  TASK_COMMENT_TYPE,
+  createTaskComment,
+  getTask,
+  updateTask,
+  deleteTask,
+} from "@/lib/kanban-db";
 import { requireAgentAuth } from "@/lib/agent-auth";
 import { logActivity } from "@/lib/activities-db";
+import {
+  isRequireCommentOnStatusFeatureEnabled,
+  normalizeCommentBody,
+  shouldRequireTransitionComment,
+} from "@/lib/kanban-comments";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +86,20 @@ export async function PATCH(
     }
 
     // Parse update body
-    const body = await request.json();
+    const body = await request.json() as {
+      status?: string;
+      title?: string;
+      description?: string | null;
+      priority?: "low" | "medium" | "high" | "critical";
+      assignee?: string | null;
+      claim?: boolean;
+      comment?: unknown;
+      body?: unknown;
+      content?: unknown;
+    };
+    const transitionComment = normalizeCommentBody(body.comment ?? body.body ?? body.content);
+    const nextStatus = typeof body.status === "string" ? body.status : task.status;
+    const hasStatusTransition = nextStatus !== task.status;
 
     // Build update object
     const updates: {
@@ -97,6 +121,17 @@ export async function PATCH(
         );
       }
       updates.status = body.status;
+    }
+
+    if (
+      isRequireCommentOnStatusFeatureEnabled()
+      && shouldRequireTransitionComment(task.status, nextStatus)
+      && !transitionComment
+    ) {
+      return NextResponse.json(
+        { error: "A comment is required when moving this task to blocked, waiting, review, or done" },
+        { status: 400 }
+      );
     }
 
     // Validate and apply title
@@ -155,6 +190,21 @@ export async function PATCH(
         { error: "Failed to update task" },
         { status: 500 }
       );
+    }
+
+    if (transitionComment) {
+      createTaskComment({
+        taskId: id,
+        authorType: "agent",
+        authorId: agentId,
+        body: transitionComment,
+        commentType: hasStatusTransition ? TASK_COMMENT_TYPE.STATUS_CHANGE : TASK_COMMENT_TYPE.COMMENT,
+        statusFrom: hasStatusTransition ? task.status : null,
+        statusTo: hasStatusTransition ? nextStatus : null,
+        metadata: {
+          source: "agent-task-update",
+        },
+      });
     }
 
     // Log activity

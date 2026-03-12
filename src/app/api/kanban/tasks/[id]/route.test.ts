@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, PUT, DELETE } from "./route";
-import { clearAllDataForTesting, createTask } from "@/lib/kanban-db";
+import { clearAllDataForTesting, createTask, listTaskComments } from "@/lib/kanban-db";
 
 function createMockRequest(url: string, options?: { method?: string; body?: unknown }): NextRequest {
   const fullUrl = new URL(url, "http://localhost");
@@ -18,12 +18,20 @@ function createParams(id: string): Promise<{ id: string }> {
 }
 
 describe("/api/kanban/tasks/[id]", () => {
+  const previousRequireCommentFlag = process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
+
   beforeEach(() => {
     clearAllDataForTesting();
+    delete process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
   });
 
   afterEach(() => {
     clearAllDataForTesting();
+    if (previousRequireCommentFlag === undefined) {
+      delete process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
+    } else {
+      process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS = previousRequireCommentFlag;
+    }
   });
 
   describe("GET", () => {
@@ -210,6 +218,43 @@ describe("/api/kanban/tasks/[id]", () => {
 
       expect(response.status).toBe(200);
       expect(data.task.title).toBe("Test task");
+    });
+
+    it("requires comment for critical status transition when feature flag is enabled", async () => {
+      process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS = "true";
+
+      const task = createTask({ title: "Test task", status: "in_progress" });
+      const request = createMockRequest(`/api/kanban/tasks/${task.id}`, {
+        method: "PUT",
+        body: { status: "done" },
+      });
+      const response = await PUT(request, { params: createParams(task.id) });
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toContain("comment is required");
+    });
+
+    it("stores transition comment when moving to critical status", async () => {
+      process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS = "true";
+
+      const task = createTask({ title: "Test task", status: "in_progress" });
+      const request = createMockRequest(`/api/kanban/tasks/${task.id}`, {
+        method: "PUT",
+        body: { status: "review", comment: "Ready for review" },
+      });
+      const response = await PUT(request, { params: createParams(task.id) });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.task.status).toBe("review");
+
+      const comments = listTaskComments({ taskId: task.id, limit: 10 });
+      expect(comments.length).toBe(1);
+      expect(comments[0].body).toBe("Ready for review");
+      expect(comments[0].commentType).toBe("status_change");
+      expect(comments[0].statusFrom).toBe("in_progress");
+      expect(comments[0].statusTo).toBe("review");
     });
   });
 

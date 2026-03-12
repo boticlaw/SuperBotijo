@@ -60,6 +60,7 @@ export interface KanbanTask {
   claimedBy: string | null;
   claimedAt: string | null;
   createdBy?: string | null;  // Agent ID or "user" for human-created tasks
+  commentCount?: number;
 }
 
 export interface KanbanColumn {
@@ -124,6 +125,54 @@ export interface TasksStats {
   total: number;
   byStatus: Record<string, number>;
   byPriority: Record<string, number>;
+}
+
+export const TASK_COMMENT_AUTHOR_TYPE = {
+  HUMAN: "human",
+  AGENT: "agent",
+  SYSTEM: "system",
+} as const;
+
+export type TaskCommentAuthorType = (typeof TASK_COMMENT_AUTHOR_TYPE)[keyof typeof TASK_COMMENT_AUTHOR_TYPE];
+
+export const TASK_COMMENT_TYPE = {
+  COMMENT: "comment",
+  STATUS_CHANGE: "status_change",
+} as const;
+
+export type TaskCommentType = (typeof TASK_COMMENT_TYPE)[keyof typeof TASK_COMMENT_TYPE];
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorType: TaskCommentAuthorType;
+  authorId: string | null;
+  body: string;
+  commentType: TaskCommentType;
+  statusFrom: string | null;
+  statusTo: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskCommentInput {
+  taskId: string;
+  authorType?: TaskCommentAuthorType;
+  authorId?: string | null;
+  body: string;
+  commentType?: TaskCommentType;
+  statusFrom?: string | null;
+  statusTo?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface ListTaskCommentsFilters {
+  taskId: string;
+  authorType?: TaskCommentAuthorType;
+  authorId?: string;
+  commentType?: TaskCommentType;
+  limit?: number;
 }
 
 // ============================================================================
@@ -288,7 +337,7 @@ function getDb(): Database.Database {
     console.log("[kanban-db] Added domain column to kanban_tasks");
   }
 
-  // Idempotent migration: Add task_comments table for inter-agent communication
+  // Idempotent migration: Add task_comments table for task communication
   const commentsTableExists = _db
     .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_comments'")
     .get() as { "1": number } | undefined;
@@ -298,16 +347,70 @@ function getDb(): Database.Database {
       CREATE TABLE task_comments (
         id TEXT PRIMARY KEY,
         task_id TEXT NOT NULL,
-        agent_id TEXT NOT NULL,
-        content TEXT NOT NULL,
+        author_type TEXT NOT NULL DEFAULT 'human',
+        author_id TEXT,
+        body TEXT NOT NULL,
+        comment_type TEXT NOT NULL DEFAULT 'comment',
+        status_from TEXT,
+        status_to TEXT,
+        metadata TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        -- Legacy mirror columns kept for backward compatibility
+        agent_id TEXT,
+        content TEXT
       );
-      CREATE INDEX IF NOT EXISTS idx_task_comments_task_id ON task_comments(task_id);
-      CREATE INDEX IF NOT EXISTS idx_task_comments_agent_id ON task_comments(agent_id);
     `);
     console.log("[kanban-db] Created task_comments table");
   }
+
+  const commentMigrations = [
+    { name: "author_type", sql: "ALTER TABLE task_comments ADD COLUMN author_type TEXT" },
+    { name: "author_id", sql: "ALTER TABLE task_comments ADD COLUMN author_id TEXT" },
+    { name: "body", sql: "ALTER TABLE task_comments ADD COLUMN body TEXT" },
+    { name: "comment_type", sql: "ALTER TABLE task_comments ADD COLUMN comment_type TEXT" },
+    { name: "status_from", sql: "ALTER TABLE task_comments ADD COLUMN status_from TEXT" },
+    { name: "status_to", sql: "ALTER TABLE task_comments ADD COLUMN status_to TEXT" },
+    { name: "metadata", sql: "ALTER TABLE task_comments ADD COLUMN metadata TEXT" },
+    { name: "agent_id", sql: "ALTER TABLE task_comments ADD COLUMN agent_id TEXT" },
+    { name: "content", sql: "ALTER TABLE task_comments ADD COLUMN content TEXT" },
+  ];
+
+  for (const migration of commentMigrations) {
+    const columnExists = _db
+      .prepare("SELECT 1 FROM pragma_table_info('task_comments') WHERE name = ?")
+      .get(migration.name) as { "1": number } | undefined;
+
+    if (!columnExists) {
+      try {
+        _db.exec(migration.sql);
+        console.log(`[kanban-db] Added ${migration.name} column to task_comments`);
+      } catch {
+        // Column may already exist from a previous partial migration
+      }
+    }
+  }
+
+  _db.exec(`
+    UPDATE task_comments
+    SET
+      author_type = COALESCE(NULLIF(author_type, ''), CASE WHEN agent_id IS NOT NULL AND TRIM(agent_id) != '' THEN 'agent' ELSE 'human' END),
+      author_id = COALESCE(NULLIF(author_id, ''), NULLIF(agent_id, '')),
+      body = COALESCE(NULLIF(body, ''), NULLIF(content, '')),
+      comment_type = COALESCE(NULLIF(comment_type, ''), 'comment'),
+      updated_at = COALESCE(NULLIF(updated_at, ''), created_at)
+    WHERE
+      author_type IS NULL OR author_type = '' OR
+      body IS NULL OR body = '' OR
+      comment_type IS NULL OR comment_type = '' OR
+      updated_at IS NULL OR updated_at = ''
+  `);
+
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_task_id ON task_comments(task_id)`);
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_agent_id ON task_comments(agent_id)`);
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_task_created ON task_comments(task_id, created_at DESC, id DESC)`);
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_author ON task_comments(author_type, author_id)`);
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_type ON task_comments(comment_type)`);
 
   // Seed default columns if table is empty
   const columnCount = (_db.prepare("SELECT COUNT(*) as n FROM kanban_columns").get() as { n: number }).n;
@@ -597,9 +700,255 @@ export function listTasks(filters?: ListTasksFilters): KanbanTask[] {
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  const rows = db.prepare(`SELECT * FROM kanban_tasks ${where} ORDER BY "order" ASC`).all(...params) as Record<string, unknown>[];
+  const rows = db.prepare(`
+    SELECT
+      kanban_tasks.*,
+      COALESCE(comment_counts.comment_count, 0) as comment_count
+    FROM kanban_tasks
+    LEFT JOIN (
+      SELECT task_id, COUNT(*) as comment_count
+      FROM task_comments
+      GROUP BY task_id
+    ) as comment_counts ON comment_counts.task_id = kanban_tasks.id
+    ${where}
+    ORDER BY kanban_tasks."order" ASC
+  `).all(...params) as Record<string, unknown>[];
 
   return rows.map(parseTaskRow);
+}
+
+const TASK_COMMENT_MAX_BODY_LENGTH = 5000;
+const TASK_COMMENT_MAX_AUTHOR_ID_LENGTH = 120;
+const TASK_COMMENT_MAX_STATUS_LENGTH = 64;
+const TASK_COMMENT_DEFAULT_LIMIT = 50;
+const TASK_COMMENT_MAX_LIMIT = 200;
+
+function parseTaskCommentMetadata(raw: unknown): Record<string, unknown> | null {
+  if (!raw) {
+    return null;
+  }
+
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function normalizeOptionalString(value: unknown, maxLength: number, fieldName: string): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error(`${fieldName} must be a string`);
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  if (trimmed.length > maxLength) {
+    throw new Error(`${fieldName} must be ${maxLength} characters or less`);
+  }
+
+  return trimmed;
+}
+
+/**
+ * Create a comment for a task
+ * @param input - Comment creation data
+ * @returns The created task comment
+ */
+export function createTaskComment(input: CreateTaskCommentInput): TaskComment {
+  const db = getDb();
+
+  const taskId = normalizeOptionalString(input.taskId, 128, "taskId");
+  if (!taskId) {
+    throw new Error("taskId is required");
+  }
+
+  const taskExists = db.prepare("SELECT 1 FROM kanban_tasks WHERE id = ?").get(taskId) as { "1": number } | undefined;
+  if (!taskExists) {
+    throw new Error("Task not found");
+  }
+
+  const authorType = input.authorType ?? TASK_COMMENT_AUTHOR_TYPE.HUMAN;
+  const validAuthorTypes = Object.values(TASK_COMMENT_AUTHOR_TYPE) as TaskCommentAuthorType[];
+  if (!validAuthorTypes.includes(authorType)) {
+    throw new Error(`authorType must be one of: ${validAuthorTypes.join(", ")}`);
+  }
+
+  const authorId = normalizeOptionalString(input.authorId, TASK_COMMENT_MAX_AUTHOR_ID_LENGTH, "authorId");
+
+  if (typeof input.body !== "string") {
+    throw new Error("body is required");
+  }
+
+  const body = input.body.trim();
+  if (body.length === 0) {
+    throw new Error("body is required");
+  }
+
+  if (body.length > TASK_COMMENT_MAX_BODY_LENGTH) {
+    throw new Error(`body must be ${TASK_COMMENT_MAX_BODY_LENGTH} characters or less`);
+  }
+
+  const commentType = input.commentType ?? TASK_COMMENT_TYPE.COMMENT;
+  const validCommentTypes = Object.values(TASK_COMMENT_TYPE) as TaskCommentType[];
+  if (!validCommentTypes.includes(commentType)) {
+    throw new Error(`commentType must be one of: ${validCommentTypes.join(", ")}`);
+  }
+
+  const statusFrom = normalizeOptionalString(input.statusFrom, TASK_COMMENT_MAX_STATUS_LENGTH, "statusFrom");
+  const statusTo = normalizeOptionalString(input.statusTo, TASK_COMMENT_MAX_STATUS_LENGTH, "statusTo");
+
+  if (commentType === TASK_COMMENT_TYPE.STATUS_CHANGE && !statusTo) {
+    throw new Error("statusTo is required when commentType is status_change");
+  }
+
+  const metadata = input.metadata ?? null;
+  if (metadata !== null && (typeof metadata !== "object" || Array.isArray(metadata))) {
+    throw new Error("metadata must be an object");
+  }
+
+  const metadataJson = metadata ? JSON.stringify(metadata) : null;
+  if (metadataJson && metadataJson.length > 20000) {
+    throw new Error("metadata is too large");
+  }
+
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const legacyAgentId = authorType === TASK_COMMENT_AUTHOR_TYPE.AGENT ? authorId : null;
+
+  db.prepare(`
+    INSERT INTO task_comments (
+      id,
+      task_id,
+      author_type,
+      author_id,
+      body,
+      comment_type,
+      status_from,
+      status_to,
+      metadata,
+      created_at,
+      updated_at,
+      agent_id,
+      content
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    taskId,
+    authorType,
+    authorId,
+    body,
+    commentType,
+    statusFrom,
+    statusTo,
+    metadataJson,
+    now,
+    now,
+    legacyAgentId,
+    body
+  );
+
+  return {
+    id,
+    taskId,
+    authorType,
+    authorId,
+    body,
+    commentType,
+    statusFrom,
+    statusTo,
+    metadata,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * List comments for a task with deterministic ordering
+ * @param filters - Required task ID and optional filters
+ * @returns Array of comments ordered by createdAt desc, id desc
+ */
+export function listTaskComments(filters: ListTaskCommentsFilters): TaskComment[] {
+  const db = getDb();
+  const taskId = normalizeOptionalString(filters.taskId, 128, "taskId");
+
+  if (!taskId) {
+    throw new Error("taskId is required");
+  }
+
+  const conditions: string[] = ["task_id = ?"];
+  const params: unknown[] = [taskId];
+
+  if (filters.authorType) {
+    const validAuthorTypes = Object.values(TASK_COMMENT_AUTHOR_TYPE) as TaskCommentAuthorType[];
+    if (!validAuthorTypes.includes(filters.authorType)) {
+      throw new Error(`authorType must be one of: ${validAuthorTypes.join(", ")}`);
+    }
+    conditions.push("author_type = ?");
+    params.push(filters.authorType);
+  }
+
+  if (filters.authorId) {
+    conditions.push("author_id = ?");
+    params.push(filters.authorId);
+  }
+
+  if (filters.commentType) {
+    const validCommentTypes = Object.values(TASK_COMMENT_TYPE) as TaskCommentType[];
+    if (!validCommentTypes.includes(filters.commentType)) {
+      throw new Error(`commentType must be one of: ${validCommentTypes.join(", ")}`);
+    }
+    conditions.push("comment_type = ?");
+    params.push(filters.commentType);
+  }
+
+  const rawLimit = Number.isFinite(filters.limit) ? Number(filters.limit) : TASK_COMMENT_DEFAULT_LIMIT;
+  const limit = Math.max(1, Math.min(TASK_COMMENT_MAX_LIMIT, Math.floor(rawLimit)));
+
+  params.push(limit);
+
+  const rows = db.prepare(`
+    SELECT *
+    FROM task_comments
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY created_at DESC, id DESC
+    LIMIT ?
+  `).all(...params) as Record<string, unknown>[];
+
+  return rows.map(parseCommentRow);
+}
+
+/**
+ * List all task comments for analytics and reporting
+ * @returns Array of comments ordered by createdAt asc, id asc
+ */
+export function listAllTaskComments(): TaskComment[] {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT *
+    FROM task_comments
+    ORDER BY created_at ASC, id ASC
+  `).all() as Record<string, unknown>[];
+
+  return rows.map(parseCommentRow);
 }
 
 /**
@@ -1122,6 +1471,64 @@ function parseTaskRow(row: Record<string, unknown>): KanbanTask {
     claimedAt: (row.claimed_at as string | null) ?? null,
     // Creator field for agent-created tasks
     createdBy: (row.created_by as string | null) ?? null,
+    commentCount: Number.isFinite(row.comment_count) ? Number(row.comment_count) : 0,
+  };
+}
+
+function parseCommentRow(row: Record<string, unknown>): TaskComment {
+  const validAuthorTypes = Object.values(TASK_COMMENT_AUTHOR_TYPE) as TaskCommentAuthorType[];
+  const validCommentTypes = Object.values(TASK_COMMENT_TYPE) as TaskCommentType[];
+
+  const legacyAgentId = typeof row.agent_id === "string" && row.agent_id.trim().length > 0
+    ? row.agent_id.trim()
+    : null;
+
+  const rawAuthorType = typeof row.author_type === "string" ? row.author_type : null;
+  const authorType = rawAuthorType && validAuthorTypes.includes(rawAuthorType as TaskCommentAuthorType)
+    ? rawAuthorType as TaskCommentAuthorType
+    : (legacyAgentId ? TASK_COMMENT_AUTHOR_TYPE.AGENT : TASK_COMMENT_AUTHOR_TYPE.HUMAN);
+
+  const rawAuthorId = typeof row.author_id === "string" && row.author_id.trim().length > 0
+    ? row.author_id.trim()
+    : null;
+  const authorId = rawAuthorId ?? legacyAgentId;
+
+  const rawBody = typeof row.body === "string" && row.body.length > 0
+    ? row.body
+    : (typeof row.content === "string" ? row.content : "");
+
+  const rawCommentType = typeof row.comment_type === "string" ? row.comment_type : null;
+  const commentType = rawCommentType && validCommentTypes.includes(rawCommentType as TaskCommentType)
+    ? rawCommentType as TaskCommentType
+    : TASK_COMMENT_TYPE.COMMENT;
+
+  const createdAt = typeof row.created_at === "string" && row.created_at.length > 0
+    ? row.created_at
+    : new Date(0).toISOString();
+
+  const updatedAt = typeof row.updated_at === "string" && row.updated_at.length > 0
+    ? row.updated_at
+    : createdAt;
+
+  const statusFrom = typeof row.status_from === "string" && row.status_from.trim().length > 0
+    ? row.status_from
+    : null;
+  const statusTo = typeof row.status_to === "string" && row.status_to.trim().length > 0
+    ? row.status_to
+    : null;
+
+  return {
+    id: row.id as string,
+    taskId: row.task_id as string,
+    authorType,
+    authorId,
+    body: rawBody,
+    commentType,
+    statusFrom,
+    statusTo,
+    metadata: parseTaskCommentMetadata(row.metadata),
+    createdAt,
+    updatedAt,
   };
 }
 
