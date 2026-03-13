@@ -628,6 +628,16 @@
       "archiveHint": "Move to archive (keeps history)",
       "unarchiveHint": "Restore to active board"
     },
+    "archived": {
+      "empty": "No archived tasks",
+      "emptyHint": "Tasks in 'done' are automatically archived after 7 days",
+      "searchPlaceholder": "Search archived tasks...",
+      "allPriorities": "All priorities",
+      "clearFilters": "Clear filters",
+      "showing": "Showing {count} of {total} tasks",
+      "noResults": "No tasks match your filters",
+      "archivedAgo": "Archived {time}"
+    },
     "executionFilter": {
       "all": "All",
       "running": "Running",

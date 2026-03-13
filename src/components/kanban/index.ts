@@ -7,3 +7,4 @@ export { KanbanBoard } from "./KanbanBoard";
 export { KanbanColumn } from "./KanbanColumn";
 export { KanbanTask } from "./KanbanTask";
 export { TaskModal } from "./TaskModal";
+export { ArchivedTasksList } from "./ArchivedTasksList";

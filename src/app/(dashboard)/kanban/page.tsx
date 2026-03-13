@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { RefreshCw, AlertCircle, Play, CheckCircle, XCircle, Clock, Calendar, Archive, Inbox } from "lucide-react";
-import { KanbanBoard, TaskModal } from "@/components/kanban";
+import { KanbanBoard, TaskModal, ArchivedTasksList } from "@/components/kanban";
 import { useI18n } from "@/i18n/provider";
 import type { KanbanTask, KanbanColumn } from "@/lib/kanban-db";
 
@@ -186,6 +186,25 @@ export default function KanbanPage() {
     }
   }, [newColumnName, newColumnColor, fetchData]);
 
+  const handleRestoreTask = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/kanban/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: false }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to restore task");
+      }
+
+      fetchData();
+    } catch (err) {
+      console.error("Failed to restore task:", err);
+    }
+  }, [fetchData]);
+
   // Loading state
   if (loading) {
     return (
@@ -325,22 +344,30 @@ export default function KanbanPage() {
         </Link>
       </div>
 
-      <KanbanBoard
-        columns={columns}
-        tasks={filteredTasks}
-        onTaskClick={handleTaskClick}
-        onAddTask={handleAddTask}
-        onAddColumn={() => setAddColumnModalOpen(true)}
-        onMoveTask={handleMoveTask}
-        configuredAgents={configuredAgents}
-        createdByFilter={createdByFilter}
-        assigneeFilter={assigneeFilter}
-        onCreatedByFilterChange={setCreatedByFilter}
-        onAssigneeFilterChange={setAssigneeFilter}
-        domains={domains}
-        domainFilter={domainFilter}
-        onDomainFilterChange={setDomainFilter}
-      />
+      {/* Content: Kanban Board or Archived List */}
+      {archiveView === "archived" ? (
+        <ArchivedTasksList
+          tasks={tasks}
+          onRestore={handleRestoreTask}
+        />
+      ) : (
+        <KanbanBoard
+          columns={columns}
+          tasks={filteredTasks}
+          onTaskClick={handleTaskClick}
+          onAddTask={handleAddTask}
+          onAddColumn={() => setAddColumnModalOpen(true)}
+          onMoveTask={handleMoveTask}
+          configuredAgents={configuredAgents}
+          createdByFilter={createdByFilter}
+          assigneeFilter={assigneeFilter}
+          onCreatedByFilterChange={setCreatedByFilter}
+          onAssigneeFilterChange={setAssigneeFilter}
+          domains={domains}
+          domainFilter={domainFilter}
+          onDomainFilterChange={setDomainFilter}
+        />
+      )}
 
       {/* Task Modal */}
       <TaskModal
