@@ -176,6 +176,23 @@ const SUBAGENT_DESK_BOUNDS = {
   maxZ: 6.4,
 } as const;
 
+const FETCH_TIMEOUT_MS = 10000; // 10 seconds timeout
+
+async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -209,6 +226,11 @@ function getVisitorStatus(ageMs: number): Visitor["status"] {
   return "offline";
 }
 
+function parseParentFromKey(key: string): string {
+  const parts = key.split(":");
+  return parts[1] || "main";
+}
+
 export default function Office3D() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [interactionModal, setInteractionModal] = useState<string | null>(null);
@@ -239,15 +261,18 @@ export default function Office3D() {
     };
   };
 
-  // Load agent configs using fetchOfficeAgents (every 5 minutes)
+  // Unified polling: fetch configs (5min), statuses (15s), and visitors (15s) in one effect
   useEffect(() => {
-    const fetchAgentConfigs = async () => {
+    let isMounted = true;
+    let configInterval: NodeJS.Timeout | null = null;
+    let statusInterval: NodeJS.Timeout | null = null;
+
+    // Fetch full configuration (agents + statuses + subagents) - runs once and every 5 minutes
+    const fetchFullConfig = async () => {
       try {
-        // Fetch agents with positions from the centralized function
         const agentsWithDesks = await fetchOfficeAgents();
         
         if (agentsWithDesks.length === 0) {
-          // Fallback to main agent only if no agents found
           setAgents([{
             id: 'main',
             name: 'Main Agent',
@@ -264,11 +289,10 @@ export default function Office3D() {
           return;
         }
         
-        // Also fetch statuses separately for the state
         const statusMap = await fetchAgentStatuses();
 
         let agentsApiList: AgentApiItem[] = [];
-        const agentsRes = await fetch("/api/agents");
+        const agentsRes = await fetchWithTimeout("/api/agents");
         if (agentsRes.ok) {
           const agentsApiData: AgentApiResponse = await agentsRes.json();
           agentsApiList = agentsApiData.agents || [];
@@ -288,7 +312,6 @@ export default function Office3D() {
 
         const primaryAgents = agentsWithDesks.filter((agent) => !configuredSubagentIds.has(agent.id));
 
-        // Map AgentWithDesk to AgentConfig format for rendering
         const configs = primaryAgents.map((desk) => ({
           id: desk.id,
           name: desk.name,
@@ -330,7 +353,6 @@ export default function Office3D() {
           setConfiguredSubagents([]);
         }
         
-        // Build states with status data from the map (for ALL agents, including configured subagents)
         const states: Record<string, AgentState> = {};
         agentsWithDesks.forEach((agent) => {
           const statusInfo = statusMap.get(agent.id);
@@ -355,7 +377,6 @@ export default function Office3D() {
         setAgentStates(states);
       } catch (error) {
         console.error('Failed to load agent configs:', error);
-        // Fallback to main agent only
         setAgents([{
           id: 'main',
           name: 'Main Agent',
@@ -373,21 +394,14 @@ export default function Office3D() {
       }
     };
 
-    fetchAgentConfigs();
-    const interval = setInterval(fetchAgentConfigs, 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
-  }, []);
+    // Fetch statuses and visitors - runs every 15 seconds
+    const fetchStatusesAndVisitors = async () => {
+      if (!isMounted) return;
 
-  // Poll agent statuses every 15 seconds using fetchAgentStatuses
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchStatuses = async () => {
       try {
-        // Use centralized fetch function
+        // Fetch statuses
         const statusMap = await fetchAgentStatuses();
 
-        if (!isMounted) return;
         setAgentStates((prev) => {
           const next: Record<string, AgentState> = { ...prev };
           statusMap.forEach((statusInfo, agentId) => {
@@ -414,41 +428,13 @@ export default function Office3D() {
           });
           return next;
         });
-      } catch (error) {
-        console.error("Failed to refresh agent statuses:", error);
-      }
-    };
 
-    fetchStatuses();
-    const interval = setInterval(fetchStatuses, 15000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+        // Fetch visitors (subagents)
+        const res = await fetchWithTimeout("/api/sessions");
+        if (!res.ok || !isMounted) return;
 
-  // Fetch visitors (subagents) from sessions API
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchVisitors = async () => {
-      try {
-        const res = await fetch("/api/sessions");
-        if (!res.ok) {
-          throw new Error(`Sessions fetch failed: ${res.status}`);
-        }
         const data = await res.json();
         const sessions = data.sessions || [];
-
-        if (!isMounted) return;
-
-        // Parse session key to extract parent agent
-        // Format: agent:<agentId>:subagent:<subagentId>
-        const parseParentFromKey = (key: string): string => {
-          const parts = key.split(":");
-          // parts[0] = "agent", parts[1] = parentId
-          return parts[1] || "main";
-        };
 
         const visitorsById = new Map<string, Visitor>();
 
@@ -488,20 +474,26 @@ export default function Office3D() {
 
         setVisitors(Array.from(visitorsById.values()));
       } catch (error) {
-        console.error("Failed to fetch visitors:", error);
+        console.error("Failed to refresh statuses/visitors:", error);
       }
     };
 
-    fetchVisitors();
-    const interval = setInterval(fetchVisitors, 15000);
+    // Initial fetch
+    fetchFullConfig();
+    fetchStatusesAndVisitors();
+
+    // Set up intervals
+    statusInterval = setInterval(fetchStatusesAndVisitors, 15000);
+    configInterval = setInterval(fetchFullConfig, 5 * 60 * 1000);
+
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      if (statusInterval) clearInterval(statusInterval);
+      if (configInterval) clearInterval(configInterval);
     };
   }, []);
 
   const handleDeskClick = (agentId: string) => {
-    console.log("[Office3D] handleDeskClick called for agent:", agentId);
     setSelectedAgent(agentId);
   };
 
@@ -725,7 +717,7 @@ export default function Office3D() {
         shadows
         gl={{ antialias: true, alpha: false }}
         style={{ width: '100%', height: '100%' }}
-        onPointerMissed={() => console.log("[Office3D] Pointer missed - no mesh was clicked")}
+        onPointerMissed={() => {}}
       >
         <Suspense fallback={
           <mesh>
@@ -778,10 +770,10 @@ export default function Office3D() {
             <CollabTable position={[COLLAB_ZONE_CENTER[0], 0, COLLAB_ZONE_CENTER[2]]} />
 
             {[
-              [-1.25, -0.8, 0],
-              [1.25, -0.8, 0],
-              [-1.25, 0.8, Math.PI],
-              [1.25, 0.8, Math.PI],
+              [-1.6, -1.1, 0],
+              [1.6, -1.1, 0],
+              [-1.6, 1.1, Math.PI],
+              [1.6, 1.1, Math.PI],
             ].map(([x, z, rot], index) => (
               <LoungeChair
                 key={`collab-chair-${index}`}
@@ -816,17 +808,22 @@ export default function Office3D() {
             </Box>
 
             <LoungeChair
-              position={[FOCUS_ZONE_CENTER[0] + 0.95, 0, FOCUS_ZONE_CENTER[2] + 0.15]}
+              position={[FOCUS_ZONE_CENTER[0] + 1.15, 0, FOCUS_ZONE_CENTER[2] + 0.15]}
               rotation={[0, -Math.PI / 2, 0]}
               variant="executive"
               color="#0f172a"
             />
 
-            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 1.25, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
-              <cylinderGeometry args={[0.04, 0.04, 0.9, 12]} />
+            {/* Floor lamp with proper stand */}
+            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 0, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
+              <cylinderGeometry args={[0.04, 0.04, 0.02, 12]} />
+              <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.4} />
+            </mesh>
+            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 0.35, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
+              <cylinderGeometry args={[0.02, 0.02, 0.7, 8]} />
               <meshStandardMaterial color="#94a3b8" metalness={0.45} roughness={0.4} />
             </mesh>
-            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 1.74, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
+            <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 0.74, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
               <sphereGeometry args={[0.16, 16, 16]} />
               <meshStandardMaterial color="#fde68a" emissive="#d97706" emissiveIntensity={0.24} />
             </mesh>
@@ -852,7 +849,7 @@ export default function Office3D() {
             </mesh>
 
             <LoungeChair
-              position={[BREAK_ZONE_CENTER[0] + 0.68, 0, BREAK_ZONE_CENTER[2] + 0.05]}
+              position={[BREAK_ZONE_CENTER[0] + 0.85, 0, BREAK_ZONE_CENTER[2] + 0.05]}
               rotation={[0, -Math.PI / 2.8, 0]}
               variant="lounge"
               color="#334155"

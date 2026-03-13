@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, Sparkles, ChevronRight, ChevronDown } from "lucide-react";
 import { SuggestionCard } from "./SuggestionCard";
 import type { Suggestion } from "@/lib/suggestions-engine";
+import { useI18n } from "@/i18n/provider";
 
 interface SuggestionsPanelProps {
   compact?: boolean;
@@ -11,6 +12,7 @@ interface SuggestionsPanelProps {
 }
 
 export function SuggestionsPanel({ compact = false, maxItems = 3 }: SuggestionsPanelProps) {
+  const { t } = useI18n();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(!compact);
@@ -141,11 +143,11 @@ export function SuggestionsPanel({ compact = false, maxItems = 3 }: SuggestionsP
                 color: "var(--text-primary)",
               }}
             >
-              Smart Suggestions
+              {t("dashboard.smartSuggestions")}
             </div>
             {!isLoading && suggestions.length > 0 && (
               <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                {suggestions.length} suggestion{suggestions.length !== 1 ? "s" : ""} available
+                {t("common.showing", { count: suggestions.length })}
               </div>
             )}
           </div>
@@ -175,7 +177,7 @@ export function SuggestionsPanel({ compact = false, maxItems = 3 }: SuggestionsP
       <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
         {isLoading ? (
           <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>
-            Analyzing usage patterns...
+            {t("suggestions.analyzing")}
           </div>
         ) : (
           <>

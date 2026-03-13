@@ -600,65 +600,93 @@
         "handoff": "Handoff",
         "done": "Done",
         "note": "Note"
+      }
+    }
+  },
+  "suggestions": {
+    "analyzing": "Analyzing usage patterns...",
+    "model": {
+      "expensive": {
+        "title": "Optimize {modelName} usage",
+        "description": "You've spent ${cost} on this model. Consider using Claude Haiku for simple tasks and Sonnet for complex ones."
+      }
+    },
+    "cron": {
+      "lowSuccessRate": {
+        "title": "Cron \"{cronName}\" has low success rate",
+        "description": "This cron job has {failureRate}% failure rate. Check the configuration and logs to identify the problem."
+      }
+    },
+    "skill": {
+      "unused": {
+        "title": "Skill \"{skillName}\" unused for 30 days",
+        "description": "This skill has only been used {uses} times. Consider uninstalling it if you no longer need it."
+      }
+    },
+    "error": {
+      "pattern": {
+        "title": "Error pattern detected",
+        "description": "{count} similar errors have occurred recently: \"{message}...\""
+      }
+    },
+    "heartbeat": {
+      "frequent": {
+        "title": "Heartbeat too frequent",
+        "description": "The heartbeat runs every {frequencySecs}s. Consider increasing the interval to reduce load."
+      }
+    },
+    "memory": {
+      "old": {
+        "title": "Memory not updated",
+        "description": "The last memory update was {days} days ago. Agents could benefit from new contextual information."
       },
-      "errors": {
-        "loadFailed": "Failed to load comments",
-        "postFailed": "Failed to send comment",
-        "rateLimited": "Too many comments sent. Wait a minute and retry.",
-        "invalidPayload": "Comment is invalid or contains sensitive content."
+      "small": {
+        "title": "Memory too small",
+        "description": "Memory files only occupy {sizeKB} KB. Agents could benefit from more context."
       },
-      "validation": {
-        "contentRequired": "Content is required"
+      "none": {
+        "title": "No memory configured",
+        "description": "There are no memory files in the workspace. Agents work without persistent context between sessions.",
+        "actionLabel": "Create memory"
+      }
+    },
+    "files": {
+      "large": {
+        "title": "Large workspace",
+        "description": "The workspace has {fileCount} files ({sizeMB} MB). Consider archiving old projects."
       },
-      "form": {
-        "type": "Type",
-        "templates": "Templates",
-        "content": "Content",
-        "contentPlaceholder": "Write a clear update for the team",
-        "evidence": "Evidence",
-        "evidencePlaceholder": "Links, logs, PRs, screenshots",
-        "nextAction": "Next action",
-        "nextActionPlaceholder": "What should happen next?",
-        "submit": "Post comment",
-        "submitting": "Posting..."
+      "inactive": {
+        "title": "Inactive workspace",
+        "description": "No file activity for {days} days. Agents may not be working correctly."
+      }
+    },
+    "kanban": {
+      "overdue": {
+        "title": "Overdue tasks",
+        "description": "There are {count} tasks with overdue due dates. Review the Kanban board to take action."
       },
-      "templates": {
-        "progress": {
-          "label": "Progress",
-          "content": "Progress update:",
-          "evidence": "Branch / PR:",
-          "nextAction": "Next step:"
-        },
-        "blocked": {
-          "label": "Blocked",
-          "content": "Blocked by:",
-          "evidence": "Error / blocker evidence:",
-          "nextAction": "Need support from:"
-        },
-        "waiting": {
-          "label": "Waiting",
-          "content": "Waiting for:",
-          "evidence": "Reference:",
-          "nextAction": "Follow-up date:"
-        },
-        "handoff": {
-          "label": "Handoff",
-          "content": "Handoff summary:",
-          "evidence": "Context package:",
-          "nextAction": "Receiving owner:"
-        },
-        "done": {
-          "label": "Done",
-          "content": "Completed:",
-          "evidence": "Delivery evidence:",
-          "nextAction": "Validation owner:"
-        },
-        "note": {
-          "label": "Note",
-          "content": "Note:",
-          "evidence": "Optional evidence:",
-          "nextAction": "Optional next action:"
-        }
+      "unassigned": {
+        "title": "Many unassigned tasks",
+        "description": "There are {count} unassigned tasks. Agents could process them automatically."
+      },
+      "bottleneck": {
+        "title": "Task bottleneck",
+        "description": "There are {inProgress} tasks in progress but only {done} completed. Agents may be blocked or need support."
+      }
+    },
+    "agent": {
+      "noIdentity": {
+        "title": "Agents without identity",
+        "description": "{count} of {total} agents don't have an IDENTITY.md file. Define their role and personality to improve communication."
+      },
+      "none": {
+        "title": "No agents configured",
+        "description": "No agents configured in openclaw.json. Add agents to automate tasks.",
+        "actionLabel": "Configure agents"
+      },
+      "noHeartbeat": {
+        "title": "Agents without heartbeat",
+        "description": "{count} agents don't have heartbeat configured. They won't be able to receive tasks automatically from Kanban."
       }
     }
   }

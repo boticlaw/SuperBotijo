@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { StatsCard } from "@/components/StatsCard";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { WeatherWidget } from "@/components/WeatherWidget";
-import { Notepad } from "@/components/Notepad";
 import { MoodWidget } from "@/components/MoodWidget";
 import { SuggestionsPanel } from "@/components/SuggestionsPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -411,10 +410,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Notepad */}
-          <div style={{ margin: "1rem", marginTop: "0.5rem" }}>
-            <Notepad />
-          </div>
+
         </div>
       </div>
       </div>

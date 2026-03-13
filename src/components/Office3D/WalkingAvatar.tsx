@@ -164,7 +164,6 @@ export default function WalkingAvatar({
         agent.position[2] + forwardOffset
       );
       variationRef.current = now * 0.001;
-      console.log(`[WalkingAvatar] ${agent.id} initialized at [${position.x.toFixed(2)}, ${position.z.toFixed(2)}]`);
     }
 
     // Only idle agents walk around

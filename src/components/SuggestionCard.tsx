@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 import type { Suggestion } from "@/lib/suggestions-engine";
+import { useI18n } from "@/i18n/provider";
 
 interface SuggestionCardProps {
   suggestion: Suggestion;
@@ -48,8 +49,15 @@ export function SuggestionCard({
   isApplying,
   isDismissing,
 }: SuggestionCardProps) {
+  const { t } = useI18n();
+  
   const color = TYPE_COLORS[suggestion.type] || "var(--text-primary)";
   const icon = TYPE_ICONS[suggestion.type] || <Info size={18} />;
+
+  // Use translation keys if available, fallback to static text
+  const title = suggestion.titleKey ? t(suggestion.titleKey, suggestion.titleParams) : suggestion.title;
+  const description = suggestion.descriptionKey ? t(suggestion.descriptionKey, suggestion.descriptionParams) : suggestion.description;
+  const actionLabel = suggestion.action?.labelKey ? t(suggestion.action.labelKey) : suggestion.action?.label || "Apply";
 
   const handleApply = () => {
     if (onApply && !isApplying) {
@@ -108,7 +116,7 @@ export function SuggestionCard({
                   color: "var(--text-primary)",
                 }}
               >
-                {suggestion.title}
+                {title}
               </span>
               <span
                 style={{
@@ -134,7 +142,7 @@ export function SuggestionCard({
                 margin: 0,
               }}
             >
-              {suggestion.description}
+              {description}
             </p>
 
             {suggestion.metadata && Object.keys(suggestion.metadata).length > 0 && (
@@ -205,23 +213,23 @@ export function SuggestionCard({
                 }}
               >
                 {isApplying ? (
-                  "Applying..."
+                  t("common.loading")
                 ) : (
                   <>
-                    {suggestion.action.type === "link" ? (
+                    {suggestion.action?.type === "link" ? (
                       <>
                         <ExternalLink size={12} />
-                        View
+                        {actionLabel}
                       </>
-                    ) : suggestion.action.type === "config" ? (
+                    ) : suggestion.action?.type === "config" ? (
                       <>
                         <Settings size={12} />
-                        Apply
+                        {actionLabel}
                       </>
                     ) : (
                       <>
                         <Check size={12} />
-                        Apply
+                        {actionLabel}
                       </>
                     )}
                   </>
@@ -245,11 +253,11 @@ export function SuggestionCard({
               }}
             >
               {isDismissing ? (
-                "Dismissing..."
+                t("common.loading")
               ) : (
                 <>
                   <X size={12} />
-                  Dismiss
+                  {t("common.dismiss")}
                 </>
               )}
             </button>

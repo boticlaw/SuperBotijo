@@ -48,7 +48,6 @@ export default function AgentDesk({
   isSelected,
   useSharedTable = false,
 }: AgentDeskProps) {
-  const deskRef = useRef<Mesh>(null);
   const monitorRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -173,14 +172,12 @@ export default function AgentDesk({
       {/* Clickable desk surface */}
       {!useSharedTable && (
         <Box
-          ref={deskRef}
           args={[2, 0.1, 1.5]}
           position={[0, 0.75, 0]}
           castShadow
           receiveShadow
           onClick={(e) => {
             e.stopPropagation();
-            console.log("[AgentDesk] Click on desk for agent:", agentId, "state:", avatarState);
             onClick();
           }}
           onPointerOver={(e) => {
@@ -205,7 +202,6 @@ export default function AgentDesk({
         position={[0, 1.5, -0.5]} 
         onClick={(e) => {
           e.stopPropagation();
-          console.log("[AgentDesk] Monitor clicked for agent:", agentId, "state:", avatarState);
           onClick();
         }}
       >

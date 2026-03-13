@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSuggestions, generateSuggestions } from "@/lib/suggestions-engine";
+import { collectSuggestionsData } from "@/lib/suggestions-data";
 import { getDatabase, getCostByModel } from "@/lib/usage-queries";
 import fs from "fs";
 import path from "path";
@@ -8,6 +9,16 @@ export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
+
+// Simple in-memory cache to avoid blocking the event loop on every request
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let cache: {
+  data: Awaited<ReturnType<typeof collectSuggestionsData>> | null;
+  timestamp: number;
+} = {
+  data: null,
+  timestamp: 0,
+};
 
 interface CronJob {
   name: string;
@@ -77,30 +88,56 @@ function getModelUsage(): Array<{ model: string; count: number; totalTokens: num
   }
 }
 
-function getRecentErrors(): Array<{ message: string; count: number; lastSeen: string }> {
-  return [];
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const regenerate = searchParams.get("regenerate") === "true";
 
   try {
-    if (regenerate) {
+    // Check cache first (only for non-regenerate requests)
+    const now = Date.now();
+    const isCacheValid = cache.data && (now - cache.timestamp) < CACHE_TTL_MS;
+
+    if (!regenerate && isCacheValid && cache.data) {
+      // Use cached collected data
       const usageData = {
         modelUsage: getModelUsage(),
-        recentErrors: getRecentErrors(),
+        recentErrors: cache.data.recentErrors,
         cronHealth: getCronHealth(),
         skillUsage: getSkillUsage(),
-        heartbeatFrequency: 60000,
+        heartbeatFrequency: cache.data.heartbeatFrequency,
+        memoryStats: cache.data.memoryStats,
+        fileStats: cache.data.fileStats,
+        kanbanStats: cache.data.kanbanStats,
+        agentStats: cache.data.agentStats,
       };
 
       const suggestions = generateSuggestions(usageData);
-      return NextResponse.json({ suggestions, generated: true });
+      return NextResponse.json({ suggestions, generated: false, cached: true });
     }
 
-    const suggestions = getSuggestions();
-    return NextResponse.json({ suggestions, generated: false });
+    // Collect all data from OpenClaw (with cache for expensive fs operations)
+    const collected = collectSuggestionsData();
+    
+    // Update cache
+    cache = {
+      data: collected,
+      timestamp: now,
+    };
+
+    const usageData = {
+      modelUsage: getModelUsage(),
+      recentErrors: collected.recentErrors,
+      cronHealth: getCronHealth(),
+      skillUsage: getSkillUsage(),
+      heartbeatFrequency: collected.heartbeatFrequency,
+      memoryStats: collected.memoryStats,
+      fileStats: collected.fileStats,
+      kanbanStats: collected.kanbanStats,
+      agentStats: collected.agentStats,
+    };
+
+    const suggestions = generateSuggestions(usageData);
+    return NextResponse.json({ suggestions, generated: true });
   } catch (error) {
     console.error("[suggestions] Error:", error);
     return NextResponse.json({ error: "Failed to get suggestions" }, { status: 500 });
