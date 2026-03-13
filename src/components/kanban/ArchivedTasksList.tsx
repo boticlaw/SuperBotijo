@@ -8,6 +8,7 @@ import type { KanbanTask, KanbanLabel, TaskPriority } from "@/lib/kanban-db";
 interface ArchivedTasksListProps {
   tasks: KanbanTask[];
   onRestore: (taskId: string) => void;
+  onTaskClick: (task: KanbanTask) => void;
 }
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
@@ -32,7 +33,7 @@ function formatRelativeTime(isoString: string): string {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) {
+export function ArchivedTasksList({ tasks, onRestore, onTaskClick }: ArchivedTasksListProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all");
@@ -215,13 +216,14 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
             >
               {/* Title + priority + labels - single line when possible */}
               <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-                <span
-                  className="truncate text-sm"
+                <button
+                  onClick={() => onTaskClick(task)}
+                  className="truncate text-sm text-left hover:underline cursor-pointer"
                   style={{ color: "var(--text-primary)" }}
                   title={task.title}
                 >
                   {task.title}
-                </span>
+                </button>
 
                 {/* Priority indicator */}
                 <span

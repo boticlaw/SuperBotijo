@@ -349,6 +349,7 @@ export default function KanbanPage() {
         <ArchivedTasksList
           tasks={tasks}
           onRestore={handleRestoreTask}
+          onTaskClick={handleTaskClick}
         />
       ) : (
         <KanbanBoard
