@@ -35,6 +35,9 @@ function createMockTask(overrides: Partial<KanbanTaskType> = {}): KanbanTaskType
     claimedBy: null,
     claimedAt: null,
     createdBy: null,
+    archived: false,
+    archivedAt: null,
+    doneAt: null,
     ...overrides,
   };
 }

@@ -61,6 +61,10 @@ export interface KanbanTask {
   claimedAt: string | null;
   createdBy?: string | null;  // Agent ID or "user" for human-created tasks
   commentCount?: number;
+  // Archive fields for auto-archiving done tasks
+  archived: boolean;       // Soft archive flag (0 = active, 1 = archived)
+  archivedAt: string | null;  // ISO timestamp when archived
+  doneAt: string | null;   // ISO timestamp when task entered 'done' status
 }
 
 export interface KanbanColumn {
@@ -95,6 +99,7 @@ export interface UpdateTaskInput {
   domain?: string | null;  // Update task's domain
   claimedBy?: string | null;  // For claim/unclaim
   claimedAt?: string | null;  // Timestamp when claimed
+  archived?: boolean;  // Archive/unarchive task
 }
 
 export interface CreateColumnInput {
@@ -119,6 +124,7 @@ export interface ListTasksFilters {
   projectId?: string;
   createdBy?: string;  // Filter by creator (agent ID or "user")
   domain?: string;  // Filter by agent domain (WORK, FINANCE, PERSONAL, etc.)
+  view?: "active" | "archived" | "all";  // Archive view filter (default: active)
 }
 
 export interface TasksStats {
@@ -412,6 +418,38 @@ function getDb(): Database.Database {
   _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_author ON task_comments(author_type, author_id)`);
   _db.exec(`CREATE INDEX IF NOT EXISTS idx_task_comments_type ON task_comments(comment_type)`);
 
+  // Idempotent migration: Add archive fields for auto-archiving done tasks
+  const archiveMigrations = [
+    { name: "archived", sql: "ALTER TABLE kanban_tasks ADD COLUMN archived INTEGER NOT NULL DEFAULT 0" },
+    { name: "archived_at", sql: "ALTER TABLE kanban_tasks ADD COLUMN archived_at TEXT" },
+    { name: "done_at", sql: "ALTER TABLE kanban_tasks ADD COLUMN done_at TEXT" },
+  ];
+
+  for (const migration of archiveMigrations) {
+    const columnExists = _db
+      .prepare("SELECT 1 FROM pragma_table_info('kanban_tasks') WHERE name = ?")
+      .get(migration.name) as { "1": number } | undefined;
+
+    if (!columnExists) {
+      try {
+        _db.exec(migration.sql);
+        console.log(`[kanban-db] Added ${migration.name} column to kanban_tasks`);
+      } catch {
+        // Column may already exist from a previous partial migration
+      }
+    }
+  }
+
+  // Add index for efficient archive queries and auto-archive sweep
+  _db.exec(`CREATE INDEX IF NOT EXISTS idx_kanban_tasks_archive ON kanban_tasks(archived, status, done_at)`);
+
+  // Backfill: Set done_at for existing done tasks (use updated_at as approximation)
+  _db.exec(`
+    UPDATE kanban_tasks
+    SET done_at = updated_at
+    WHERE status = 'done' AND done_at IS NULL
+  `);
+
   // Seed default columns if table is empty
   const columnCount = (_db.prepare("SELECT COUNT(*) as n FROM kanban_columns").get() as { n: number }).n;
   if (columnCount === 0) {
@@ -532,6 +570,10 @@ export function createTask(input: CreateTaskInput): KanbanTask {
     claimedBy: null,
     claimedAt: null,
     createdBy,
+    // Archive fields - new tasks start as active
+    archived: false,
+    archivedAt: null,
+    doneAt: null,
   };
 }
 
@@ -577,6 +619,11 @@ export function updateTask(id: string, updates: UpdateTaskInput): KanbanTask | n
   if (updates.status !== undefined) {
     fields.push("status = ?");
     values.push(updates.status);
+    // Set done_at when task moves to 'done' status
+    if (updates.status === "done" && existing.status !== "done") {
+      fields.push("done_at = ?");
+      values.push(now);
+    }
   }
   if (updates.priority !== undefined) {
     fields.push("priority = ?");
@@ -607,6 +654,18 @@ export function updateTask(id: string, updates: UpdateTaskInput): KanbanTask | n
   if (updates.claimedAt !== undefined) {
     fields.push("claimed_at = ?");
     values.push(updates.claimedAt);
+  }
+
+  // Handle archive/unarchive
+  if (updates.archived !== undefined) {
+    if (updates.archived) {
+      fields.push("archived = 1");
+      fields.push("archived_at = ?");
+      values.push(now);
+    } else {
+      fields.push("archived = 0");
+      fields.push("archived_at = NULL");
+    }
   }
 
   if (fields.length === 0) return existing;
@@ -654,14 +713,26 @@ export function deleteTask(id: string): boolean {
 
 /**
  * List tasks with optional filters
- * @param filters - Optional filters for status, assignee, priority, and search
+ * @param filters - Optional filters for status, assignee, priority, search, and view
  * @returns Array of tasks ordered by their order field
  */
 export function listTasks(filters?: ListTasksFilters): KanbanTask[] {
+  // Trigger auto-archive sweep on read (lazy, throttled)
+  runAutoArchiveSweepIfDue();
+
   const db = getDb();
 
   const conditions: string[] = [];
   const params: unknown[] = [];
+
+  // Handle archive view filter (default: active only)
+  const view = filters?.view ?? "active";
+  if (view === "active") {
+    conditions.push("archived = 0");
+  } else if (view === "archived") {
+    conditions.push("archived = 1");
+  }
+  // view === "all" => no filter on archived
 
   if (filters?.status) {
     conditions.push("status = ?");
@@ -971,18 +1042,24 @@ export function getTasksByColumn(): Record<string, KanbanTask[]> {
 
 /**
  * Get task statistics
+ * @param includeArchived - Whether to include archived tasks (default: false)
  * @returns Stats object with totals by status and priority
  */
-export function getTasksStats(): TasksStats {
+export function getTasksStats(includeArchived = false): TasksStats {
+  // Trigger auto-archive sweep on read (lazy, throttled)
+  runAutoArchiveSweepIfDue();
+
   const db = getDb();
 
-  const total = (db.prepare("SELECT COUNT(*) as n FROM kanban_tasks").get() as { n: number }).n;
+  const archiveFilter = includeArchived ? "" : "WHERE archived = 0";
 
-  const statusRows = db.prepare("SELECT status, COUNT(*) as n FROM kanban_tasks GROUP BY status").all() as Array<{ status: string; n: number }>;
+  const total = (db.prepare(`SELECT COUNT(*) as n FROM kanban_tasks ${archiveFilter}`).get() as { n: number }).n;
+
+  const statusRows = db.prepare(`SELECT status, COUNT(*) as n FROM kanban_tasks ${archiveFilter} GROUP BY status`).all() as Array<{ status: string; n: number }>;
   const byStatus: Record<string, number> = {};
   for (const r of statusRows) byStatus[r.status] = r.n;
 
-  const priorityRows = db.prepare("SELECT priority, COUNT(*) as n FROM kanban_tasks GROUP BY priority").all() as Array<{ priority: string; n: number }>;
+  const priorityRows = db.prepare(`SELECT priority, COUNT(*) as n FROM kanban_tasks ${archiveFilter} GROUP BY priority`).all() as Array<{ priority: string; n: number }>;
   const byPriority: Record<string, number> = {};
   for (const r of priorityRows) byPriority[r.priority] = r.n;
 
@@ -1472,6 +1549,10 @@ function parseTaskRow(row: Record<string, unknown>): KanbanTask {
     // Creator field for agent-created tasks
     createdBy: (row.created_by as string | null) ?? null,
     commentCount: Number.isFinite(row.comment_count) ? Number(row.comment_count) : 0,
+    // Archive fields for auto-archiving done tasks
+    archived: Boolean(row.archived),
+    archivedAt: (row.archived_at as string | null) ?? null,
+    doneAt: (row.done_at as string | null) ?? null,
   };
 }
 
@@ -1956,6 +2037,81 @@ function parseJournalEntryRow(row: Record<string, unknown>): OperationsJournalEn
     highlights: row.highlights ? JSON.parse(row.highlights as string) : [],
     createdAt: row.created_at as string,
   };
+}
+
+// ============================================================================
+// Auto-Archive Engine
+// ============================================================================
+
+// Throttle state for auto-archive sweep (in-memory, per process)
+let lastAutoArchiveSweep = 0;
+const AUTO_ARCHIVE_SWEEP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Get the configured auto-archive threshold in days
+ * @returns Number of days before auto-archiving done tasks (default: 7)
+ */
+export function getAutoArchiveDays(): number {
+  const envValue = process.env.KANBAN_AUTO_ARCHIVE_DAYS;
+  if (envValue) {
+    const parsed = parseInt(envValue, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return 7;
+}
+
+/**
+ * Run auto-archive sweep if enough time has passed since last run
+ * Archives done tasks older than KANBAN_AUTO_ARCHIVE_DAYS (default: 7)
+ * 
+ * Uses lazy throttle: only runs once per hour per process
+ * Uses indexed UPDATE for efficiency
+ * 
+ * @returns Number of tasks archived, or 0 if sweep was throttled
+ */
+export function runAutoArchiveSweepIfDue(): number {
+  const now = Date.now();
+  
+  // Throttle: only run once per hour
+  if (now - lastAutoArchiveSweep < AUTO_ARCHIVE_SWEEP_INTERVAL_MS) {
+    return 0;
+  }
+  
+  lastAutoArchiveSweep = now;
+  
+  const db = getDb();
+  const archiveDays = getAutoArchiveDays();
+  const cutoffDate = new Date(now - archiveDays * 24 * 60 * 60 * 1000).toISOString();
+  const archiveTimestamp = new Date(now).toISOString();
+  
+  // Single indexed UPDATE - efficient and idempotent
+  const result = db.prepare(`
+    UPDATE kanban_tasks
+    SET archived = 1, archived_at = ?
+    WHERE archived = 0
+      AND status = 'done'
+      AND done_at IS NOT NULL
+      AND done_at <= ?
+  `).run(archiveTimestamp, cutoffDate);
+  
+  if (result.changes > 0) {
+    console.log(`[kanban-db] Auto-archived ${result.changes} done tasks (older than ${archiveDays} days)`);
+  }
+  
+  return result.changes;
+}
+
+/**
+ * Force run auto-archive sweep (bypasses throttle)
+ * Useful for testing or manual triggers
+ * 
+ * @returns Number of tasks archived
+ */
+export function forceAutoArchiveSweep(): number {
+  lastAutoArchiveSweep = 0;
+  return runAutoArchiveSweepIfDue();
 }
 
 // ============================================================================

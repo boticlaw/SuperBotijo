@@ -110,6 +110,30 @@
     "energy": "Energía",
     "currentTask": "Tarea actual",
     "streak": "Racha",
+    "mood": {
+      "score": "Puntuación",
+      "daysWithoutErrors": "días sin errores críticos",
+      "showDetails": "Ver detalles",
+      "hideDetails": "Ocultar detalles",
+      "activities24h": "Actividades (24h)",
+      "successRate": "Tasa de éxito",
+      "tokensPerHour": "Tokens/hora",
+      "errors24h": "Errores (24h)",
+      "ptsVsYesterday": "pts vs ayer",
+      "last7Days": "Últimos 7 días",
+      "productive": "Productivo",
+      "busy": "Ocupado",
+      "idle": "Inactivo",
+      "frustrated": "Frustrado",
+      "neutral": "Neutral",
+      "descriptions": {
+        "productive": "¡SuperBotijo es muy productivo y está completando tareas!",
+        "busy": "SuperBotijo está ocupado manejando múltiples tareas.",
+        "idle": "SuperBotijo está inactivo, esperando tareas.",
+        "frustrated": "SuperBotijo ha encontrado varios errores recientemente.",
+        "neutral": "SuperBotijo está operando normalmente."
+      }
+    },
     "status": {
       "working": "Trabajando",
       "online": "En línea",
@@ -398,6 +422,75 @@
     "cpuLabel": "CPU"
   },
   "kanban": {
+    "title": "Tablero Kanban",
+    "subtitle": "Arrastrá y soltá tareas para organizar tu flujo de trabajo",
+    "loading": "Cargando tablero kanban...",
+    "filter": "Filtrar:",
+    "domain": "Dominio:",
+    "createdBy": "Creado por:",
+    "assignedTo": "Asignado a:",
+    "addColumn": "Agregar Columna",
+    "noColumns": "Todavía no hay columnas",
+    "noColumnsHint": "Clickeá \"Agregar Columna\" para empezar",
+    "noTasks": "Sin tareas",
+    "dropHere": "Soltar acá",
+    "addTask": "Agregar Tarea",
+    "claimedBy": "Reclamado por {name}",
+    "createdByAgent": "Creado por {name}",
+    "bot": "bot",
+    "cronJobs": "Tareas Cron",
+    "archiveView": {
+      "active": "Activas",
+      "archived": "Archivadas"
+    },
+    "archiveActions": {
+      "archive": "Archivar",
+      "unarchive": "Desarchivar",
+      "archiveHint": "Mover al archivo (mantiene historial)",
+      "unarchiveHint": "Restaurar al tablero activo"
+    },
+    "executionFilter": {
+      "all": "Todas",
+      "running": "Ejecutando",
+      "success": "Éxito",
+      "error": "Error",
+      "pending": "Pendiente",
+      "manual": "Manual"
+    },
+    "columnModal": {
+      "title": "Agregar Nueva Columna",
+      "columnName": "Nombre de Columna",
+      "columnNamePlaceholder": "Ingresá el nombre de la columna...",
+      "color": "Color",
+      "create": "Crear Columna"
+    },
+    "taskModal": {
+      "editTitle": "Editar Tarea",
+      "newTitle": "Nueva Tarea",
+      "titleLabel": "Título *",
+      "titlePlaceholder": "Título de la tarea...",
+      "titleRequired": "El título es requerido",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Agregá más detalles...",
+      "status": "Estado",
+      "priority": "Prioridad",
+      "assignee": "Asignado a",
+      "assigneePlaceholder": "Ingresá el nombre...",
+      "labels": "Etiquetas",
+      "add": "Agregar",
+      "labelNamePlaceholder": "Nombre de etiqueta...",
+      "addLabel": "Agregar Etiqueta",
+      "saving": "Guardando...",
+      "update": "Actualizar",
+      "create": "Crear",
+      "deleteConfirm": "¿Estás seguro de que querés eliminar esta tarea?"
+    },
+    "priorities": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
     "comments": {
       "title": "Comentarios",
       "loading": "Cargando comentarios...",
@@ -421,6 +514,65 @@
         "handoff": "Handoff",
         "done": "Hecho",
         "note": "Nota"
+      },
+      "form": {
+        "type": "Tipo",
+        "templates": "Plantillas",
+        "content": "Contenido",
+        "contentPlaceholder": "Describí la actualización u observación...",
+        "evidence": "Evidencia",
+        "evidencePlaceholder": "Links, archivos o datos...",
+        "nextAction": "Próxima Acción",
+        "nextActionPlaceholder": "Qué debería pasar después...",
+        "submit": "Enviar",
+        "submitting": "Enviando..."
+      },
+      "templates": {
+        "progress": {
+          "label": "Progreso",
+          "content": "Trabajo en progreso en esta tarea.",
+          "evidence": "Link a commit/PR/doc",
+          "nextAction": "Continuar con el siguiente paso"
+        },
+        "blocked": {
+          "label": "Bloqueado",
+          "content": "Esta tarea está bloqueada.",
+          "evidence": "Log de error o descripción del bloqueo",
+          "nextAction": "Necesita input de..."
+        },
+        "waiting": {
+          "label": "Esperando",
+          "content": "Esperando dependencia externa.",
+          "evidence": "Referencia a ticket/issue",
+          "nextAction": "Se reanudará cuando..."
+        },
+        "handoff": {
+          "label": "Handoff",
+          "content": "Entregando esta tarea.",
+          "evidence": "Resumen del estado actual",
+          "nextAction": "El próximo asignado debería..."
+        },
+        "done": {
+          "label": "Hecho",
+          "content": "Tarea completada exitosamente.",
+          "evidence": "Resultado o entregable",
+          "nextAction": "Listo para revisión/merge"
+        },
+        "note": {
+          "label": "Nota",
+          "content": "Contexto adicional para esta tarea.",
+          "evidence": "",
+          "nextAction": ""
+        }
+      },
+      "validation": {
+        "contentRequired": "El contenido del comentario es requerido"
+      },
+      "errors": {
+        "loadFailed": "Error al cargar comentarios",
+        "postFailed": "Error al publicar comentario",
+        "rateLimited": "Demasiados comentarios. Por favor esperá antes de publicar otro.",
+        "invalidPayload": "Datos de comentario inválidos"
       }
     }
   },

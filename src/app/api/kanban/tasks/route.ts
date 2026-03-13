@@ -4,6 +4,7 @@ import {
   createTask,
   type TaskPriority,
   type CreateTaskInput,
+  type ListTasksFilters,
 } from "@/lib/kanban-db";
 import { emitKanbanTaskCreated } from "@/lib/runtime-events";
 
@@ -12,7 +13,8 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/kanban/tasks
  * List tasks with optional filters
- * Query params: status, assignee, priority, search, columnId, projectId
+ * Query params: status, assignee, priority, search, columnId, projectId, view
+ * - view: "active" (default), "archived", or "all"
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,8 +25,15 @@ export async function GET(request: NextRequest) {
     const priority = (searchParams.get("priority") || undefined) as TaskPriority | undefined;
     const search = searchParams.get("search") || undefined;
     const projectId = searchParams.get("projectId") || undefined;
+    const createdBy = searchParams.get("createdBy") || undefined;
+    const domain = searchParams.get("domain") || undefined;
+    
+    // Archive view filter: "active" (default), "archived", or "all"
+    const viewParam = searchParams.get("view");
+    const view: ListTasksFilters["view"] = 
+      viewParam === "archived" || viewParam === "all" ? viewParam : "active";
 
-    const tasks = listTasks({ status, assignee, priority, search, projectId });
+    const tasks = listTasks({ status, assignee, priority, search, projectId, createdBy, domain, view });
 
     return NextResponse.json({ tasks });
   } catch (error) {

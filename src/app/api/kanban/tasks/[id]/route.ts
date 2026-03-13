@@ -119,6 +119,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Validate archived (must be boolean)
+    if (body.archived !== undefined && typeof body.archived !== "boolean") {
+      return NextResponse.json(
+        { error: "archived must be a boolean" },
+        { status: 400 }
+      );
+    }
+
     if (
       isRequireCommentOnStatusFeatureEnabled()
       && shouldRequireTransitionComment(existingTask.status, nextStatus)
@@ -163,6 +171,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (body.assignee !== undefined) changes.assignee = body.assignee;
     if (body.labels !== undefined) changes.labels = body.labels;
     if (body.projectId !== undefined) changes.projectId = body.projectId;
+    if (body.archived !== undefined) changes.archived = body.archived;
 
     emitKanbanTaskUpdated(task.id, task.title, changes);
 

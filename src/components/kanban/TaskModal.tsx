@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, MessageSquare, Send } from "lucide-react";
+import { X, Plus, MessageSquare, Send, Archive, ArchiveRestore, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/provider";
 import type {
@@ -38,13 +38,6 @@ const COMMENT_TEMPLATE_KEYS = ["progress", "blocked", "waiting", "handoff", "don
 
 type StructuredCommentType = (typeof COMMENT_TEMPLATE_KEYS)[number];
 
-const PRIORITIES = [
-  { value: "low", label: "Low", color: "var(--text-muted)" },
-  { value: "medium", label: "Medium", color: "var(--info)" },
-  { value: "high", label: "High", color: "var(--warning)" },
-  { value: "critical", label: "Critical", color: "var(--error)" },
-];
-
 function parseCommentMetadata(metadata: TaskComment["metadata"]): StructuredCommentMetadata {
   if (!metadata || typeof metadata !== "object") {
     return {};
@@ -71,6 +64,14 @@ export function TaskModal({
   onCommentsUpdated,
 }: TaskModalProps) {
   const { t, formatDateTime } = useI18n();
+
+  const PRIORITIES = [
+    { value: "low", label: t("kanban.priorities.low"), color: "var(--text-muted)" },
+    { value: "medium", label: t("kanban.priorities.medium"), color: "var(--info)" },
+    { value: "high", label: t("kanban.priorities.high"), color: "var(--warning)" },
+    { value: "critical", label: t("kanban.priorities.critical"), color: "var(--error)" },
+  ];
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<KanbanTaskType["priority"]>("medium");
@@ -238,7 +239,7 @@ export function TaskModal({
 
     // Validation
     if (!title.trim()) {
-      setError("Title is required");
+      setError(t("kanban.taskModal.titleRequired"));
       return;
     }
 
@@ -295,10 +296,38 @@ export function TaskModal({
 
   function handleDelete() {
     if (!editingTask) return;
-    if (!confirm("Are you sure you want to delete this task?")) return;
+    if (!confirm(t("kanban.taskModal.deleteConfirm"))) return;
 
     onDelete(editingTask.id);
     onClose();
+  }
+
+  async function handleArchiveToggle() {
+    if (!editingTask) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const newArchived = !editingTask.archived;
+      const res = await fetch(`/api/kanban/tasks/${editingTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: newArchived }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update task");
+      }
+
+      onSave({ ...editingTask, archived: newArchived });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to archive task");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function addLabel() {
@@ -340,7 +369,7 @@ export function TaskModal({
           style={{ backgroundColor: "var(--card)", borderBottom: "1px solid var(--border)" }}
         >
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-            {editingTask ? "Edit Task" : "New Task"}
+            {editingTask ? t("kanban.taskModal.editTitle") : t("kanban.taskModal.newTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -355,7 +384,7 @@ export function TaskModal({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-              Title *
+              {t("kanban.taskModal.titleLabel")}
             </label>
             <input
               type="text"
@@ -364,7 +393,7 @@ export function TaskModal({
                 setTitle(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="Task title..."
+              placeholder={t("kanban.taskModal.titlePlaceholder")}
               className="w-full rounded-lg border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-offset-0"
               style={{
                 backgroundColor: "var(--card-elevated)",
@@ -378,12 +407,12 @@ export function TaskModal({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-              Description
+              {t("kanban.taskModal.description")}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details..."
+              placeholder={t("kanban.taskModal.descriptionPlaceholder")}
               rows={3}
               className="w-full rounded-lg border px-4 py-3 text-sm outline-none resize-none"
               style={{
@@ -397,7 +426,7 @@ export function TaskModal({
           {/* Status (Column) */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-              Status
+              {t("kanban.taskModal.status")}
             </label>
             <select
               value={status}
@@ -420,7 +449,7 @@ export function TaskModal({
           {/* Priority */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-              Priority
+              {t("kanban.taskModal.priority")}
             </label>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
@@ -448,13 +477,13 @@ export function TaskModal({
           {/* Assignee */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-              Assignee
+              {t("kanban.taskModal.assignee")}
             </label>
             <input
               type="text"
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
-              placeholder="Enter name..."
+              placeholder={t("kanban.taskModal.assigneePlaceholder")}
               className="w-full rounded-lg border px-4 py-3 text-sm outline-none"
               style={{
                 backgroundColor: "var(--card-elevated)",
@@ -468,7 +497,7 @@ export function TaskModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                Labels
+                {t("kanban.taskModal.labels")}
               </label>
               <button
                 type="button"
@@ -479,7 +508,7 @@ export function TaskModal({
               }}
               >
                 <Plus className="h-3 w-3" />
-                Add
+                {t("kanban.taskModal.add")}
               </button>
             </div>
 
@@ -517,7 +546,7 @@ export function TaskModal({
                     type="text"
                     value={newLabelName}
                     onChange={(e) => setNewLabelName(e.target.value)}
-                    placeholder="Label name..."
+                    placeholder={t("kanban.taskModal.labelNamePlaceholder")}
                     className="flex-1 rounded border px-2 py-1 text-xs outline-none"
                     style={{
                       backgroundColor: "var(--card)",
@@ -553,7 +582,7 @@ export function TaskModal({
                     cursor: newLabelName.trim() ? "pointer" : "not-allowed",
                   }}
                 >
-                  Add Label
+                  {t("kanban.taskModal.addLabel")}
                 </button>
               </div>
             )}
@@ -744,42 +773,61 @@ export function TaskModal({
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-            {editingTask && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-                style={{
-              color: "var(--error)",
-              backgroundColor: "var(--error-bg)",
-            }}
-              >
-                Delete
-              </button>
-            )}
+            <div className="flex gap-2">
+              {editingTask && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleArchiveToggle}
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+                    style={{
+                      color: editingTask.archived ? "var(--success)" : "var(--text-muted)",
+                      backgroundColor: editingTask.archived ? "var(--success-bg)" : "var(--surface-elevated)",
+                      border: "1px solid var(--border)",
+                    }}
+                    title={editingTask.archived ? t("kanban.archiveActions.unarchiveHint") : t("kanban.archiveActions.archiveHint")}
+                  >
+                    {editingTask.archived ? <Inbox className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    {editingTask.archived ? t("kanban.archiveActions.unarchive") : t("kanban.archiveActions.archive")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                    style={{
+                      color: "var(--error)",
+                      backgroundColor: "var(--error-bg)",
+                    }}
+                  >
+                    {t("common.delete")}
+                  </button>
+                </>
+              )}
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
                 className="rounded-lg px-4 py-2 text-sm font-medium"
                 style={{
-              color: "var(--text-muted)",
-              backgroundColor: "transparent",
-            }}
+                  color: "var(--text-muted)",
+                  backgroundColor: "transparent",
+                }}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
                 className="rounded-lg px-4 py-2 text-sm font-bold transition-all disabled:opacity-50"
                 style={{
-              backgroundColor: "var(--accent)",
-              color: "white",
-              cursor: isSaving ? "not-allowed" : "pointer",
-            }}
+                  backgroundColor: "var(--accent)",
+                  color: "white",
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                }}
               >
-                {isSaving ? "Saving..." : editingTask ? "Update" : "Create"}
+                {isSaving ? t("kanban.taskModal.saving") : editingTask ? t("kanban.taskModal.update") : t("kanban.taskModal.create")}
               </button>
             </div>
           </div>

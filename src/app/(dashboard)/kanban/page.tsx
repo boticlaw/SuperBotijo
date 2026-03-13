@@ -2,16 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { RefreshCw, AlertCircle, Play, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
+import { RefreshCw, AlertCircle, Play, CheckCircle, XCircle, Clock, Calendar, Archive, Inbox } from "lucide-react";
 import { KanbanBoard, TaskModal } from "@/components/kanban";
+import { useI18n } from "@/i18n/provider";
 import type { KanbanTask, KanbanColumn } from "@/lib/kanban-db";
 
 type ExecutionFilter = "all" | "running" | "success" | "error" | "pending" | "none";
+type ArchiveView = "active" | "archived";
 
 export default function KanbanPage() {
+  const { t } = useI18n();
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [tasks, setTasks] = useState<KanbanTask[]>([]);
   const [executionFilter, setExecutionFilter] = useState<ExecutionFilter>("all");
+  const [archiveView, setArchiveView] = useState<ArchiveView>("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +38,7 @@ export default function KanbanPage() {
 
       const [columnsRes, tasksRes, agentsRes, domainsRes] = await Promise.all([
         fetch("/api/kanban/columns"),
-        fetch("/api/kanban/tasks"),
+        fetch(`/api/kanban/tasks?view=${archiveView}`),
         fetch("/api/kanban/agent/ids").catch(() => ({ ok: false, json: async () => ({ agents: [] }) })),
         fetch("/api/kanban/agent/domains").catch(() => ({ ok: false, json: async () => ({ domains: [] }) })),
       ]);
@@ -58,7 +62,7 @@ export default function KanbanPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [archiveView]);
 
   useEffect(() => {
     fetchData();
@@ -191,7 +195,7 @@ export default function KanbanPage() {
           style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
         >
           <RefreshCw className="h-5 w-5 animate-spin" style={{ color: "var(--accent)" }} />
-          <span style={{ color: "var(--text-secondary)" }}>Loading kanban board...</span>
+          <span style={{ color: "var(--text-secondary)" }}>{t("kanban.loading")}</span>
         </div>
       </div>
     );
@@ -212,7 +216,7 @@ export default function KanbanPage() {
             className="rounded-lg px-3 py-1 text-sm font-medium"
             style={{ backgroundColor: "var(--accent)", color: "white" }}
           >
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       </div>
@@ -221,58 +225,89 @@ export default function KanbanPage() {
 
   return (
     <div className="h-full p-4 md:p-6">
-      {/* Execution Status Filters */}
+      {/* Archive View Toggle + Execution Status Filters */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-            Filter:
-          </span>
-          <FilterButton
-            active={executionFilter === "all"}
-            onClick={() => setExecutionFilter("all")}
-            count={taskCounts.all}
-            label="All"
-          />
-          <FilterButton
-            active={executionFilter === "running"}
-            onClick={() => setExecutionFilter("running")}
-            count={taskCounts.running}
-            label="Running"
-            icon={<Play className="h-3 w-3" />}
-            color="var(--info)"
-          />
-          <FilterButton
-            active={executionFilter === "success"}
-            onClick={() => setExecutionFilter("success")}
-            count={taskCounts.success}
-            label="Success"
-            icon={<CheckCircle className="h-3 w-3" />}
-            color="var(--success)"
-          />
-          <FilterButton
-            active={executionFilter === "error"}
-            onClick={() => setExecutionFilter("error")}
-            count={taskCounts.error}
-            label="Error"
-            icon={<XCircle className="h-3 w-3" />}
-            color="var(--error)"
-          />
-          <FilterButton
-            active={executionFilter === "pending"}
-            onClick={() => setExecutionFilter("pending")}
-            count={taskCounts.pending}
-            label="Pending"
-            icon={<Clock className="h-3 w-3" />}
-            color="var(--warning)"
-          />
-          <FilterButton
-            active={executionFilter === "none"}
-            onClick={() => setExecutionFilter("none")}
-            count={taskCounts.none}
-            label="Manual"
-            icon={<AlertCircle className="h-3 w-3" />}
-            color="var(--text-muted)"
-          />
+          {/* Archive View Toggle */}
+          <div className="mr-4 flex items-center gap-1 rounded-lg p-1" style={{ backgroundColor: "var(--surface-elevated)" }}>
+            <button
+              onClick={() => setArchiveView("active")}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+              style={{
+                backgroundColor: archiveView === "active" ? "var(--accent)" : "transparent",
+                color: archiveView === "active" ? "white" : "var(--text-secondary)",
+              }}
+            >
+              <Inbox className="h-4 w-4" />
+              {t("kanban.archiveView.active")}
+            </button>
+            <button
+              onClick={() => setArchiveView("archived")}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all"
+              style={{
+                backgroundColor: archiveView === "archived" ? "var(--accent)" : "transparent",
+                color: archiveView === "archived" ? "white" : "var(--text-secondary)",
+              }}
+            >
+              <Archive className="h-4 w-4" />
+              {t("kanban.archiveView.archived")}
+            </button>
+          </div>
+
+          {/* Execution Filters (only show in active view) */}
+          {archiveView === "active" && (
+            <>
+              <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                {t("kanban.filter")}
+              </span>
+              <FilterButton
+                active={executionFilter === "all"}
+                onClick={() => setExecutionFilter("all")}
+                count={taskCounts.all}
+                label={t("kanban.executionFilter.all")}
+              />
+              <FilterButton
+                active={executionFilter === "running"}
+                onClick={() => setExecutionFilter("running")}
+                count={taskCounts.running}
+                label={t("kanban.executionFilter.running")}
+                icon={<Play className="h-3 w-3" />}
+                color="var(--info)"
+              />
+              <FilterButton
+                active={executionFilter === "success"}
+                onClick={() => setExecutionFilter("success")}
+                count={taskCounts.success}
+                label={t("kanban.executionFilter.success")}
+                icon={<CheckCircle className="h-3 w-3" />}
+                color="var(--success)"
+              />
+              <FilterButton
+                active={executionFilter === "error"}
+                onClick={() => setExecutionFilter("error")}
+                count={taskCounts.error}
+                label={t("kanban.executionFilter.error")}
+                icon={<XCircle className="h-3 w-3" />}
+                color="var(--error)"
+              />
+              <FilterButton
+                active={executionFilter === "pending"}
+                onClick={() => setExecutionFilter("pending")}
+                count={taskCounts.pending}
+                label={t("kanban.executionFilter.pending")}
+                icon={<Clock className="h-3 w-3" />}
+                color="var(--warning)"
+              />
+              <FilterButton
+                active={executionFilter === "none"}
+                onClick={() => setExecutionFilter("none")}
+                count={taskCounts.none}
+                label={t("kanban.executionFilter.manual")}
+                icon={<AlertCircle className="h-3 w-3" />}
+                color="var(--text-muted)"
+              />
+            </>
+          )}
         </div>
 
         {/* Cron Jobs Link */}
@@ -286,7 +321,7 @@ export default function KanbanPage() {
           }}
         >
           <Calendar className="h-4 w-4" />
-          Cron Jobs
+          {t("kanban.cronJobs")}
         </Link>
       </div>
 
@@ -336,7 +371,7 @@ export default function KanbanPage() {
               className="mb-4 text-lg font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
-              Add New Column
+              {t("kanban.columnModal.title")}
             </h2>
 
             <div className="space-y-4">
@@ -345,13 +380,13 @@ export default function KanbanPage() {
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  Column Name
+                  {t("kanban.columnModal.columnName")}
                 </label>
                 <input
                   type="text"
                   value={newColumnName}
                   onChange={(e) => setNewColumnName(e.target.value)}
-                  placeholder="Enter column name..."
+                  placeholder={t("kanban.columnModal.columnNamePlaceholder")}
                   className="w-full rounded-lg border px-4 py-3 text-sm outline-none"
                   style={{
                     backgroundColor: "var(--card-elevated)",
@@ -366,7 +401,7 @@ export default function KanbanPage() {
                   className="mb-2 block text-sm font-medium"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  Color
+                  {t("kanban.columnModal.color")}
                 </label>
                 <input
                   type="color"
@@ -384,7 +419,7 @@ export default function KanbanPage() {
                 className="rounded-lg px-4 py-2 text-sm font-medium"
                 style={{ color: "var(--text-muted)" }}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleAddColumn}
@@ -392,7 +427,7 @@ export default function KanbanPage() {
                 className="rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50"
                 style={{ backgroundColor: "var(--accent)", color: "white" }}
               >
-                Create Column
+                {t("kanban.columnModal.create")}
               </button>
             </div>
           </div>
