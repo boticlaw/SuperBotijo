@@ -2,6 +2,7 @@
 
 import { AlertCircle, Lock, Clock, Play, CheckCircle, XCircle, PauseCircle, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { useI18n } from "@/i18n/provider";
 import type { KanbanTask as KanbanTaskType } from "@/lib/kanban-db";
 
 interface KanbanTaskProps {
@@ -61,6 +62,7 @@ function getExecutionIcon(status: string) {
 }
 
 export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }: KanbanTaskProps) {
+  const { t } = useI18n();
   const priorityConfig = PRIORITY_CONFIG[task.priority];
 
   function handleDragStart(e: React.DragEvent) {
@@ -152,7 +154,7 @@ export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }
                 <span
                   className="flex items-center gap-0.5 text-[10px]"
                   style={{ color: "var(--warning)" }}
-                  title={`Claimed by ${task.claimedBy}`}
+                  title={t("kanban.claimedBy", { name: task.claimedBy })}
                 >
                   <Lock className="h-2.5 w-2.5" />
                 </span>
@@ -181,9 +183,9 @@ export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }
                     backgroundColor: "rgba(139, 92, 246, 0.15)",
                     color: "#a855f7",
                   }}
-                  title={`Created by ${task.createdBy}`}
+                  title={t("kanban.createdByAgent", { name: task.createdBy })}
                 >
-                  bot
+                  {t("kanban.bot")}
                 </span>
               )}
 

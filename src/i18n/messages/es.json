@@ -452,10 +452,10 @@
     "archived": {
       "empty": "No hay tareas archivadas",
       "emptyHint": "Las tareas en 'done' se archivan automáticamente después de 7 días",
-      "searchPlaceholder": "Buscar tareas archivadas...",
-      "allPriorities": "Todas las prioridades",
-      "clearFilters": "Limpiar filtros",
-      "showing": "Mostrando {count} de {total} tareas",
+      "searchPlaceholder": "Buscar...",
+      "allPriorities": "Todas",
+      "clearFilters": "Limpiar",
+      "showing": "Mostrando {count} de {total}",
       "noResults": "Ninguna tarea coincide con tus filtros",
       "archivedAgo": "Archivada {time}"
     },

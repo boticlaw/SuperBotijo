@@ -631,10 +631,10 @@
     "archived": {
       "empty": "No archived tasks",
       "emptyHint": "Tasks in 'done' are automatically archived after 7 days",
-      "searchPlaceholder": "Search archived tasks...",
-      "allPriorities": "All priorities",
-      "clearFilters": "Clear filters",
-      "showing": "Showing {count} of {total} tasks",
+      "searchPlaceholder": "Search...",
+      "allPriorities": "All",
+      "clearFilters": "Clear",
+      "showing": "Showing {count} of {total}",
       "noResults": "No tasks match your filters",
       "archivedAgo": "Archived {time}"
     },

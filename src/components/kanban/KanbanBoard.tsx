@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
+import { useI18n } from "@/i18n/provider";
 import type { KanbanTask, KanbanColumn as KanbanColumnType } from "@/lib/kanban-db";
 
 interface KanbanBoardProps {
@@ -40,6 +41,7 @@ export function KanbanBoard({
   domainFilter = null,
   onDomainFilterChange,
 }: KanbanBoardProps) {
+  const { t } = useI18n();
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
   const handleDragStart = useCallback((e: React.DragEvent, task: KanbanTask) => {
@@ -117,20 +119,20 @@ export function KanbanBoard({
             className="text-2xl font-bold"
             style={{ color: "var(--text-primary)" }}
           >
-            Kanban Board
+            {t("kanban.title")}
           </h1>
           <p
             className="text-sm"
             style={{ color: "var(--text-muted)" }}
           >
-            Drag and drop tasks to organize your workflow
+            {t("kanban.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
           {/* Domain Filter - Only show if there are domains */}
           {domains.length > 0 && onDomainFilterChange && (
             <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Domain:</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("kanban.domain")}</span>
               <select
                 value={domainFilter || ""}
                 onChange={(e) => onDomainFilterChange(e.target.value || null)}
@@ -141,7 +143,7 @@ export function KanbanBoard({
                   color: "var(--text-secondary)",
                 }}
               >
-                <option value="">All</option>
+                <option value="">{t("common.all")}</option>
                 {domains.map((domain) => (
                   <option key={domain.id} value={domain.id}>
                     {domain.name}
@@ -157,7 +159,7 @@ export function KanbanBoard({
               {/* Created By Filter */}
               {onCreatedByFilterChange && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Created by:</span>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("kanban.createdBy")}</span>
                   <select
                     value={createdByFilter || ""}
                     onChange={(e) => onCreatedByFilterChange(e.target.value || null)}
@@ -168,7 +170,7 @@ export function KanbanBoard({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    <option value="">All</option>
+                    <option value="">{t("common.all")}</option>
                     {configuredAgents.map((agentId) => (
                       <option key={agentId} value={agentId}>
                         {agentId}
@@ -181,7 +183,7 @@ export function KanbanBoard({
               {/* Assignee Filter */}
               {onAssigneeFilterChange && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Assigned to:</span>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("kanban.assignedTo")}</span>
                   <select
                     value={assigneeFilter || ""}
                     onChange={(e) => onAssigneeFilterChange(e.target.value || null)}
@@ -192,7 +194,7 @@ export function KanbanBoard({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    <option value="">All</option>
+                    <option value="">{t("common.all")}</option>
                     {configuredAgents.map((agentId) => (
                       <option key={agentId} value={agentId}>
                         {agentId}
@@ -213,7 +215,7 @@ export function KanbanBoard({
             }}
           >
             <Plus className="h-4 w-4" />
-            Add Column
+            {t("kanban.addColumn")}
           </button>
         </div>
       </div>
@@ -250,13 +252,13 @@ export function KanbanBoard({
                   className="text-lg font-medium"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  No columns yet
+                  {t("kanban.noColumns")}
                 </p>
                 <p
                   className="mt-1 text-sm"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  Click &quot;Add Column&quot; to get started
+                  {t("kanban.noColumnsHint")}
                 </p>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { KanbanTask } from "./KanbanTask";
+import { useI18n } from "@/i18n/provider";
 import type { KanbanTask as KanbanTaskType, KanbanColumn as KanbanColumnType } from "@/lib/kanban-db";
 
 interface KanbanColumnProps {
@@ -29,6 +30,7 @@ export function KanbanColumn({
   onDrop,
   draggingTaskId,
 }: KanbanColumnProps) {
+  const { t } = useI18n();
   const [isDragOver, setIsDragOver] = useState(false);
 
   const taskCount = tasks.length;
@@ -128,7 +130,7 @@ export function KanbanColumn({
             className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed"
             style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
           >
-            <p className="text-xs">No tasks</p>
+            <p className="text-xs">{t("kanban.noTasks")}</p>
           </div>
         )}
 
@@ -144,7 +146,7 @@ export function KanbanColumn({
             }}
           >
             <p className="text-sm font-medium" style={{ color: "var(--accent)" }}>
-              Drop here
+              {t("kanban.dropHere")}
             </p>
           </motion.div>
         )}
@@ -162,7 +164,7 @@ export function KanbanColumn({
           }}
         >
           <Plus className="h-4 w-4" />
-          Add Task
+          {t("kanban.addTask")}
         </button>
       </div>
     </div>

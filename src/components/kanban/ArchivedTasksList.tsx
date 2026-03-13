@@ -115,16 +115,16 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Filters */}
       <div
-        className="flex flex-wrap items-center gap-3 rounded-xl p-4"
+        className="flex flex-wrap items-center gap-2 rounded-xl p-3"
         style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
       >
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[180px]">
           <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+            className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
             style={{ color: "var(--text-muted)" }}
           />
           <input
@@ -132,7 +132,7 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("kanban.archived.searchPlaceholder")}
-            className="w-full rounded-lg border py-2 pl-10 pr-4 text-sm outline-none"
+            className="w-full rounded-lg border py-1.5 pl-8 pr-3 text-sm outline-none"
             style={{
               backgroundColor: "var(--card-elevated)",
               borderColor: "var(--border)",
@@ -145,7 +145,7 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | "all")}
-          className="rounded-lg border px-3 py-2 text-sm outline-none"
+          className="rounded-lg border px-2 py-1.5 text-sm outline-none"
           style={{
             backgroundColor: "var(--card-elevated)",
             borderColor: "var(--border)",
@@ -166,7 +166,7 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
               <button
                 key={label.name}
                 onClick={() => toggleLabel(label.name)}
-                className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-all"
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-all"
                 style={{
                   backgroundColor: selectedLabels.includes(label.name)
                     ? `${label.color}30`
@@ -185,26 +185,24 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors"
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs transition-colors"
             style={{
               color: "var(--text-muted)",
               backgroundColor: "var(--surface-elevated)",
             }}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
             {t("kanban.archived.clearFilters")}
           </button>
         )}
       </div>
 
       {/* Results count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          {t("kanban.archived.showing", { count: filteredTasks.length, total: tasks.length })}
-        </p>
-      </div>
+      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+        {t("kanban.archived.showing", { count: filteredTasks.length, total: tasks.length })}
+      </p>
 
-      {/* Tasks list */}
+      {/* Tasks list - compact */}
       <div
         className="overflow-hidden rounded-xl"
         style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
@@ -213,36 +211,36 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
           {filteredTasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-center gap-4 p-4 transition-colors hover:bg-white/5"
+              className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-white/5"
             >
-              {/* Task info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3
-                    className="truncate font-medium"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {task.title}
-                  </h3>
-                  {/* Priority badge */}
-                  <span
-                    className="shrink-0 rounded px-2 py-0.5 text-xs font-medium"
-                    style={{
-                      backgroundColor: `${PRIORITY_COLORS[task.priority]}20`,
-                      color: PRIORITY_COLORS[task.priority],
-                    }}
-                  >
-                    {t(`kanban.priorities.${task.priority}`)}
-                  </span>
-                </div>
+              {/* Title + priority + labels - single line when possible */}
+              <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                <span
+                  className="truncate text-sm"
+                  style={{ color: "var(--text-primary)" }}
+                  title={task.title}
+                >
+                  {task.title}
+                </span>
 
-                {/* Labels */}
+                {/* Priority indicator */}
+                <span
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase"
+                  style={{
+                    backgroundColor: `${PRIORITY_COLORS[task.priority]}20`,
+                    color: PRIORITY_COLORS[task.priority],
+                  }}
+                >
+                  {task.priority.charAt(0)}
+                </span>
+
+                {/* Labels - compact */}
                 {(task.labels?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {task.labels!.map((label) => (
+                  <div className="flex flex-wrap gap-0.5">
+                    {task.labels!.slice(0, 3).map((label) => (
                       <span
                         key={label.name}
-                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs"
+                        className="rounded px-1.5 py-0.5 text-[10px]"
                         style={{
                           backgroundColor: `${label.color}20`,
                           color: label.color,
@@ -251,46 +249,42 @@ export function ArchivedTasksList({ tasks, onRestore }: ArchivedTasksListProps) 
                         {label.name}
                       </span>
                     ))}
+                    {(task.labels?.length ?? 0) > 3 && (
+                      <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                        +{task.labels!.length - 3}
+                      </span>
+                    )}
                   </div>
                 )}
 
-                {/* Metadata */}
-                <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                  {task.archivedAt && (
-                    <>
-                      {t("kanban.archived.archivedAgo", {
-                        time: formatRelativeTime(task.archivedAt)
-                      })}
-                      {task.description && " · "}
-                    </>
-                  )}
-                  {task.description && (
-                    <span className="truncate">{task.description}</span>
-                  )}
-                </p>
+                {/* Archived date */}
+                {task.archivedAt && (
+                  <span className="text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>
+                    {formatRelativeTime(task.archivedAt)}
+                  </span>
+                )}
               </div>
 
-              {/* Actions */}
+              {/* Restore button */}
               <button
                 onClick={() => onRestore(task.id)}
-                className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+                className="flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors"
                 style={{
                   color: "var(--accent)",
                   backgroundColor: "var(--surface-elevated)",
-                  border: "1px solid var(--border)",
                 }}
                 title={t("kanban.archiveActions.unarchiveHint")}
               >
-                <RotateCcw className="h-4 w-4" />
-                {t("kanban.archiveActions.unarchive")}
+                <RotateCcw className="h-3 w-3" />
+                <span className="hidden sm:inline">{t("kanban.archiveActions.unarchive")}</span>
               </button>
             </div>
           ))}
         </div>
 
         {filteredTasks.length === 0 && (
-          <div className="p-8 text-center">
-            <p style={{ color: "var(--text-muted)" }}>
+          <div className="p-6 text-center">
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
               {t("kanban.archived.noResults")}
             </p>
           </div>
