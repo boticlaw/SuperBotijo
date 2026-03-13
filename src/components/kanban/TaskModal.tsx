@@ -667,7 +667,7 @@ export function TaskModal({
                 })}
               </div>
 
-              <form onSubmit={handleSubmitComment} className="space-y-3 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+              <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -758,7 +758,8 @@ export function TaskModal({
 
                 <div className="flex justify-end">
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); handleSubmitComment(e); }}
                     disabled={isPostingComment}
                     className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50"
                     style={{ backgroundColor: "var(--accent)", color: "white" }}
@@ -767,7 +768,7 @@ export function TaskModal({
                     {isPostingComment ? t("kanban.comments.form.submitting") : t("kanban.comments.form.submit")}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
           )}
 
