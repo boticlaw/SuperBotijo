@@ -83,7 +83,15 @@
     "skills": "Skills",
     "quickActions": "Acciones rápidas",
     "openOffice": "Abrir Oficina",
-    "smartSuggestions": "💡 Sugerencias inteligentes"
+    "smartSuggestions": "💡 Sugerencias inteligentes",
+    "telemetry": {
+      "loading": "Cargando telemetría real...",
+      "loadError": "No se pudo cargar la telemetría real",
+      "empty": "No hay agentes disponibles en telemetría",
+      "stale": "La telemetría está desactualizada (hace {seconds}s)",
+      "degradedTitle": "Telemetría degradada en {count} sección(es)",
+      "degradedItem": "{section}: {message}"
+    }
   },
   "agents": {
     "title": "Agentes",

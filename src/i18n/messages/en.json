@@ -130,7 +130,15 @@
     "skills": "Skills",
     "quickActions": "Quick Actions",
     "openOffice": "Open Office",
-    "smartSuggestions": "💡 Smart Suggestions"
+    "smartSuggestions": "💡 Smart Suggestions",
+    "telemetry": {
+      "loading": "Loading real telemetry...",
+      "loadError": "Unable to load real telemetry",
+      "empty": "No agents available from telemetry",
+      "stale": "Telemetry is stale ({seconds}s old)",
+      "degradedTitle": "Telemetry degraded in {count} section(s)",
+      "degradedItem": "{section}: {message}"
+    }
   },
   "fleet": {
     "title": "Fleet",
