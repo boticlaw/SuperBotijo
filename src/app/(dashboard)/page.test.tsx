@@ -301,8 +301,17 @@ describe("DashboardPage telemetry states", () => {
 
     expect(await screen.findByText("Total Activities: 22")).toBeInTheDocument();
     expect(await screen.findByText("Legacy Agent")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/activities/stats");
-    expect(fetchMock).toHaveBeenCalledWith("/api/agents");
-    expect(fetchMock).toHaveBeenCalledWith("/api/agents/status");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/activities/stats",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/agents",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/agents/status",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
   });
 });

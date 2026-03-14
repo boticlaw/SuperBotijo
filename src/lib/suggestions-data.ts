@@ -221,9 +221,17 @@ export function getKanbanStats(): KanbanStats {
     const db = new Database(dbPath, { readonly: true });
 
     try {
+      const hasKanbanTasksTable = Boolean(
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'kanban_tasks'").get()
+      );
+
+      if (!hasKanbanTasksTable) {
+        return stats;
+      }
+
       // Get task counts by status
       const statusCounts = db
-        .prepare("SELECT status, COUNT(*) as count FROM tasks GROUP BY status")
+        .prepare("SELECT status, COUNT(*) as count FROM kanban_tasks GROUP BY status")
         .all() as Array<{ status: string; count: number }>;
 
       for (const row of statusCounts) {
@@ -234,14 +242,14 @@ export function getKanbanStats(): KanbanStats {
       // Get overdue tasks (past due date and not done)
       const overdueCount = db
         .prepare(
-          "SELECT COUNT(*) as count FROM tasks WHERE dueDate IS NOT NULL AND dueDate < date('now') AND status NOT IN ('done', 'completed')"
+          "SELECT COUNT(*) as count FROM kanban_tasks WHERE due_date IS NOT NULL AND date(due_date) < date('now') AND status NOT IN ('done', 'completed')"
         )
         .get() as { count: number };
       stats.overdueTasks = overdueCount?.count || 0;
 
       // Get unassigned tasks
       const unassignedCount = db
-        .prepare("SELECT COUNT(*) as count FROM tasks WHERE assignee IS NULL OR assignee = ''")
+        .prepare("SELECT COUNT(*) as count FROM kanban_tasks WHERE assignee IS NULL OR assignee = ''")
         .get() as { count: number };
       stats.unassignedTasks = unassignedCount?.count || 0;
     } finally {

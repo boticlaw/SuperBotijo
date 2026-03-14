@@ -43,14 +43,17 @@ describe("parseOpenClawSessionsOutput", () => {
 
 describe("getOpenClawSessionsTelemetry", () => {
   it("requests sessions across all agents", () => {
-    let capturedCommand = "";
-    const result = getOpenClawSessionsTelemetry((command) => {
-      capturedCommand = command;
+    let capturedFile = "";
+    let capturedArgs: readonly string[] = [];
+    const result = getOpenClawSessionsTelemetry((file, args) => {
+      capturedFile = file;
+      capturedArgs = args;
       return JSON.stringify({ sessions: [] });
     });
 
     expect(result.degraded).toHaveLength(0);
-    expect(capturedCommand).toContain("--all-agents");
+    expect(capturedFile).toBe("openclaw");
+    expect(capturedArgs).toContain("--all-agents");
   });
 
   it("returns timeout degradation when source command times out", () => {

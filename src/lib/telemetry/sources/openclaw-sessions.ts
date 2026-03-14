@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 import {
   TELEMETRY_DEGRADATION_CODE,
@@ -7,8 +7,10 @@ import {
   type TelemetryDegradation,
 } from "@/lib/telemetry/types";
 
-const OPENCLAW_SESSIONS_COMMAND = "openclaw sessions --all-agents --json 2>/dev/null";
+const OPENCLAW_EXECUTABLE = "openclaw";
+const OPENCLAW_SESSIONS_ARGS = ["sessions", "--all-agents", "--json"] as const;
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const OPENCLAW_SESSIONS_TIMEOUT_MS = Number(process.env.OPENCLAW_SESSIONS_TIMEOUT_MS ?? "20000");
 
 interface OpenClawSession {
   key: string;
@@ -25,7 +27,11 @@ interface SessionRunnerOptions {
   encoding: "utf-8";
 }
 
-type SessionRunner = (command: string, options: SessionRunnerOptions) => string;
+type SessionRunner = (
+  file: string,
+  args: readonly string[],
+  options: SessionRunnerOptions,
+) => string;
 
 export interface OpenClawSessionsSourceResult {
   sessions: AgentSessionTelemetry[];
@@ -99,10 +105,10 @@ export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTele
   return Array.from(perAgent.values());
 }
 
-export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execSync): OpenClawSessionsSourceResult {
+export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
   try {
-    const output = runCommand(OPENCLAW_SESSIONS_COMMAND, {
-      timeout: 10000,
+    const output = runCommand(OPENCLAW_EXECUTABLE, OPENCLAW_SESSIONS_ARGS, {
+      timeout: OPENCLAW_SESSIONS_TIMEOUT_MS,
       encoding: "utf-8",
     });
 

@@ -4,7 +4,7 @@
 import type { OperationResult } from "./index";
 import { getActivities } from "@/lib/activities-db"
 import { getAgentDefaults } from "@/lib/agent-auto-config"
-import { execSync } from "child_process";
+import { getOpenClawSessionsTelemetry } from "@/lib/telemetry/sources/openclaw-sessions";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
@@ -73,46 +73,24 @@ interface SessionFreshness {
   freshSessions: number;
 }
 
-interface OpenClawSession {
-  key: string;
-  updatedAt: number;
-  ageMs: number;
-}
-
-interface OpenClawSessionsOutput {
-  sessions?: OpenClawSession[];
-}
-
 function loadSessionFreshnessByAgent(): Map<string, SessionFreshness> {
   const freshnessByAgent = new Map<string, SessionFreshness>();
 
   try {
-    const output = execSync("openclaw sessions --json 2>/dev/null", {
-      timeout: 10000,
-      encoding: "utf-8",
-    });
-    const data = JSON.parse(output) as OpenClawSessionsOutput;
-    const sessions = data.sessions || [];
+    const sessionsSource = getOpenClawSessionsTelemetry();
 
-    sessions.forEach((session) => {
-      const parts = session.key.split(":");
-      if (parts.length < 3 || parts[0] !== "agent") {
-        return;
-      }
+    if (sessionsSource.degraded.length > 0) {
+      console.warn(
+        "[agent-ops] Session telemetry degraded while computing freshness:",
+        sessionsSource.degraded.map((entry) => entry.message).join(" | "),
+      );
+    }
 
-      const agentId = parts[1];
-      const current = freshnessByAgent.get(agentId) || { freshSessions: 0 };
-      const sessionTimestamp = new Date(session.updatedAt).toISOString();
-
-      if (!current.latestActivity || new Date(sessionTimestamp).getTime() > new Date(current.latestActivity).getTime()) {
-        current.latestActivity = sessionTimestamp;
-      }
-
-      if (session.ageMs < ONLINE_WINDOW_MS) {
-        current.freshSessions += 1;
-      }
-
-      freshnessByAgent.set(agentId, current);
+    sessionsSource.sessions.forEach((session) => {
+      freshnessByAgent.set(session.id, {
+        freshSessions: session.freshSessions,
+        latestActivity: session.latestActivity,
+      });
     });
   } catch (error) {
     console.warn("[agent-ops] Unable to read OpenClaw sessions for status freshness:", error);

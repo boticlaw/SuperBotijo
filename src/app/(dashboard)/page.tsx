@@ -195,6 +195,38 @@ const EMPTY_TELEMETRY: DashboardTelemetryPayload = {
   degraded: [],
 };
 
+const TELEMETRY_REQUEST_TIMEOUT_MS = Number(
+  process.env.NEXT_PUBLIC_DASHBOARD_TELEMETRY_TIMEOUT_MS ?? "25000",
+);
+
+async function fetchJsonWithTimeout(url: string, timeoutMs: number): Promise<unknown> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Telemetry request failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(`Telemetry request timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export default function DashboardPage() {
   const { t } = useI18n();
   const [telemetry, setTelemetry] = useState<DashboardTelemetryPayload>(EMPTY_TELEMETRY);
@@ -210,32 +242,26 @@ export default function DashboardPage() {
         let payload: DashboardTelemetryPayload;
 
         if (isRealTelemetryEnabled()) {
-          const response = await fetch("/api/telemetry/dashboard");
-          if (!response.ok) {
-            throw new Error(`Telemetry request failed: ${response.status}`);
-          }
-
-          const parsed = await response.json();
+          const parsed = await fetchJsonWithTimeout(
+            "/api/telemetry/dashboard",
+            TELEMETRY_REQUEST_TIMEOUT_MS,
+          );
           if (!isDashboardTelemetryPayload(parsed)) {
             throw new Error("Telemetry payload is invalid");
           }
 
           payload = parsed;
         } else {
-          const [activityStatsResponse, agentsResponse, statusResponse] = await Promise.all([
-            fetch("/api/activities/stats"),
-            fetch("/api/agents"),
-            fetch("/api/agents/status"),
+          const [activityStats, agentsResponse, statusResponse] = await Promise.all([
+            fetchJsonWithTimeout("/api/activities/stats", TELEMETRY_REQUEST_TIMEOUT_MS),
+            fetchJsonWithTimeout("/api/agents", TELEMETRY_REQUEST_TIMEOUT_MS),
+            fetchJsonWithTimeout("/api/agents/status", TELEMETRY_REQUEST_TIMEOUT_MS),
           ]);
 
-          if (!activityStatsResponse.ok || !agentsResponse.ok || !statusResponse.ok) {
-            throw new Error("Legacy telemetry request failed");
-          }
-
           payload = normalizeLegacyTelemetry(
-            await activityStatsResponse.json(),
-            await agentsResponse.json(),
-            await statusResponse.json(),
+            activityStats as LegacyActivityStatsPayload,
+            agentsResponse as LegacyAgentsResponse,
+            statusResponse as LegacyAgentStatusResponse,
           );
         }
 

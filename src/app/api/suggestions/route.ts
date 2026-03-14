@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const WORKSPACE = path.join(OPENCLAW_DIR, "workspace");
+const USAGE_DB_PATH = path.join(process.cwd(), "data", "usage-tracking.db");
 
 // Simple in-memory cache to avoid blocking the event loop on every request
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -72,6 +73,8 @@ function getSkillUsage(): Array<{ name: string; lastUsed: string; uses: number }
 
 function getModelUsage(): Array<{ model: string; count: number; totalTokens: number; totalCost: number }> {
   try {
+    if (!fs.existsSync(USAGE_DB_PATH)) return [];
+
     const db = getDatabase();
     if (!db) return [];
 
