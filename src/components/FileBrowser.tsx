@@ -23,9 +23,9 @@ import {
   Eye,
   Code2,
   RefreshCw,
-  MoreVertical,
 } from "lucide-react";
 import { FilePreview } from "./FilePreview";
+import { MarkdownPreview } from "./MarkdownPreview";
 
 // Lazy-load Monaco editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -91,21 +91,27 @@ function isEditable(name: string): boolean {
   return editableExts.includes(ext) || !name.includes(".");
 }
 
+function isMarkdownFile(name: string): boolean {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  return ext === "md" || ext === "mdx";
+}
+
 // ─── Monaco Editor Modal ───────────────────────────────────────────────────────
 interface EditorModalProps {
   workspace: string;
   filePath: string;
   fileName: string;
+  initialViewMode?: "edit" | "preview";
   onClose: () => void;
 }
 
-function EditorModal({ workspace, filePath, fileName, onClose }: EditorModalProps) {
+function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview", onClose }: EditorModalProps) {
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [viewMode, setViewMode] = useState<"edit" | "preview">(initialViewMode);
 
   useEffect(() => {
     setLoading(true);
@@ -121,7 +127,7 @@ function EditorModal({ workspace, filePath, fileName, onClose }: EditorModalProp
       });
   }, [workspace, filePath]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
     try {
@@ -138,7 +144,7 @@ function EditorModal({ workspace, filePath, fileName, onClose }: EditorModalProp
     } finally {
       setSaving(false);
     }
-  };
+  }, [workspace, filePath, content]);
 
   // Keyboard shortcut: Ctrl/Cmd+S to save
   useEffect(() => {
@@ -151,7 +157,7 @@ function EditorModal({ workspace, filePath, fileName, onClose }: EditorModalProp
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [content]);
+  }, [handleSave, onClose]);
 
   return (
     <div style={{
@@ -259,6 +265,10 @@ function EditorModal({ workspace, filePath, fileName, onClose }: EditorModalProp
                 automaticLayout: true,
               }}
             />
+          ) : viewMode === "preview" && isMarkdownFile(fileName) ? (
+            <div style={{ height: "100%", overflow: "auto", padding: "1.5rem" }}>
+              <MarkdownPreview content={content} withContainer={false} />
+            </div>
           ) : (
             <div style={{ height: "100%", overflow: "auto", padding: "1.5rem" }}>
               <pre style={{ color: "var(--text-primary)", whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "0.875rem" }}>
@@ -278,7 +288,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<{ workspace: string; path: string; name: string } | null>(null);
-  const [editorFile, setEditorFile] = useState<{ workspace: string; path: string; name: string } | null>(null);
+  const [editorFile, setEditorFile] = useState<{ workspace: string; path: string; name: string; initialViewMode?: "edit" | "preview" } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<FileEntry | null>(null);
@@ -286,7 +296,6 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [showNewFile, setShowNewFile] = useState(false);
-  const [actionMenu, setActionMenu] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadItems = useCallback(() => {
@@ -311,18 +320,27 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
     loadItems();
   }, [loadItems]);
 
-  const handleItemClick = (item: FileEntry) => {
+  const handleItemClick = (item: FileEntry, openMode: "preview" | "edit" = "preview") => {
     if (item.type === "folder") {
       const newPath = path ? `${path}/${item.name}` : item.name;
       onNavigate(newPath);
     } else {
       const filePath = path ? `${path}/${item.name}` : item.name;
       if (isEditable(item.name)) {
-        setEditorFile({ workspace, path: filePath, name: item.name });
+        setEditorFile({
+          workspace,
+          path: filePath,
+          name: item.name,
+          initialViewMode: openMode,
+        });
       } else {
         setPreviewFile({ workspace, path: filePath, name: item.name });
       }
     }
+  };
+
+  const handleItemDoubleClick = (item: FileEntry) => {
+    handleItemClick(item, "edit");
   };
 
   // Upload handler
@@ -409,7 +427,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       setShowNewFile(false);
       loadItems();
       // Open editor immediately
-      setEditorFile({ workspace, path: filePath, name: newFileName.trim() });
+      setEditorFile({ workspace, path: filePath, name: newFileName.trim(), initialViewMode: "edit" });
     } catch {
       alert("Failed to create file");
     }
@@ -593,28 +611,27 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
             {items.map((item) => {
               const Icon = getFileIcon(item.name, item.type);
               const iconColor = getFileColor(item.name, item.type);
-              const filePath = path ? `${path}/${item.name}` : item.name;
-
               return (
                 <div
                   key={item.name}
                   className="flex md:grid md:grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-2.5 md:py-3 cursor-pointer transition-colors hover:opacity-80 group"
                   style={{ borderBottom: "1px solid var(--border)", position: "relative" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--background)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; setActionMenu(null); }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                 >
                   {/* Name */}
-                  <div
-                    className="md:col-span-6 flex items-center gap-2 md:gap-3 min-w-0 flex-1"
-                    onClick={() => handleItemClick(item)}
-                  >
+                    <div
+                      className="md:col-span-6 flex items-center gap-2 md:gap-3 min-w-0 flex-1"
+                      onClick={() => handleItemClick(item)}
+                      onDoubleClick={() => handleItemDoubleClick(item)}
+                    >
                     <Icon className="w-4 h-4 md:w-5 md:h-5 shrink-0" style={{ color: iconColor }} />
                     <span className="truncate text-sm md:text-base" style={{ color: "var(--text-primary)" }}>
                       {item.name}
                     </span>
                     {isEditable(item.name) && item.type === "file" && (
                       <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0 }} className="group-hover:opacity-100">
-                        edit
+                        double-click to edit
                       </span>
                     )}
                   </div>
@@ -622,6 +639,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                   {/* Size */}
                   <div className="md:col-span-2 text-xs md:text-sm flex items-center" style={{ color: "var(--text-secondary)" }}
                     onClick={() => handleItemClick(item)}
+                    onDoubleClick={() => handleItemDoubleClick(item)}
                   >
                     {item.type === "folder" ? "—" : formatFileSize(item.size)}
                   </div>
@@ -631,6 +649,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     className="hidden md:col-span-3 md:text-sm md:flex items-center"
                     style={{ color: "var(--text-secondary)" }}
                     onClick={() => handleItemClick(item)}
+                    onDoubleClick={() => handleItemDoubleClick(item)}
                   >
                     {format(new Date(item.modified), "MMM d, yyyy HH:mm")}
                   </div>
@@ -671,6 +690,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                 <div
                   key={item.name}
                   onClick={() => handleItemClick(item)}
+                  onDoubleClick={() => handleItemDoubleClick(item)}
                   className="flex flex-col items-center p-3 md:p-4 rounded-xl cursor-pointer transition-all group relative"
                   style={{ backgroundColor: "var(--card)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--background)"; }}
@@ -683,6 +703,14 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                   <span className="text-[10px] md:text-xs mt-0.5 md:mt-1" style={{ color: "var(--text-muted)" }}>
                     {item.type === "folder" ? "Folder" : formatFileSize(item.size)}
                   </span>
+                  {isEditable(item.name) && item.type === "file" && (
+                    <span
+                      className="text-[10px] mt-1 transition-opacity opacity-0 group-hover:opacity-100"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Double-click to edit
+                    </span>
+                  )}
 
                   {/* Quick action buttons on hover */}
                   <div style={{
@@ -766,6 +794,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
           workspace={editorFile.workspace}
           filePath={editorFile.path}
           fileName={editorFile.name}
+          initialViewMode={editorFile.initialViewMode}
           onClose={() => { setEditorFile(null); loadItems(); }}
         />
       )}

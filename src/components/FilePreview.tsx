@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import NextImage from "next/image";
 import {
   X,
   Download,
@@ -10,6 +11,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import { MarkdownPreview } from "@/components/MarkdownPreview";
 
 interface FilePreviewProps {
   workspace: string;
@@ -20,26 +22,6 @@ interface FilePreviewProps {
 
 function getFileExtension(filename: string): string {
   return filename.split(".").pop()?.toLowerCase() || "";
-}
-
-function getLanguage(ext: string): string {
-  const languageMap: Record<string, string> = {
-    ts: "typescript",
-    tsx: "typescript",
-    js: "javascript",
-    jsx: "javascript",
-    json: "json",
-    py: "python",
-    md: "markdown",
-    css: "css",
-    html: "html",
-    yaml: "yaml",
-    yml: "yaml",
-    sh: "bash",
-    bash: "bash",
-    sql: "sql",
-  };
-  return languageMap[ext] || "plaintext";
 }
 
 function isImageFile(ext: string): boolean {
@@ -68,61 +50,6 @@ function isCodeFile(ext: string): boolean {
     "xml",
     "toml",
   ].includes(ext);
-}
-
-// Simple markdown renderer
-function renderMarkdown(text: string): string {
-  return (
-    text
-      // Headers
-      .replace(
-        /^### (.*$)/gm,
-        '<h3 style="font-size: 1.125rem; font-weight: bold; color: var(--text-primary); margin-top: 1rem; margin-bottom: 0.5rem;">$1</h3>'
-      )
-      .replace(
-        /^## (.*$)/gm,
-        '<h2 style="font-size: 1.25rem; font-weight: bold; color: var(--text-primary); margin-top: 1.5rem; margin-bottom: 0.75rem;">$1</h2>'
-      )
-      .replace(
-        /^# (.*$)/gm,
-        '<h1 style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary); margin-top: 1.5rem; margin-bottom: 1rem;">$1</h1>'
-      )
-      // Bold and italic
-      .replace(/\*\*\*(.*?)\*\*\*/g, "<strong><em>$1</em></strong>")
-      .replace(
-        /\*\*(.*?)\*\*/g,
-        '<strong style="color: var(--text-primary);">$1</strong>'
-      )
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      // Code blocks
-      .replace(
-        /```(\w+)?\n([\s\S]*?)```/g,
-        '<pre style="background-color: var(--background); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; overflow-x: auto;"><code style="color: var(--accent);">$2</code></pre>'
-      )
-      // Inline code
-      .replace(
-        /`([^`]+)`/g,
-        '<code style="background-color: var(--background); padding: 0.125rem 0.375rem; border-radius: 0.25rem; color: var(--accent);">$1</code>'
-      )
-      // Links
-      .replace(
-        /\[([^\]]+)\]\(([^)]+)\)/g,
-        '<a href="$2" style="color: #60A5FA;" target="_blank">$1</a>'
-      )
-      // Unordered lists
-      .replace(
-        /^\s*[-*] (.*$)/gm,
-        '<li style="margin-left: 1rem; list-style-type: disc;">$1</li>'
-      )
-      // Blockquotes
-      .replace(
-        /^> (.*$)/gm,
-        '<blockquote style="border-left: 4px solid var(--border); padding-left: 1rem; font-style: italic; color: var(--text-secondary);">$1</blockquote>'
-      )
-      // Line breaks
-      .replace(/\n\n/g, '</p><p style="margin-bottom: 1rem;">')
-      .replace(/\n/g, "<br/>")
-  );
 }
 
 export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps) {
@@ -296,23 +223,22 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
 
           {!loading && !error && isImage && (
             <div className="flex items-center justify-center h-full">
-              <img
-                src={`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}&raw=true`}
-                alt={name}
-                className="max-w-full max-h-full object-contain rounded-lg"
-                onError={() => setError("Failed to load image")}
-              />
+              <div className="relative w-full h-full">
+                <NextImage
+                  src={`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}&raw=true`}
+                  alt={name}
+                  fill
+                  sizes="(max-width: 768px) calc(100vw - 2rem), 56rem"
+                  quality={75}
+                  className="object-contain rounded-lg"
+                  onError={() => setError("Failed to load image")}
+                />
+              </div>
             </div>
           )}
 
           {!loading && !error && isMd && content && (
-            <div
-              className="prose prose-invert max-w-none"
-              style={{ color: "var(--text-secondary)" }}
-              dangerouslySetInnerHTML={{
-                __html: `<p style="margin-bottom: 1rem;">${renderMarkdown(content)}</p>`,
-              }}
-            />
+            <MarkdownPreview content={content} withContainer={false} />
           )}
 
           {!loading && !error && isCode && content && (
@@ -321,7 +247,7 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
               style={{ backgroundColor: "var(--background)" }}
             >
               <code
-                className={`language-${getLanguage(ext)} text-sm`}
+                className="text-sm"
                 style={{ color: "var(--text-secondary)" }}
               >
                 {content}

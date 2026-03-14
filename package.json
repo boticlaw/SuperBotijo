@@ -40,7 +40,9 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
     "recharts": "^2.15.4",
+    "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "three": "^0.183.0"
   },
@@ -52,6 +54,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "agent-browser": "^0.15.1",
