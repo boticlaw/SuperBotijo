@@ -25,6 +25,7 @@ export interface CronJob {
   agentId: string;
   name: string;
   description: string;
+  message: string;
   schedule: string | Record<string, unknown>;
   scheduleDisplay: string;
   timezone: string;

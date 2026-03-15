@@ -153,7 +153,7 @@ function parseIdentityMd(content: string): AgentIdentity {
  * Parse heartbeat interval string to milliseconds
  */
 function parseHeartbeatInterval(every: string): number | null {
-  const match = every.match(/^(\d+)\s*(min|minute|minutes|h|hour|hours)$/i);
+  const match = every.match(/^(\d+)\s*(m|min|minute|minutes|h|hour|hours)$/i);
   if (!match) {
     return null;
   }
@@ -162,6 +162,7 @@ function parseHeartbeatInterval(every: string): number | null {
   const unit = match[2].toLowerCase();
 
   switch (unit) {
+    case "m":
     case "min":
     case "minute":
     case "minutes":

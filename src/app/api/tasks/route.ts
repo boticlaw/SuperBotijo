@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
-import { readFileSync, existsSync } from "fs";
+import { execSync, exec } from "child_process";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 
 export const dynamic = "force-dynamic";
@@ -131,6 +131,78 @@ export async function GET() {
     console.error("[tasks API] Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch tasks" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/tasks?jobId=<id>
+ * Deletes a cron job or heartbeat configuration
+ */
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get("jobId");
+
+    if (!jobId) {
+      return NextResponse.json(
+        { error: "jobId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Special handling for heartbeat (stored in openclaw.json)
+    if (jobId === "heartbeat") {
+      try {
+        const configPath = join(OPENCLAW_DIR, "openclaw.json");
+        if (existsSync(configPath)) {
+          const raw = readFileSync(configPath, "utf-8");
+          const json = JSON.parse(raw);
+
+          // Remove heartbeat from defaults
+          if (json.agents?.defaults) {
+            delete json.agents.defaults.heartbeat;
+          }
+
+          // Also check and remove from individual agents
+          if (json.agents?.byId) {
+            for (const agentId in json.agents.byId) {
+              delete json.agents.byId[agentId].heartbeat;
+            }
+          }
+
+          writeFileSync(configPath, JSON.stringify(json, null, 2));
+          return NextResponse.json({ success: true, message: "Heartbeat disabled" });
+        }
+      } catch (error) {
+        console.error("[tasks API] Error disabling heartbeat:", error);
+        return NextResponse.json(
+          { error: "Failed to disable heartbeat" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // For cron jobs, use CLI (timeout 5 seconds)
+    try {
+      execSync(`openclaw cron rm ${jobId}`, {
+        timeout: 5000,
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      return NextResponse.json({ success: true, message: `Cron job ${jobId} deleted` });
+    } catch (execError) {
+      console.error("[tasks API] Error deleting cron job:", execError);
+      return NextResponse.json(
+        { error: `Failed to delete cron job: ${jobId}` },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("[tasks API] DELETE Error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete task" },
       { status: 500 }
     );
   }

@@ -131,7 +131,7 @@ export function MoodWidget() {
 
   useEffect(() => {
     fetchMood();
-    const interval = setInterval(fetchMood, 30000);
+    const interval = setInterval(fetchMood, 60000);
     return () => clearInterval(interval);
   }, []);
 

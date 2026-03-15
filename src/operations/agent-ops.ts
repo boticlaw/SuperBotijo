@@ -5,6 +5,7 @@ import type { OperationResult } from "./index";
 import { getActivities } from "@/lib/activities-db"
 import { getAgentDefaults } from "@/lib/agent-auto-config"
 import { getOpenClawSessionsTelemetry } from "@/lib/telemetry/sources/openclaw-sessions";
+import { createCache } from "@/lib/cache";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
@@ -99,6 +100,15 @@ function loadSessionFreshnessByAgent(): Map<string, SessionFreshness> {
   return freshnessByAgent;
 }
 
+/**
+ * Cached session freshness with 10-second TTL.
+ * Avoids spawning the `openclaw sessions` CLI subprocess on every request.
+ */
+const cachedSessionFreshness = createCache<Map<string, SessionFreshness>>({
+  ttlMs: 10_000,
+  compute: loadSessionFreshnessByAgent,
+});
+
 function classifyAgentStatus(lastActivity: string | undefined, activeSessions: number): AgentStatusValue {
   if (activeSessions > 0) {
     console.log(`[agent-ops] ${lastActivity ? 'agent' : 'unknown'}: working (activeSessions=${activeSessions})`);
@@ -180,6 +190,57 @@ function loadAgentsFromConfig(): AgentInfo[] {
 }
 
 /**
+ * Calculate mood for an agent from a pre-fetched list of activities.
+ *
+ * This avoids the N+1 problem — instead of querying the DB per-agent,
+ * we filter from the already-loaded activities dataset.
+ */
+function calculateMoodFromActivities(
+  id: string,
+  agentActivities: Array<{ status: string }>
+): AgentMood {
+  const activityCount = agentActivities.length;
+  const errorCount = agentActivities.filter((a) => a.status === "error").length;
+  const successCount = agentActivities.filter((a) => a.status === "success").length;
+
+  let mood: AgentMood["mood"];
+  let emoji: string;
+  let streak: number;
+  let energyLevel: number;
+
+  if (errorCount > successCount) {
+    mood = "frustrated";
+    emoji = "😤";
+    streak = 0;
+    energyLevel = 30;
+  } else if (activityCount > 5) {
+    mood = "busy";
+    emoji = "🏃";
+    streak = successCount;
+    energyLevel = 70;
+  } else if (activityCount >= 3) {
+    mood = "productive";
+    emoji = "💪";
+    streak = activityCount;
+    energyLevel = 90;
+  } else {
+    mood = "content";
+    emoji = "😊";
+    streak = 1;
+    energyLevel = 60;
+  }
+
+  return {
+    agentId: id,
+    mood,
+    emoji,
+    streak,
+    energyLevel,
+    lastCalculated: new Date().toISOString(),
+  };
+}
+
+/**
  * Get all registered agents
  */
 export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
@@ -194,11 +255,11 @@ export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
       }
     }
 
-    // Get activities for each agent to calculate stats
+    // Get activities ONCE for all agents — avoids N+1
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
 
-    // Calculate stats for each agent
+    // Calculate stats for each agent using the shared dataset
     for (const agent of configAgents) {
       const agentActivities = recentActivities.filter(
         (a) => a.agent === agent.id || (a.agent?.toLowerCase().includes(agent.id.toLowerCase()))
@@ -233,11 +294,10 @@ export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
         agent.status = lastActivityTime > fiveMinutesAgo ? "online" : "idle";
       }
 
-      // Get mood (cached or calculate)
-      const moodResult = await getAgentMood(agent.id);
-      if (moodResult.success && moodResult.data) {
-        agent.mood = moodResult.data;
-      }
+      // Calculate mood from already-fetched activities (no extra DB query)
+      const mood = calculateMoodFromActivities(agent.id, agentActivities);
+      agentMoods.set(agent.id, mood);
+      agent.mood = mood;
 
       // Update registry
       agentRegistry.set(agent.id, agent);
@@ -260,7 +320,7 @@ export async function getAgentStatusList(): Promise<OperationResult<AgentStatusE
     const configAgents = loadAgentsFromConfig();
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
-    const sessionFreshnessByAgent = loadSessionFreshnessByAgent();
+    const sessionFreshnessByAgent = cachedSessionFreshness.get();
 
     console.log(`[agent-ops] getAgentStatusList: ${configAgents.length} agents loaded, ${recentActivities.length} activities found`);
     console.log(`[agent-ops] Agent IDs from config:`, configAgents.map(a => a.id));

@@ -252,6 +252,7 @@ export default function WalkingAvatar({
         isWorking={false}
         isThinking={false}
         isError={false}
+        isWalking={true}
         scale={1.5}
       />
     </group>

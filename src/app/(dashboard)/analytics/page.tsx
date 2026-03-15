@@ -7,6 +7,7 @@ import { HourlyHeatmap } from "@/components/charts/HourlyHeatmap";
 import { SuccessRateGauge } from "@/components/charts/SuccessRateGauge";
 import { TopTasksList } from "@/components/TopTasksList";
 import { EfficiencyGauge } from "@/components/EfficiencyGauge";
+import { ScheduledTasksManager } from "@/components/ScheduledTasksManager";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useI18n } from "@/i18n/provider";
 import { BarChart3, TrendingUp, Clock, Target, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
@@ -280,7 +281,14 @@ export default function AnalyticsPage() {
               </div>
             </>
           )}
-         </>
+
+          {/* Scheduled Tasks Manager - visible in overview */}
+          {activeTab === "overview" && (
+            <div className="mt-6">
+              <ScheduledTasksManager />
+            </div>
+          )}
+        </>
       )}
 
       {activeTab === "costs" && (

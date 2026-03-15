@@ -303,14 +303,22 @@ export default function Office3D() {
           agentDetailsById.set(agent.id, agent);
         });
 
+        // Collect subagent IDs, but only those that are NOT top-level agents.
+        // Top-level agents that appear in another agent's allowAgents should still
+        // get their own desk — they're peers, not subordinates.
+        const topLevelAgentIds = new Set(agentsApiList.map((a) => a.id));
         const configuredSubagentIds = new Set<string>();
         agentsApiList.forEach((agent) => {
           (agent.allowAgents || []).forEach((subagentId) => {
-            configuredSubagentIds.add(subagentId);
+            if (!topLevelAgentIds.has(subagentId)) {
+              configuredSubagentIds.add(subagentId);
+            }
           });
         });
 
-        const primaryAgents = agentsWithDesks.filter((agent) => !configuredSubagentIds.has(agent.id));
+        const filteredAgents = agentsWithDesks.filter((agent) => !configuredSubagentIds.has(agent.id));
+        // Fallback: if filtering removed ALL agents, use the unfiltered list
+        const primaryAgents = filteredAgents.length > 0 ? filteredAgents : agentsWithDesks;
 
         const configs = primaryAgents.map((desk) => ({
           id: desk.id,
@@ -376,6 +384,13 @@ export default function Office3D() {
         });
         setAgentStates(states);
       } catch (error) {
+        // Ignore AbortError - this happens when component unmounts or Fast Refresh triggers
+        const isAbortError = error instanceof DOMException
+          ? error.name === "AbortError"
+          : (error as Error)?.message?.includes("abort");
+        if (isAbortError) {
+          return;
+        }
         console.error('Failed to load agent configs:', error);
         setAgents([{
           id: 'main',
@@ -474,6 +489,13 @@ export default function Office3D() {
 
         setVisitors(Array.from(visitorsById.values()));
       } catch (error) {
+        // Ignore AbortError - this happens when component unmounts or Fast Refresh triggers
+        const isAbortError = error instanceof DOMException
+          ? error.name === "AbortError"
+          : (error as Error)?.message?.includes("abort");
+        if (isAbortError) {
+          return;
+        }
         console.error("Failed to refresh statuses/visitors:", error);
       }
     };

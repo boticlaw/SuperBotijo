@@ -1,5 +1,8 @@
 import { execFileSync } from "child_process";
+import fs from "fs";
+import path from "path";
 
+import { OPENCLAW_DIR } from "@/lib/paths";
 import {
   TELEMETRY_DEGRADATION_CODE,
   TELEMETRY_DEGRADATION_SECTION,
@@ -38,7 +41,9 @@ export interface OpenClawSessionsSourceResult {
   degraded: TelemetryDegradation[];
 }
 
-function getAgentIdFromSessionKey(key: string): string | null {
+const EXCLUDED_SESSION_KEYS = ["agent:main:main"] as const;
+
+export function getAgentIdFromSessionKey(key: string): string | null {
   const parts = key.split(":");
   if (parts.length < 3 || parts[0] !== "agent") {
     return null;
@@ -47,7 +52,11 @@ function getAgentIdFromSessionKey(key: string): string | null {
   return parts[1] || null;
 }
 
-function classifySessionSourceError(error: unknown): TelemetryDegradation {
+function isExcludedSessionKey(key: string): boolean {
+  return EXCLUDED_SESSION_KEYS.includes(key as (typeof EXCLUDED_SESSION_KEYS)[number]);
+}
+
+export function classifySessionSourceError(error: unknown): TelemetryDegradation {
   if (error instanceof Error && /timed out/i.test(error.message)) {
     return {
       section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
@@ -65,12 +74,12 @@ function classifySessionSourceError(error: unknown): TelemetryDegradation {
   };
 }
 
-export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTelemetry[] {
-  const parsed = JSON.parse(rawOutput) as OpenClawSessionsOutput;
-  const sessions = parsed.sessions ?? [];
+export function aggregateSessionsByAgent(
+  normalizedSessions: { key: string; updatedAt: number; ageMs: number }[],
+): AgentSessionTelemetry[] {
   const perAgent = new Map<string, AgentSessionTelemetry>();
 
-  for (const session of sessions) {
+  for (const session of normalizedSessions) {
     const agentId = getAgentIdFromSessionKey(session.key);
     if (!agentId) {
       continue;
@@ -86,16 +95,14 @@ export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTele
       current.freshSessions += 1;
     }
 
-    if (typeof session.updatedAt === "number") {
-      const sessionTimestamp = new Date(session.updatedAt).toISOString();
-      if (!current.latestActivity) {
+    const sessionTimestamp = new Date(session.updatedAt).toISOString();
+    if (!current.latestActivity) {
+      current.latestActivity = sessionTimestamp;
+    } else {
+      const previousTime = new Date(current.latestActivity).getTime();
+      const nextTime = new Date(sessionTimestamp).getTime();
+      if (nextTime > previousTime) {
         current.latestActivity = sessionTimestamp;
-      } else {
-        const previousTime = new Date(current.latestActivity).getTime();
-        const nextTime = new Date(sessionTimestamp).getTime();
-        if (nextTime > previousTime) {
-          current.latestActivity = sessionTimestamp;
-        }
       }
     }
 
@@ -105,7 +112,29 @@ export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTele
   return Array.from(perAgent.values());
 }
 
-export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
+export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTelemetry[] {
+  const parsed = JSON.parse(rawOutput) as OpenClawSessionsOutput;
+  const sessions = parsed.sessions ?? [];
+  const now = Date.now();
+  const normalized: { key: string; updatedAt: number; ageMs: number }[] = [];
+
+  for (const session of sessions) {
+    if (typeof session.key !== "string" || typeof session.updatedAt !== "number") {
+      continue;
+    }
+
+    if (isExcludedSessionKey(session.key)) {
+      continue;
+    }
+
+    const ageMs = typeof session.ageMs === "number" ? session.ageMs : now - session.updatedAt;
+    normalized.push({ key: session.key, updatedAt: session.updatedAt, ageMs });
+  }
+
+  return aggregateSessionsByAgent(normalized);
+}
+
+function getOpenClawSessionsCliTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
   try {
     const output = runCommand(OPENCLAW_EXECUTABLE, OPENCLAW_SESSIONS_ARGS, {
       timeout: OPENCLAW_SESSIONS_TIMEOUT_MS,
@@ -114,7 +143,14 @@ export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFil
 
     return {
       sessions: parseOpenClawSessionsOutput(output),
-      degraded: [],
+      degraded: [
+        {
+          section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
+          code: TELEMETRY_DEGRADATION_CODE.SOURCE_UNAVAILABLE,
+          retriable: false,
+          message: "Session store unavailable, using CLI fallback",
+        },
+      ],
     };
   } catch (error) {
     return {
@@ -122,4 +158,125 @@ export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFil
       degraded: [classifySessionSourceError(error)],
     };
   }
+}
+
+function getStoreSourceTelemetry(): OpenClawSessionsSourceResult {
+  const agentsDir = path.join(OPENCLAW_DIR, "agents");
+
+  if (!fs.existsSync(agentsDir)) {
+    return {
+      sessions: [],
+      degraded: [
+        {
+          section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
+          code: TELEMETRY_DEGRADATION_CODE.SOURCE_UNAVAILABLE,
+          retriable: true,
+          message: "Session store directory not available",
+        },
+      ],
+    };
+  }
+
+  const degradations: TelemetryDegradation[] = [];
+  const allNormalizedSessions: { key: string; updatedAt: number; ageMs: number }[] = [];
+  const now = Date.now();
+
+  let dirEntries: fs.Dirent[];
+  try {
+    dirEntries = fs.readdirSync(agentsDir, { withFileTypes: true });
+  } catch (error) {
+    return {
+      sessions: [],
+      degraded: [
+        {
+          section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
+          code: TELEMETRY_DEGRADATION_CODE.SOURCE_UNAVAILABLE,
+          retriable: true,
+          message: error instanceof Error ? error.message : "Failed to read agents directory",
+        },
+      ],
+    };
+  }
+
+  for (const entry of dirEntries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const agentId = entry.name;
+    const sessionsPath = path.join(agentsDir, agentId, "sessions", "sessions.json");
+
+    if (!fs.existsSync(sessionsPath)) {
+      continue;
+    }
+
+    let fileContent: string;
+    try {
+      fileContent = fs.readFileSync(sessionsPath, "utf-8");
+    } catch (error) {
+      degradations.push({
+        section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
+        code: TELEMETRY_DEGRADATION_CODE.SOURCE_UNAVAILABLE,
+        retriable: true,
+        message: `Failed to read sessions.json for agent ${agentId}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
+      continue;
+    }
+
+    let parsed: { sessions?: { key: string; updatedAt: number; ageMs?: number }[] };
+    try {
+      parsed = JSON.parse(fileContent);
+    } catch {
+      degradations.push({
+        section: TELEMETRY_DEGRADATION_SECTION.SESSIONS,
+        code: TELEMETRY_DEGRADATION_CODE.VALIDATION_ERROR,
+        retriable: true,
+        message: `Failed to parse sessions.json for agent ${agentId}`,
+      });
+      continue;
+    }
+
+    const sessions = parsed.sessions ?? [];
+    for (const session of sessions) {
+      if (typeof session.key !== "string" || typeof session.updatedAt !== "number") {
+        continue;
+      }
+
+      if (isExcludedSessionKey(session.key)) {
+        continue;
+      }
+
+      const ageMs = typeof session.ageMs === "number" ? session.ageMs : now - session.updatedAt;
+      allNormalizedSessions.push({ key: session.key, updatedAt: session.updatedAt, ageMs });
+    }
+  }
+
+  const sessions = aggregateSessionsByAgent(allNormalizedSessions);
+
+  return {
+    sessions,
+    degraded: degradations,
+  };
+}
+
+export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
+  const storeResult = getStoreSourceTelemetry();
+
+  const hasUsableData = storeResult.sessions.length > 0 || storeResult.degraded.length === 0;
+
+  if (hasUsableData) {
+    return storeResult;
+  }
+
+  const cliResult = getOpenClawSessionsCliTelemetry(runCommand);
+
+  const allDegradations: TelemetryDegradation[] = [
+    ...storeResult.degraded,
+    ...cliResult.degraded,
+  ];
+
+  return {
+    sessions: cliResult.sessions,
+    degraded: allDegradations,
+  };
 }

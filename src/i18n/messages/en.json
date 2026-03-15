@@ -244,6 +244,14 @@
     "scheduledTasks": "scheduled tasks",
     "today": "Today"
   },
+  "tasks": {
+    "title": "Scheduled Tasks",
+    "loading": "Loading tasks...",
+    "empty": "No scheduled tasks",
+    "delete": "Delete task",
+    "deleteConfirm": "Are you sure you want to delete \"{name}\"?",
+    "count": "{count} task(s)"
+  },
   "files": {
     "title": "File Browser",
     "subtitle": "Browse agent workspaces and files",

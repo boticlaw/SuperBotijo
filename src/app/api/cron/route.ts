@@ -102,6 +102,7 @@ export async function GET() {
         agentId: job.agentId || "unknown",
         name: job.name,
         description: (job.description as string) || "",
+        message: (job.payload as Record<string, unknown>)?.message as string || "",
         schedule: scheduleString,
         scheduleDisplay,
         timezone: (schedule?.tz as string) || "UTC",

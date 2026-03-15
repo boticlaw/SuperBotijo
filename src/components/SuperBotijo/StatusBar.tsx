@@ -99,7 +99,7 @@ export function StatusBar() {
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 10000);
+    const interval = setInterval(fetchStats, 30000);
 
     return () => clearInterval(interval);
   }, []);

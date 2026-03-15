@@ -139,9 +139,12 @@ export function logActivity(
     opts?.metadata ? JSON.stringify(opts.metadata) : null,
   );
 
-  // Prune activities older than 30 days
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  db.prepare('DELETE FROM activities WHERE timestamp < ?').run(cutoff);
+  // Probabilistic pruning: ~1% of inserts trigger cleanup of activities older than 30 days.
+  // This avoids running a DELETE on every single insert while still keeping the table bounded.
+  if (Math.random() < 0.01) {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    db.prepare("DELETE FROM activities WHERE timestamp < ?").run(cutoff);
+  }
 
   return { id, timestamp, type, description, status, duration_ms: opts?.duration_ms ?? null, tokens_used: opts?.tokens_used ?? null, agent: opts?.agent ?? null, metadata: opts?.metadata ?? null };
 }

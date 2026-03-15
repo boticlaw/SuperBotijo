@@ -20,16 +20,16 @@ const STATUS_ANIMATIONS = {
 
 /**
  * SeatedAvatar - Avatar positioned on chair, no movement
- * Position relative to desk group: [0, 0.7, 0.9]
+ * Position relative to desk group: [0, 0.95, 0.9]
  * - z=0.9: same as chair position
- * - y=0.7: seated on chair seat (chair seat at y=0.4*2=0.8, avatar pivot at y≈0.1)
+ * - y=0.95: seated on chair, high enough so head clears the desk surface (desk top at y≈0.8)
  * - rotation Y=PI: facing monitor (not the chair back)
  */
 export function SeatedAvatar({ agent, status, scale = 1.5 }: SeatedAvatarProps) {
   const animations = STATUS_ANIMATIONS[status] || STATUS_ANIMATIONS.offline;
 
   return (
-    <group position={[0, 0.7, 0.9]} rotation={[0, Math.PI, 0]} scale={scale}>
+    <group position={[0, 0.95, 0.9]} rotation={[0, Math.PI, 0]} scale={scale}>
       <VoxelAvatar
         agent={agent}
         position={[0, 0, 0]}

@@ -14,6 +14,7 @@ import {
   Heart,
   Play,
   Calendar,
+  Trash2,
 } from "lucide-react";
 import { CronJobCard, type CronJob } from "@/components/CronJobCard";
 import { CronWeeklyTimeline } from "@/components/CronWeeklyTimeline";
@@ -26,7 +27,7 @@ import { HeartbeatStatus } from "@/components/HeartbeatStatus";
 import type { SystemCronJob } from "@/app/api/cron/system/route";
 import { useI18n } from "@/i18n/provider";
 
-type ViewMode = "compact" | "timeline";
+type ViewMode = "list" | "timeline";
 type CronTab = "all" | "system" | "openclaw" | "heartbeat";
 
 interface HeartbeatData {
@@ -47,7 +48,7 @@ export default function CronJobsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("compact");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeTab, setActiveTab] = useState<CronTab>("openclaw");
   const [runToast, setRunToast] = useState<{
     id: string;
@@ -110,6 +111,14 @@ export default function CronJobsPage() {
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
+
+  // Reset delete confirmation after 5 seconds
+  useEffect(() => {
+    if (deleteConfirm) {
+      const timer = setTimeout(() => setDeleteConfirm(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [deleteConfirm]);
 
   const handleToggle = async (id: string, enabled: boolean) => {
     try {
@@ -212,10 +221,11 @@ export default function CronJobsPage() {
 
       const body: Record<string, unknown> = {
         name: jobData.name,
+        description: jobData.description,
+        message: jobData.message,
         schedule:
           typeof jobData.schedule === "string" ? jobData.schedule : undefined,
         timezone: jobData.timezone || "UTC",
-        message: jobData.description,
       };
 
       if (isEditing) {
@@ -325,12 +335,12 @@ export default function CronJobsPage() {
     const showSystem = activeTab === "all" || activeTab === "system";
     const showOpenclaw = activeTab === "all" || activeTab === "openclaw";
 
-    // Vista compacta (default): solo lo esencial
+    // Vista de lista (default): densa y fácil de leer
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+      <div className="flex flex-col gap-2">
         {showSystem &&
           systemJobs.map((job) => (
-            <CompactSystemCronCard
+            <ListSystemCronRow
               key={job.id}
               job={job}
               onRun={handleSystemRun}
@@ -339,14 +349,22 @@ export default function CronJobsPage() {
 
         {showOpenclaw &&
           jobs.map((job) => (
-            <CompactCronJobCard
+            <ListCronJobRow
               key={job.id}
               job={job}
               onToggle={handleToggle}
               onEdit={handleEdit}
               onRun={handleRun}
+              onDelete={handleDelete}
+              isDeleting={deleteConfirm === job.id}
             />
           ))}
+        
+        {(!showSystem || systemJobs.length === 0) && (!showOpenclaw || jobs.length === 0) && (
+          <div className="text-center p-8 border border-dashed border-[var(--border)] rounded-xl text-[var(--text-muted)]">
+            No hay tareas configuradas en esta vista.
+          </div>
+        )}
       </div>
     );
   };
@@ -753,7 +771,7 @@ export default function CronJobsPage() {
             }}
           >
             <button
-              onClick={() => setViewMode("compact")}
+              onClick={() => setViewMode("list")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -763,16 +781,16 @@ export default function CronJobsPage() {
                 fontSize: "0.8rem",
                 fontWeight: 600,
                 backgroundColor:
-                  viewMode === "compact" ? "var(--accent)" : "transparent",
+                  viewMode === "list" ? "var(--accent)" : "transparent",
                 color:
-                  viewMode === "compact" ? "white" : "var(--text-secondary)",
+                  viewMode === "list" ? "white" : "var(--text-secondary)",
                 border: "none",
                 cursor: "pointer",
                 transition: "all 0.15s",
               }}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              {t("cron.compact")}
+              Lista
             </button>
             <button
               onClick={() => setViewMode("timeline")}
@@ -986,16 +1004,20 @@ const AGENT_EMOJI: Record<string, string> = {
   freelance: "🔧",
 };
 
-function CompactCronJobCard({
+function ListCronJobRow({
   job,
   onToggle,
   onEdit,
   onRun,
+  onDelete,
+  isDeleting,
 }: {
   job: CronJob;
   onToggle: (id: string, enabled: boolean) => void;
   onEdit: (job: CronJob) => void;
   onRun?: (id: string) => Promise<void>;
+  onDelete?: (id: string) => void;
+  isDeleting?: boolean;
 }) {
   const agentEmoji = AGENT_EMOJI[job.agentId] || "🤖";
 
@@ -1009,187 +1031,186 @@ function CompactCronJobCard({
     const days = Math.floor(hours / 24);
 
     if (diff < 0) return "now";
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    if (hours > 0) return `${hours}h ${minutes % 60}m`;
-    if (minutes > 0) return `${minutes}m`;
+    if (days > 0) return `in ${days}d ${hours % 24}h`;
+    if (hours > 0) return `in ${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `in ${minutes}m`;
     return "soon";
   };
 
   return (
     <div
       onClick={() => onEdit(job)}
+      className="flex items-center gap-4 py-3 px-4 hover:bg-[color-mix(in_srgb,var(--card-elevated)_50%,transparent)] border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors group"
       style={{
-        border: "1px solid var(--border)",
-        borderRadius: "0.5rem",
-        backgroundColor: job.enabled ? "var(--card)" : "color-mix(in srgb, var(--card) 50%, var(--card-elevated))",
-        opacity: job.enabled ? 1 : 0.6,
-        cursor: "pointer",
-        transition: "all 0.15s",
-        padding: "0.5rem 0.625rem",
+        opacity: job.enabled ? 1 : 0.5,
+        backgroundColor: "var(--card)",
       }}
-      className="hover:border-accent"
     >
-      {/* Header: emoji + nombre + estado */}
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <span className="text-sm">{agentEmoji}</span>
-        <span
-          className="text-xs font-medium truncate flex-1"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {job.name}
-        </span>
+      {/* Agent & Toggle */}
+      <div className="flex items-center gap-3 w-48 shrink-0">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onToggle(job.id, !job.enabled);
           }}
+          className="w-10 text-[0.65rem] font-bold py-1 rounded transition-colors"
           style={{
-            padding: "0.125rem 0.375rem",
-            fontSize: "0.6rem",
-            fontWeight: 600,
-            borderRadius: "0.25rem",
-            border: "none",
-            cursor: "pointer",
             backgroundColor: job.enabled
               ? "color-mix(in srgb, var(--success) 20%, transparent)"
-              : "rgba(42, 42, 42, 0.5)",
+              : "color-mix(in srgb, var(--text-muted) 20%, transparent)",
             color: job.enabled ? "var(--success)" : "var(--text-muted)",
           }}
         >
           {job.enabled ? "ON" : "OFF"}
         </button>
-      </div>
-
-      {/* Schedule */}
-      <div className="flex items-center gap-1 mb-1">
-        <Clock className="w-3 h-3" style={{ color: "var(--info)" }} />
-        <code
-          className="text-[0.6rem] px-1 py-0.25 rounded"
-          style={{
-            backgroundColor: "rgba(42, 42, 42, 0.5)",
-            color: "var(--text-secondary)",
-            fontFamily: "monospace",
-          }}
-        >
-          {job.scheduleDisplay}
-        </code>
-      </div>
-
-      {/* Next run */}
-      {job.enabled && job.nextRun && (
-        <div className="flex items-center gap-1">
-          <Calendar className="w-3 h-3" style={{ color: "var(--type-cron)" }} />
-          <span className="text-[0.65rem]" style={{ color: "var(--text-muted)" }}>
-            {formatNextRun(job.nextRun)}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">{agentEmoji}</span>
+          <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+            {job.name}
           </span>
         </div>
-      )}
+      </div>
 
-      {/* Run button */}
-      {onRun && job.enabled && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRun(job.id);
-          }}
-          className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 px-2 rounded text-[0.65rem] font-medium"
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--accent) 15%, transparent)",
-            color: "var(--accent)",
-            border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
-            cursor: "pointer",
-          }}
-        >
-          <Play className="w-3 h-3" />
-          Run
-        </button>
-      )}
+      {/* Info: Message & Schedule */}
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+        <div className="flex items-center gap-2 shrink-0">
+          <Clock className="w-3.5 h-3.5 text-[var(--info)]" />
+          <code className="text-xs bg-[var(--card-elevated)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded font-mono">
+            {job.scheduleDisplay}
+          </code>
+        </div>
+        
+        {job.message && (
+          <span className="text-xs text-[var(--text-muted)] truncate flex-1">
+            {job.message}
+          </span>
+        )}
+      </div>
+
+      {/* Status / Next Run */}
+      <div className="hidden md:flex items-center gap-1.5 w-32 shrink-0 text-xs text-[var(--text-secondary)]">
+        {job.enabled && job.nextRun ? (
+          <>
+            <Calendar className="w-3.5 h-3.5 text-[var(--type-cron)]" />
+            {formatNextRun(job.nextRun)}
+          </>
+        ) : (
+          <span className="text-[var(--text-muted)]">—</span>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onRun && job.enabled && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRun(job.id);
+            }}
+            className="p-1.5 rounded bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_25%,transparent)] transition-colors"
+            title="Run now"
+          >
+            <Play className="w-4 h-4" />
+          </button>
+        )}
+
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(job.id);
+            }}
+            className="p-1.5 rounded transition-colors flex items-center justify-center min-w-[28px]"
+            style={{
+              backgroundColor: isDeleting 
+                ? "var(--error)" 
+                : "color-mix(in srgb, var(--error) 15%, transparent)",
+              color: isDeleting ? "white" : "var(--error)",
+            }}
+            title="Delete job"
+          >
+            {isDeleting ? <span className="text-[0.65rem] font-bold px-1">?</span> : <Trash2 className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function CompactSystemCronCard({
+function ListSystemCronRow({
   job,
   onRun,
 }: {
   job: SystemCronJob;
   onRun: (id: string) => Promise<void>;
 }) {
+  const formatNextRun = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (diff < 0) return "now";
+    if (days > 0) return `in ${days}d ${hours % 24}h`;
+    if (hours > 0) return `in ${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `in ${minutes}m`;
+    return "soon";
+  };
+
   return (
     <div
-      style={{
-        border: "1px solid color-mix(in srgb, var(--info) 30%, var(--border))",
-        borderRadius: "0.5rem",
-        backgroundColor: "color-mix(in srgb, var(--info) 5%, var(--card))",
-        cursor: "pointer",
-        transition: "all 0.15s",
-        padding: "0.5rem 0.625rem",
-      }}
-      className="hover:border-info"
+      className="flex items-center gap-4 py-3 px-4 hover:bg-[color-mix(in_srgb,var(--card-elevated)_50%,transparent)] border-b border-[var(--border)] last:border-0 transition-colors group"
+      style={{ backgroundColor: "var(--card)" }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <span className="text-sm">🖥️</span>
-        <span
-          className="text-xs font-medium truncate flex-1"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {job.name}
-        </span>
-        <span
-          className="text-[0.55rem] px-1 py-0.25 rounded"
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--info) 20%, transparent)",
-            color: "var(--info)",
-            fontWeight: 600,
-          }}
-        >
+      {/* Agent & Name */}
+      <div className="flex items-center gap-3 w-48 shrink-0">
+        <span className="w-10 text-[0.65rem] font-bold py-1 rounded text-center bg-[color-mix(in_srgb,var(--info)_20%,transparent)] text-[var(--info)]">
           SYS
         </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">🖥️</span>
+          <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+            {job.name}
+          </span>
+        </div>
       </div>
 
-      {/* Schedule */}
-      <div className="flex items-center gap-1 mb-1">
-        <Clock className="w-3 h-3" style={{ color: "var(--info)" }} />
-        <code
-          className="text-[0.6rem] px-1 py-0.25 rounded"
-          style={{
-            backgroundColor: "var(--card-elevated)",
-            color: "var(--text-secondary)",
-            fontFamily: "monospace",
-          }}
-        >
-          {job.scheduleDisplay}
-        </code>
+      {/* Info: Description & Schedule */}
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+        <div className="flex items-center gap-2 shrink-0">
+          <Clock className="w-3.5 h-3.5 text-[var(--info)]" />
+          <code className="text-xs bg-[var(--card-elevated)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded font-mono">
+            {job.scheduleDisplay}
+          </code>
+        </div>
+        
+        {job.description && (
+          <span className="text-xs text-[var(--text-muted)] truncate flex-1">
+            {job.description}
+          </span>
+        )}
       </div>
 
-      {/* Command preview */}
-      <div className="flex items-center gap-1 mb-1">
-        <span
-          className="text-[0.6rem] truncate"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {job.command.split(" ")[0]}
-        </span>
+      {/* Status / Next Run */}
+      <div className="hidden md:flex items-center gap-1.5 w-32 shrink-0 text-xs text-[var(--text-secondary)]">
+        <span className="text-[var(--text-muted)]">system task</span>
       </div>
 
-      {/* Run button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRun(job.id);
-        }}
-        className="mt-1.5 w-full flex items-center justify-center gap-1 py-1 px-2 rounded text-[0.65rem] font-medium"
-        style={{
-          backgroundColor: "var(--info)",
-          color: "#000",
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        <Play className="w-3 h-3" />
-        Run
-      </button>
+      {/* Actions */}
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onRun && (
+          <button
+            onClick={() => onRun(job.id)}
+            className="p-1.5 rounded bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] text-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_25%,transparent)] transition-colors"
+            title="Run now"
+          >
+            <Play className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

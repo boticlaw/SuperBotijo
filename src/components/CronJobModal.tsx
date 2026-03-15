@@ -69,6 +69,7 @@ function buildCron(mode: FrequencyMode, opts: Record<string, number | number[]>)
 export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [message, setMessage] = useState("");
   const [schedule, setSchedule] = useState("0 9 * * *");
   const [timezone, setTimezone] = useState("Europe/Madrid");
   const [frequencyMode, setFrequencyMode] = useState<FrequencyMode>("daily");
@@ -89,12 +90,14 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
       if (editingJob) {
         setName(editingJob.name);
         setDescription(editingJob.description);
+        setMessage(editingJob.message || "");
         setSchedule(typeof editingJob.schedule === "string" ? editingJob.schedule : String(editingJob.schedule));
         setTimezone(editingJob.timezone);
         setFrequencyMode("custom");
       } else {
         setName("");
         setDescription("");
+        setMessage("");
         setSchedule("0 9 * * *");
         setTimezone("Europe/Madrid");
         setFrequencyMode("daily");
@@ -134,6 +137,7 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
         id: editingJob?.id,
         name: name.trim(),
         description: description.trim(),
+        message: message.trim(),
         schedule: schedule.trim(),
         timezone,
         enabled: editingJob?.enabled ?? true,
@@ -203,7 +207,7 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does this job do?"
+              placeholder="Brief description of this job"
               rows={2}
               style={{
                 width: "100%", padding: "0.75rem 1rem",
@@ -211,6 +215,27 @@ export function CronJobModal({ isOpen, onClose, onSave, editingJob }: CronJobMod
                 border: "1px solid var(--border)",
                 borderRadius: "0.5rem", color: "var(--text-primary)", outline: "none",
                 fontSize: "0.9rem", resize: "none",
+              }}
+            />
+          </div>
+
+          {/* Message - What the task executes */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+              Task Message {editingJob && <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(what the task executes)</span>}
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="The prompt/instruction sent to the agent when this task runs"
+              rows={4}
+              style={{
+                width: "100%", padding: "0.75rem 1rem",
+                backgroundColor: "var(--card-elevated)",
+                border: "1px solid var(--border)",
+                borderRadius: "0.5rem", color: "var(--text-primary)", outline: "none",
+                fontSize: "0.85rem", resize: "vertical",
+                fontFamily: "monospace",
               }}
             />
           </div>

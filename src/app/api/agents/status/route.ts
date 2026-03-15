@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAgentStatusList } from "@/operations";
 import type { AgentStatusEntry } from "@/operations/agent-ops";
 import { getDashboardTelemetrySnapshot } from "@/lib/telemetry/dashboard-snapshot";
+import { createAsyncCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +11,10 @@ function isRealTelemetryEnabled(): boolean {
   return process.env.NEXT_PUBLIC_DASHBOARD_REAL_TELEMETRY === "true";
 }
 
-interface CacheEntry {
-  data: { agents: AgentStatusEntry[]; timestamp: number };
+interface StatusResponse {
+  agents: AgentStatusEntry[];
   timestamp: number;
 }
-
-let statusCache: CacheEntry | null = null;
-const CACHE_TTL = 10000; // 10 seconds
 
 /**
  * Compatibility endpoint for older clients.
@@ -37,64 +35,54 @@ function getStatusEntriesFromTelemetry(): AgentStatusEntry[] {
   }));
 }
 
-export async function GET() {
-  const now = Date.now();
-  
-  // Return cached data if still fresh
-  if (statusCache && (now - statusCache.timestamp) < CACHE_TTL) {
-    return NextResponse.json(statusCache.data);
-  }
-  
-  try {
-    let statusResult: { success: boolean; data?: AgentStatusEntry[]; error?: string };
+/** Compute status data from telemetry or legacy path */
+async function computeAgentStatus(): Promise<StatusResponse> {
+  let statusResult: { success: boolean; data?: AgentStatusEntry[]; error?: string };
 
-    if (isRealTelemetryEnabled()) {
-      try {
-        statusResult = {
-          success: true,
-          data: getStatusEntriesFromTelemetry(),
-        };
-      } catch (telemetryError) {
-        console.warn("[api/agents/status] telemetry proxy failed, falling back to legacy status", {
-          error: telemetryError instanceof Error ? telemetryError.message : String(telemetryError),
-        });
-        statusResult = await getAgentStatusList();
-      }
-    } else {
+  if (isRealTelemetryEnabled()) {
+    try {
+      statusResult = {
+        success: true,
+        data: getStatusEntriesFromTelemetry(),
+      };
+    } catch (telemetryError) {
+      console.warn("[api/agents/status] telemetry proxy failed, falling back to legacy status", {
+        error: telemetryError instanceof Error ? telemetryError.message : String(telemetryError),
+      });
       statusResult = await getAgentStatusList();
     }
+  } else {
+    statusResult = await getAgentStatusList();
+  }
 
-    if (!statusResult.success || !statusResult.data) {
-      return NextResponse.json(
-        {
-          error: statusResult.error || "Failed to compute statuses",
-          agents: [],
-          timestamp: now,
-        },
-        { status: 500 }
-      );
-    }
+  if (!statusResult.success || !statusResult.data) {
+    throw new Error(statusResult.error || "Failed to compute statuses");
+  }
 
-    const responseData = {
-      agents: statusResult.data,
-      timestamp: now,
-    };
+  return {
+    agents: statusResult.data,
+    timestamp: Date.now(),
+  };
+}
 
-    statusCache = {
-      data: responseData,
-      timestamp: now,
-    };
+/** Module-level 10-second cache replacing the ad-hoc statusCache */
+const cachedAgentStatus = createAsyncCache<StatusResponse>({
+  ttlMs: 10_000,
+  compute: computeAgentStatus,
+});
 
-    return NextResponse.json(responseData);
+export async function GET() {
+  try {
+    const data = await cachedAgentStatus.get();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Error computing agent statuses:", error);
-    
-    // Return error but don't crash
+
     return NextResponse.json(
-      { 
+      {
         error: "Failed to compute statuses",
         agents: [],
-        timestamp: now 
+        timestamp: Date.now(),
       },
       { status: 500 }
     );

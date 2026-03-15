@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActivities } from "@/lib/activities-db";
+import { createAsyncCache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -185,85 +186,95 @@ function calculateCurrentMood(
   };
 }
 
-export async function GET() {
-  try {
-    const now = new Date();
-    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const last7days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const last8days = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
+/**
+ * Compute the full mood response — current mood, 7-day history, and trend.
+ */
+async function computeMoodResponse(): Promise<MoodResponse> {
+  const now = new Date();
+  const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const last7days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const last8days = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
 
-    const recentResult = getActivities({
-      startDate: last24h.toISOString(),
-      limit: 1000,
-      sort: "newest",
-    });
+  const recentResult = getActivities({
+    startDate: last24h.toISOString(),
+    limit: 500,
+    sort: "newest",
+  });
 
-    const weekResult = getActivities({
-      startDate: last7days.toISOString(),
-      limit: 5000,
-      sort: "newest",
-    });
+  const weekResult = getActivities({
+    startDate: last7days.toISOString(),
+    limit: 2000,
+    sort: "newest",
+  });
 
-    const fullHistoryResult = getActivities({
-      startDate: last8days.toISOString(),
-      limit: 10000,
-      sort: "newest",
-    });
+  const fullHistoryResult = getActivities({
+    startDate: last8days.toISOString(),
+    limit: 5000,
+    sort: "newest",
+  });
 
-    // Calculate current mood
-    const current = calculateCurrentMood(
-      recentResult.activities as Array<{
+  // Calculate current mood
+  const current = calculateCurrentMood(
+    recentResult.activities as Array<{
+      timestamp: string;
+      status: string;
+      type: string;
+      tokens_used: number | null;
+    }>,
+    weekResult.activities as Array<{ timestamp: string; status: string; type: string }>
+  );
+
+  // Calculate history for each of the last 7 days
+  const history: DailyMood[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+
+    const dayMood = calculateMoodForDay(
+      fullHistoryResult.activities as Array<{
         timestamp: string;
         status: string;
         type: string;
         tokens_used: number | null;
       }>,
-      weekResult.activities as Array<{ timestamp: string; status: string; type: string }>
+      weekResult.activities as Array<{ timestamp: string; status: string; type: string }>,
+      date
     );
+    history.push(dayMood);
+  }
 
-    // Calculate history for each of the last 7 days
-    const history: DailyMood[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
+  // Calculate trend (compare today vs yesterday)
+  const today = history[history.length - 1];
+  const yesterday = history[history.length - 2];
+  let trend: MoodResponse["trend"];
 
-      const dayMood = calculateMoodForDay(
-        fullHistoryResult.activities as Array<{
-          timestamp: string;
-          status: string;
-          type: string;
-          tokens_used: number | null;
-        }>,
-        weekResult.activities as Array<{ timestamp: string; status: string; type: string }>,
-        date
-      );
-      history.push(dayMood);
-    }
-
-    // Calculate trend (compare today vs yesterday)
-    const today = history[history.length - 1];
-    const yesterday = history[history.length - 2];
-    let trend: MoodResponse["trend"];
-
-    if (!yesterday || yesterday.score === 0) {
-      trend = { direction: "stable", change: 0 };
+  if (!yesterday || yesterday.score === 0) {
+    trend = { direction: "stable", change: 0 };
+  } else {
+    const change = today.score - yesterday.score;
+    if (change > 5) {
+      trend = { direction: "up", change };
+    } else if (change < -5) {
+      trend = { direction: "down", change };
     } else {
-      const change = today.score - yesterday.score;
-      if (change > 5) {
-        trend = { direction: "up", change };
-      } else if (change < -5) {
-        trend = { direction: "down", change };
-      } else {
-        trend = { direction: "stable", change };
-      }
+      trend = { direction: "stable", change };
     }
+  }
 
-    return NextResponse.json({
-      current,
-      history,
-      trend,
-    });
+  return { current, history, trend };
+}
+
+/** Module-level 60-second cache for mood computation */
+const cachedMood = createAsyncCache<MoodResponse>({
+  ttlMs: 60_000,
+  compute: computeMoodResponse,
+});
+
+export async function GET() {
+  try {
+    const data = await cachedMood.get();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to calculate mood:", error);
     return NextResponse.json({ error: "Failed to calculate mood" }, { status: 500 });

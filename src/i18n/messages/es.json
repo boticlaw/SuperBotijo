@@ -181,6 +181,14 @@
     "scheduledTasks": "tareas programadas",
     "today": "Hoy"
   },
+  "tasks": {
+    "title": "Tareas Programadas",
+    "loading": "Cargando tareas...",
+    "empty": "No hay tareas programadas",
+    "delete": "Eliminar tarea",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{name}\"?",
+    "count": "{count} tarea(s)"
+  },
   "help": {
     "dashboard": {
       "title": "Panel Principal",
