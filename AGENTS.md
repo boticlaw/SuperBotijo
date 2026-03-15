@@ -45,6 +45,32 @@ SuperBotijo is a real-time dashboard for OpenClaw AI agent instances. It reads d
 
 ---
 
+## UI Style Guide
+
+**IMPORTANT**: This project has a dedicated UI style guide skill. Load it when working on UI components:
+
+```
+skill: superbotijo-style
+```
+
+### Quick Reference
+
+| Category | Canonical Pattern | Component |
+|----------|-------------------|-----------|
+| **Confirmations** | `<ConfirmDialog />` | `src/components/ConfirmDialog.tsx` |
+| **Toasts** | `useToast()` hook | `src/components/Toast.tsx` |
+| **Loading** | `<Loader2 className="animate-spin" />` | lucide-react |
+
+### Key Rules
+
+1. **NEVER use `window.confirm()` or `window.alert()`** — use `ConfirmDialog` or `useToast()`
+2. **Use CSS variables** (`var(--card)`, `var(--text-primary)`, etc.) — never hardcoded colors
+3. **Tailwind for layout, inline styles for CSS vars** — don't duplicate
+4. **All text must be internationalized** via `useI18n()`
+5. **No `neutral-*` classes in dashboard** — use CSS variables
+
+---
+
 ## Project Structure
 
 ```
@@ -62,6 +88,8 @@ src/
 │   ├── SuperBotijo/     # OS-style UI shell (topbar, dock, status bar)
 │   ├── Office3D/        # React Three Fiber 3D components
 │   ├── charts/          # Recharts wrappers
+│   ├── ConfirmDialog.tsx# Reusable confirmation dialog
+│   ├── Toast.tsx        # Toast notification system with useToast()
 │   ├── ConfigEditor.tsx # Editor for openclaw.json configuration
 │   ├── PricingEditor.tsx# Editor for model pricing overrides
 │   └── *.tsx            # Other feature components

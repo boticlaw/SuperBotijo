@@ -1,28 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  MessageCircle, 
-  Twitter, 
-  Mail, 
+import {
+  MessageCircle,
+  Twitter,
+  Mail,
   Key,
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  RefreshCw, 
-  Play, 
-  RotateCcw,
-  Bot, 
-  Cpu, 
-  FileText, 
-  Globe, 
-  Brain, 
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  Play,
+  Bot,
+  Cpu,
+  FileText,
+  Globe,
+  Brain,
   Zap,
   X,
   Settings,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { useI18n } from "@/i18n/provider";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Integration {
   id: string;
@@ -124,6 +123,7 @@ function IntegrationDetailModal({
   const [enabled, setEnabled] = useState(integration.status !== "not_configured");
   const [loadingStats, setLoadingStats] = useState(false);
   const [stats, setStats] = useState<ActivityStats | null>(null);
+  const [showToggleConfirm, setShowToggleConfirm] = useState(false);
 
   const Icon = iconMap[integration.icon] || MessageCircle;
   const status = statusConfig[integration.status];
@@ -145,11 +145,11 @@ function IntegrationDetailModal({
     }
   };
 
-  const handleToggle = async () => {
-    if (!confirm(`${enabled ? "Disable" : "Enable"} ${integration.name}? Changes will be saved to openclaw.json.`)) {
-      return;
-    }
+  const handleToggleClick = () => {
+    setShowToggleConfirm(true);
+  };
 
+  const handleToggleConfirm = async () => {
     setToggling(true);
     try {
       const res = await fetch(`/api/integrations/${integration.id}/toggle`, {
@@ -160,13 +160,14 @@ function IntegrationDetailModal({
 
       if (res.ok) {
         setEnabled(!enabled);
+        setShowToggleConfirm(false);
         onRefresh?.();
       } else {
-        alert("Failed to toggle integration");
+        setTestResult({ success: false, message: "Failed to toggle integration" });
       }
     } catch (error) {
       console.error("Failed to toggle:", error);
-      alert("Failed to toggle integration");
+      setTestResult({ success: false, message: "Failed to toggle integration" });
     } finally {
       setToggling(false);
     }
@@ -253,7 +254,7 @@ function IntegrationDetailModal({
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Enabled</span>
               <button
-                onClick={handleToggle}
+                onClick={handleToggleClick}
                 disabled={toggling}
                 className="relative w-12 h-6 rounded-full transition-colors disabled:opacity-50"
                 style={{
@@ -368,6 +369,19 @@ function IntegrationDetailModal({
           </button>
         </div>
       </div>
+
+      {/* Toggle Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showToggleConfirm}
+        title={enabled ? "Disable Integration?" : "Enable Integration?"}
+        message={`${enabled ? "Disable" : "Enable"} ${integration.name}? Changes will be saved to openclaw.json.`}
+        confirmLabel={enabled ? "Disable" : "Enable"}
+        cancelLabel="Cancel"
+        variant={enabled ? "warning" : "info"}
+        isLoading={toggling}
+        onConfirm={handleToggleConfirm}
+        onCancel={() => setShowToggleConfirm(false)}
+      />
     </div>
   );
 }

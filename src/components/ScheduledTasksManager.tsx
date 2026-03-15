@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Trash2, Clock, Heart, AlertCircle, CheckCircle, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface ScheduledTask {
   id: string;
@@ -29,6 +30,7 @@ export function ScheduledTasksManager({ onTasksChange }: ScheduledTasksManagerPr
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<ScheduledTask | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -49,14 +51,12 @@ export function ScheduledTasksManager({ onTasksChange }: ScheduledTasksManagerPr
     fetchTasks();
   }, []);
 
-  const handleDelete = async (taskId: string) => {
-    if (!confirm(t("tasks.deleteConfirm", { name: taskId }))) return;
-
-    setDeleting(taskId);
+  const handleDelete = async (task: ScheduledTask) => {
+    setDeleting(task.id);
     setError(null);
 
     try {
-      const res = await fetch(`/api/tasks?jobId=${encodeURIComponent(taskId)}`, {
+      const res = await fetch(`/api/tasks?jobId=${encodeURIComponent(task.id)}`, {
         method: "DELETE",
       });
 
@@ -66,7 +66,8 @@ export function ScheduledTasksManager({ onTasksChange }: ScheduledTasksManagerPr
       }
 
       // Remove from local state
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setTaskToDelete(null);
       onTasksChange?.();
     } catch (err) {
       console.error("Failed to delete task:", err);
@@ -135,139 +136,154 @@ export function ScheduledTasksManager({ onTasksChange }: ScheduledTasksManagerPr
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: "var(--card)",
-        borderRadius: "0.75rem",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header */}
+    <>
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1rem",
-          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--card)",
+          borderRadius: "0.75rem",
+          overflow: "hidden",
         }}
       >
-        <h3
+        {/* Header */}
+        <div
           style={{
-            fontSize: "1rem",
-            fontWeight: 600,
-            color: "var(--text-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1rem",
+            borderBottom: "1px solid var(--border)",
           }}
         >
-          {t("tasks.title")}
-        </h3>
-        <button
-          onClick={fetchTasks}
-          className="p-2 rounded-lg transition-colors"
-          style={{
-            backgroundColor: "var(--card-elevated)",
-            color: "var(--text-secondary)",
-          }}
-          title={t("common.refresh")}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
+          <h3
+            style={{
+              fontSize: "1rem",
+              fontWeight: 600,
+              color: "var(--text-primary)",
+            }}
+          >
+            {t("tasks.title")}
+          </h3>
+          <button
+            onClick={fetchTasks}
+            className="p-2 rounded-lg transition-colors"
+            style={{
+              backgroundColor: "var(--card-elevated)",
+              color: "var(--text-secondary)",
+            }}
+            title={t("common.refresh")}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
 
-      {/* Error message */}
-      {error && (
+        {/* Error message */}
+        {error && (
+          <div
+            style={{
+              padding: "0.75rem 1rem",
+              backgroundColor: "color-mix(in srgb, var(--error) 15%, transparent)",
+              borderBottom: "1px solid var(--border)",
+              color: "var(--error)",
+              fontSize: "0.875rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Tasks list */}
+        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.75rem 1rem",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                {getTypeIcon(task.type)}
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      color: "var(--text-primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {task.name}
+                    {getStatusIcon(task.status)}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-muted)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span>{task.scheduleDisplay || task.schedule}</span>
+                    {task.agentId && <span>• {task.agentId}</span>}
+                    <span>• {task.type}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setTaskToDelete(task)}
+                disabled={deleting === task.id}
+                className="p-2 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: deleting === task.id ? "var(--card-elevated)" : "transparent",
+                  color: "var(--error)",
+                  opacity: deleting === task.id ? 0.5 : 1,
+                  cursor: deleting === task.id ? "not-allowed" : "pointer",
+                }}
+                title={t("tasks.delete")}
+              >
+                {deleting === task.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
         <div
           style={{
             padding: "0.75rem 1rem",
-            backgroundColor: "color-mix(in srgb, var(--error) 15%, transparent)",
-            borderBottom: "1px solid var(--border)",
-            color: "var(--error)",
-            fontSize: "0.875rem",
+            borderTop: "1px solid var(--border)",
+            fontSize: "0.75rem",
+            color: "var(--text-muted)",
+            textAlign: "center",
           }}
         >
-          {error}
+          {tasks.length} {t("tasks.count", { count: tasks.length })}
         </div>
-      )}
-
-      {/* Tasks list */}
-      <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0.75rem 1rem",
-              borderBottom: "1px solid var(--border)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
-              {getTypeIcon(task.type)}
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    color: "var(--text-primary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {task.name}
-                  {getStatusIcon(task.status)}
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--text-muted)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <span>{task.scheduleDisplay || task.schedule}</span>
-                  {task.agentId && <span>• {task.agentId}</span>}
-                  <span>• {task.type}</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => handleDelete(task.id)}
-              disabled={deleting === task.id}
-              className="p-2 rounded-lg transition-colors"
-              style={{
-                backgroundColor: deleting === task.id ? "var(--card-elevated)" : "transparent",
-                color: "var(--error)",
-                opacity: deleting === task.id ? 0.5 : 1,
-                cursor: deleting === task.id ? "not-allowed" : "pointer",
-              }}
-              title={t("tasks.delete")}
-            >
-              {deleting === task.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        ))}
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          padding: "0.75rem 1rem",
-          borderTop: "1px solid var(--border)",
-          fontSize: "0.75rem",
-          color: "var(--text-muted)",
-          textAlign: "center",
-        }}
-      >
-        {tasks.length} {t("tasks.count", { count: tasks.length })}
-      </div>
-    </div>
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={taskToDelete !== null}
+        title={t("tasks.deleteTitle")}
+        message={t("tasks.deleteConfirm", { name: taskToDelete?.name || taskToDelete?.id || "" })}
+        confirmLabel={t("tasks.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        isLoading={deleting !== null}
+        onConfirm={() => taskToDelete && handleDelete(taskToDelete)}
+        onCancel={() => setTaskToDelete(null)}
+      />
+    </>
   );
 }

@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface ConfigSection {
   editable: boolean;
@@ -300,6 +301,7 @@ export function ConfigEditor() {
   const [expandedSections, setExpandedSections] = useState<string[]>(["env"]);
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -409,11 +411,12 @@ export function ConfigEditor() {
     }
   };
 
-  const handleReset = async () => {
-    if (!confirm("Are you sure you want to restore from backup? This will overwrite current changes.")) {
-      return;
-    }
+  const handleResetClick = () => {
+    setShowRestoreConfirm(true);
+  };
 
+  const handleRestoreConfirm = async () => {
+    setShowRestoreConfirm(false);
     setRestoring(true);
     try {
       const res = await fetch("/api/config/restore", { method: "POST" });
@@ -532,7 +535,7 @@ export function ConfigEditor() {
         </button>
 
         <button
-          onClick={handleReset}
+          onClick={handleResetClick}
           disabled={restoring || !backupInfo?.hasBackup}
           className="flex items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
           style={{
@@ -548,6 +551,19 @@ export function ConfigEditor() {
           )}
           {restoring ? t("config.saving") : t("config.restoreBackup")}
         </button>
+
+      {/* Restore Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showRestoreConfirm}
+        title={t("config.restoreBackup")}
+        message={t("config.restoreConfirm")}
+        confirmLabel={t("config.restoreBackup")}
+        cancelLabel={t("common.cancel")}
+        variant="warning"
+        isLoading={restoring}
+        onConfirm={handleRestoreConfirm}
+        onCancel={() => setShowRestoreConfirm(false)}
+      />
 
         {hasChanges && (
           <button

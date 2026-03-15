@@ -6,6 +6,7 @@ import { FileTree, FileNode } from "@/components/FileTree";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { MemoryWordCloud } from "@/components/MemoryWordCloud";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useI18n } from "@/i18n/provider";
 import type { WordFrequency } from "@/app/api/memories/word-cloud/route";
 
@@ -34,6 +35,8 @@ export default function MemoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [wordCloudData, setWordCloudData] = useState<WordFrequency[]>([]);
   const [wordCloudLoading, setWordCloudLoading] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: "file" | "workspace"; target: string } | null>(null);
 
   const hasUnsavedChanges = content !== originalContent;
 
@@ -105,8 +108,9 @@ export default function MemoryPage() {
   const handleSelectFile = useCallback(
     async (path: string) => {
       if (hasUnsavedChanges) {
-        const confirmed = window.confirm("You have unsaved changes. Discard them?");
-        if (!confirmed) return;
+        setPendingAction({ type: "file", target: path });
+        setShowDiscardConfirm(true);
+        return;
       }
       setSelectedPath(path);
       if (selectedWorkspace) await loadFile(selectedWorkspace, path);
@@ -116,14 +120,33 @@ export default function MemoryPage() {
 
   const handleWorkspaceSelect = (workspaceId: string) => {
     if (hasUnsavedChanges) {
-      const confirmed = window.confirm("You have unsaved changes. Discard them?");
-      if (!confirmed) return;
+      setPendingAction({ type: "workspace", target: workspaceId });
+      setShowDiscardConfirm(true);
+      return;
     }
     setSelectedWorkspace(workspaceId);
     setSelectedPath(null);
     setContent("");
     setOriginalContent("");
   };
+
+  const handleDiscardConfirm = useCallback(async () => {
+    if (!pendingAction) return;
+    
+    setShowDiscardConfirm(false);
+    
+    if (pendingAction.type === "file") {
+      setSelectedPath(pendingAction.target);
+      if (selectedWorkspace) await loadFile(selectedWorkspace, pendingAction.target);
+    } else if (pendingAction.type === "workspace") {
+      setSelectedWorkspace(pendingAction.target);
+      setSelectedPath(null);
+      setContent("");
+      setOriginalContent("");
+    }
+    
+    setPendingAction(null);
+  }, [pendingAction, selectedWorkspace, loadFile]);
 
   useEffect(() => {
     if (selectedWorkspace) loadFileTree(selectedWorkspace);
@@ -428,6 +451,21 @@ export default function MemoryPage() {
           </div>
         )}
       </div>
+
+      {/* Discard Changes Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        title={t("memory.unsavedTitle")}
+        message={t("memory.unsavedMessage")}
+        confirmLabel={t("memory.discard")}
+        cancelLabel={t("common.cancel")}
+        variant="warning"
+        onConfirm={handleDiscardConfirm}
+        onCancel={() => {
+          setShowDiscardConfirm(false);
+          setPendingAction(null);
+        }}
+      />
 
       <style jsx global>{`
         @keyframes spin {

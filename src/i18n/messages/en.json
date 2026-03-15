@@ -274,6 +274,9 @@
   "memory": {
     "title": "Memory Browser",
     "subtitle": "View and edit agent memory files",
+    "unsavedTitle": "Unsaved Changes",
+    "unsavedMessage": "You have unsaved changes. Discard them?",
+    "discard": "Discard",
     "discardPrompt": "You have unsaved changes. Discard them?",
     "loadFilesError": "Failed to load files",
     "loadTreeError": "Failed to load file tree",
