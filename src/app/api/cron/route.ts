@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execSync } from "child_process";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 import { isValidCron } from "@/lib/cron-parser";
 
 export const dynamic = "force-dynamic";
+
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+const CRON_JOBS_FILE = join(OPENCLAW_DIR, "cron", "jobs.json");
 
 interface GatewayConfig {
   token: string;
@@ -12,7 +16,7 @@ interface GatewayConfig {
 
 function getGatewayConfig(): GatewayConfig {
   try {
-    const configRaw = readFileSync((process.env.OPENCLAW_DIR || "/home/daniel/.openclaw") + "/openclaw.json", "utf-8");
+    const configRaw = readFileSync(join(OPENCLAW_DIR, "openclaw.json"), "utf-8");
     const config = JSON.parse(configRaw);
     return {
       token: config.gateway?.auth?.token || "",
@@ -54,23 +58,27 @@ interface UpdateJobBody {
 
 export async function GET() {
   try {
-    const output = execSync("openclaw cron list --json --all 2>/dev/null", {
-      timeout: 10000,
-      encoding: "utf-8",
-    });
+    // Read cron jobs directly from JSON file (more reliable than CLI)
+    let rawJobs: Record<string, unknown>[] = [];
 
-    let rawJobs = [];
-    try {
-      const parsed = JSON.parse(output);
-      // OpenClaw returns { jobs: [...] }
-      rawJobs = parsed.jobs || parsed || [];
-    } catch {
-      console.error("[cron API] Failed to parse cron list output:", output);
-      return NextResponse.json([]);
+    if (existsSync(CRON_JOBS_FILE)) {
+      try {
+        const fileContent = readFileSync(CRON_JOBS_FILE, "utf-8");
+        const parsed = JSON.parse(fileContent);
+        rawJobs = (parsed.jobs as Record<string, unknown>[]) || [];
+      } catch (parseError) {
+        console.error("[cron API] Failed to parse cron jobs file:", parseError);
+        // Fallback to CLI if file can't be parsed
+        rawJobs = await fetchCronJobsFromCLI();
+      }
+    } else {
+      // Fallback to CLI if file doesn't exist
+      console.warn("[cron API] Cron jobs file not found, falling back to CLI");
+      rawJobs = await fetchCronJobsFromCLI();
     }
 
     // Transform to match CronJob interface expected by UI
-    const cronJobs = rawJobs.map((job: Record<string, unknown>) => {
+    const cronJobs = rawJobs.map((job) => {
       const schedule = job.schedule as Record<string, unknown> | undefined;
       let scheduleDisplay = "Custom";
       let scheduleString = "* * * * *";
@@ -112,6 +120,22 @@ export async function GET() {
       { error: "Failed to fetch cron jobs from OpenClaw" },
       { status: 500 }
     );
+  }
+}
+
+// Fallback: Try to fetch from CLI (may fail if gateway has issues)
+async function fetchCronJobsFromCLI(): Promise<Record<string, unknown>[]> {
+  try {
+    const output = execSync("openclaw cron list --json --all 2>/dev/null", {
+      timeout: 5000,
+      encoding: "utf-8",
+    });
+
+    const parsed = JSON.parse(output);
+    return (parsed.jobs as Record<string, unknown>[]) || parsed || [];
+  } catch {
+    console.error("[cron API] CLI fallback failed");
+    return [];
   }
 }
 
