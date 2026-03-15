@@ -54,6 +54,7 @@ interface Agent {
   tokensUsed: number;
   currentTask?: string;
   mood?: AgentMood;
+  skills?: string[];
 }
 
 // Status configuration with colors

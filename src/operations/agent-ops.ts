@@ -29,6 +29,7 @@ export interface AgentInfo {
   allowAgentsDetails?: { id: string; name: string; emoji: string; color: string }[];
   dmPolicy?: string;
   mood?: AgentMood;
+  skills?: string[];
 }
 
 export interface AgentMood {
@@ -152,6 +153,7 @@ function loadAgentsFromConfig(): AgentInfo[] {
       id: string;
       name?: string
       model?: string
+      skills?: string[]
       subagents?: { allowAgents?: string[] };
     }) => {
       const defaults = getAgentDefaults(agent.id, agent.name);
@@ -181,6 +183,7 @@ function loadAgentsFromConfig(): AgentInfo[] {
         workspace: join(OPENCLAW_DIR, "workspace", agent.id),
         allowAgents,
         allowAgentsDetails,
+        skills: agent.skills || [],
       };
     });
   } catch (error) {

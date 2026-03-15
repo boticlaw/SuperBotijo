@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { FilePreview } from "./FilePreview";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { useToast } from "./Toast";
 
 // Lazy-load Monaco editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -284,6 +285,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
 
 // ─── Main FileBrowser Component ────────────────────────────────────────────────
 export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: FileBrowserProps) {
+  const { showError } = useToast();
   const [items, setItems] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -385,12 +387,12 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || "Delete failed");
+        showError(data.error || "Delete failed");
       } else {
         loadItems();
       }
     } catch {
-      alert("Delete failed");
+      showError("Delete failed");
     } finally {
       setConfirmDelete(null);
     }
@@ -409,7 +411,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       setShowNewFolder(false);
       loadItems();
     } catch {
-      alert("Failed to create folder");
+      showError("Failed to create folder");
     }
   };
 
@@ -429,7 +431,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       // Open editor immediately
       setEditorFile({ workspace, path: filePath, name: newFileName.trim(), initialViewMode: "edit" });
     } catch {
-      alert("Failed to create file");
+      showError("Failed to create file");
     }
   };
 

@@ -15,6 +15,7 @@ interface Agent {
   allowAgentsDetails?: Array<{ id: string; name: string; emoji: string; color: string }>;
   status: AgentStatus;
   activeSessions: number;
+  skills?: string[];
 }
 
 interface AgentOrganigramaProps {
@@ -477,33 +478,33 @@ function DepartmentCard({ deptId, agents, hoveredId, setHoveredId }: DepartmentC
                 {agent.model.split("/").pop() || agent.model}
               </div>
 
-              {/* Subagents */}
-              {agent.allowAgentsDetails && agent.allowAgentsDetails.length > 0 && (
+              {/* Skills */}
+              {agent.skills && agent.skills.length > 0 && (
                 <div
                   style={{
                     display: "flex",
                     flexWrap: "wrap",
                     gap: "0.25rem",
-                    marginTop: "0.4rem",
+                    marginTop: "0.35rem",
                     marginLeft: "1.7rem",
                   }}
                 >
-                  {agent.allowAgentsDetails.map((sub) => (
+                  {agent.skills.map((skill) => (
                     <div
-                      key={sub.id}
+                      key={skill}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.2rem",
-                        padding: "0.15rem 0.4rem",
-                        borderRadius: "4px",
-                        backgroundColor: `${sub.color}15`,
-                        border: `1px solid ${sub.color}30`,
-                        fontSize: "0.6rem",
+                        padding: "0.1rem 0.35rem",
+                        borderRadius: "3px",
+                        backgroundColor: "var(--card-elevated)",
+                        border: "1px solid var(--border)",
+                        fontSize: "0.55rem",
+                        color: "var(--text-secondary)",
+                        fontFamily: "monospace",
                       }}
                     >
-                      <span>{sub.emoji}</span>
-                      <span style={{ color: sub.color, fontWeight: 500 }}>{sub.name}</span>
+                      {skill}
                     </div>
                   ))}
                 </div>
