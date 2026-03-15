@@ -57,14 +57,15 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 
 | Característica | Descripción |
 |----------------|-------------|
+| **Vista de Agentes** | Tarjetas multi-agente con skills, modelo, mood y jerarquía |
 | **Sub-Agentes** | Monitoreo en tiempo real con timeline de spawn/completado |
-| **Kanban** | Gestión de tareas con columnas, prioridades y asignación a agentes |
+| **Kanban** | Gestión de tareas con columnas, prioridades, comentarios, dependencias y auto-archivado |
 
 ### ⏰ Programación
 
 | Característica | Descripción |
 |----------------|-------------|
-| **Gestor de Cron** | Jobs de OpenClaw + sistema con timeline semanal |
+| **Gestor de Cron** | Vista moderna con timeline de tareas programadas |
 | **Heartbeat** | Configuración de heartbeat por agente (intervalo, target) + editor HEARTBEAT.md |
 
 ### 🏢 Visualización 3D
@@ -503,13 +504,15 @@ Comparado con el TenecitOS original:
 |----------------|-------------|
 | Nube de Palabras | Términos frecuentes de memorias |
 | Árbol de Archivos 3D | Navegar archivos en espacio 3D |
-| Sugerencias Inteligentes | Tips de optimización basados en IA |
+| Sugerencias Inteligentes | Tips de optimización basados en IA en múltiples idiomas |
 | Reportes Compartibles | Exportar y compartir reportes |
 | Oficina Multi-piso | Edificio de 4 pisos + terraza |
 | Dashboard Git | Gestión de repositorio |
 | Streaming de Logs | Visor de logs en tiempo real |
 | i18n | Soporte inglés + español |
-| **Gestión de Tareas** | Kanban con dependencias, estados blocked/waiting, asignación a agentes |
+| **Skills de Agentes** | Ver skills descubiertas para cada agente en tarjetas y organigrama |
+| **Gestión de Tareas** | Kanban con dependencias, estados blocked/waiting, comentarios y auto-archivado |
+| **Cron Rediseñado** | Vista moderna con timeline de tareas programadas |
 | **API de Agentes OpenClaw** | Auto-detectar y sincronizar agentes a proyectos |
 | **Integración Kanban para Agentes** | API REST completa para que agentes creen/reclamen/actualicen tareas |
 

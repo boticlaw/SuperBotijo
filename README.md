@@ -57,14 +57,15 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 | Feature | Description |
 |---------|-------------|
+| **Agents Overview** | Multi-agent cards with skills, model, mood, and hierarchy |
 | **Sub-Agents** | Real-time monitoring with spawn/completion timeline |
-| **Kanban** | Task management with columns, priorities, and agent assignment |
+| **Kanban** | Task management with columns, priorities, comments, dependencies, and soft-archiving |
 
 ### ⏰ Scheduling
 
 | Feature | Description |
 |---------|-------------|
-| **Cron Manager** | OpenClaw + system cron jobs with weekly timeline |
+| **Cron Manager** | Modern view with scheduled tasks timeline and job management |
 | **Heartbeat** | Per-agent heartbeat config (interval, target) + HEARTBEAT.md editor |
 
 ### 🏢 3D Visualization
@@ -503,13 +504,15 @@ Compared to the original TenecitOS:
 |---------|-------------|
 | Word Cloud | Frequent terms from memories |
 | 3D File Tree | Navigate files in 3D space |
-| Smart Suggestions | AI-powered optimization tips |
+| Smart Suggestions | AI-powered optimization tips in multiple languages |
 | Shareable Reports | Export and share reports |
 | Multi-floor Office | 4-floor building + rooftop |
 | Git Dashboard | Repository management |
 | Log Streaming | Real-time log viewer |
 | i18n | English + Spanish support |
-| **Task Management** | Kanban with dependencies, blocked/waiting states, agent assignment |
+| **Agent Skills Display** | View discovered skills for each agent in cards and organigrama |
+| **Task Management** | Kanban with dependencies, blocked/waiting states, agent assignment, comments, and soft-archiving |
+| **Cron Redesign** | Modern cron view with scheduled tasks timeline |
 | **OpenClaw Agents API** | Auto-detect and sync agents to projects |
 | **Agent Kanban Integration** | Full REST API for agents to create/claim/update tasks |
 
