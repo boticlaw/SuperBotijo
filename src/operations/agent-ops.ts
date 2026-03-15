@@ -6,10 +6,38 @@ import { getActivities } from "@/lib/activities-db"
 import { getAgentDefaults } from "@/lib/agent-auto-config"
 import { getOpenClawSessionsTelemetry } from "@/lib/telemetry/sources/openclaw-sessions";
 import { createCache } from "@/lib/cache";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+
+/**
+ * Discover skills by scanning the agent's skills directory
+ */
+function discoverAgentSkills(workspace: string): string[] {
+  const skillsDir = join(workspace, "skills");
+  const skills: string[] = [];
+
+  if (!existsSync(skillsDir)) {
+    return skills;
+  }
+
+  try {
+    const entries = readdirSync(skillsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const skillMdPath = join(skillsDir, entry.name, "SKILL.md");
+        if (existsSync(skillMdPath)) {
+          skills.push(entry.name);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[agent-ops] Error scanning skills directory:", error);
+  }
+
+  return skills;
+}
 
 export interface AgentInfo {
   id: string;
@@ -154,10 +182,12 @@ function loadAgentsFromConfig(): AgentInfo[] {
       name?: string
       model?: string
       skills?: string[]
+      workspace?: string
       subagents?: { allowAgents?: string[] };
     }) => {
       const defaults = getAgentDefaults(agent.id, agent.name);
       const allowAgents = agent.subagents?.allowAgents || [];
+      const workspace = agent.workspace || join(OPENCLAW_DIR, "workspace", agent.id);
 
       // Build allowAgentsDetails using auto-config
       const allowAgentsDetails = allowAgents.map((subId: string) => {
@@ -170,6 +200,11 @@ function loadAgentsFromConfig(): AgentInfo[] {
         };
       });
 
+      // Discover skills from workspace directory + config skills
+      const discoveredSkills = discoverAgentSkills(workspace);
+      const configSkills = agent.skills || [];
+      const allSkills = [...new Set([...discoveredSkills, ...configSkills])];
+
       return {
         id: agent.id,
         name: agent.name || agent.id,
@@ -180,10 +215,10 @@ function loadAgentsFromConfig(): AgentInfo[] {
         tokensUsed: 0,
         sessionCount: 0,
         activeSessions: 0,
-        workspace: join(OPENCLAW_DIR, "workspace", agent.id),
+        workspace,
         allowAgents,
         allowAgentsDetails,
-        skills: agent.skills || [],
+        skills: allSkills,
       };
     });
   } catch (error) {

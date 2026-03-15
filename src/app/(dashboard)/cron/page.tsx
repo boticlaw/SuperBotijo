@@ -7,7 +7,6 @@ import {
   AlertCircle,
   LayoutGrid,
   CalendarDays,
-  Zap,
   Plus,
   Server,
   Bot,
@@ -26,6 +25,8 @@ import {
 import { HeartbeatStatus } from "@/components/HeartbeatStatus";
 import type { SystemCronJob } from "@/app/api/cron/system/route";
 import { useI18n } from "@/i18n/provider";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/Toast";
 
 type ViewMode = "list" | "timeline";
 type CronTab = "all" | "system" | "openclaw" | "heartbeat";
@@ -42,25 +43,18 @@ interface HeartbeatData {
 
 export default function CronJobsPage() {
   const { t } = useI18n();
+  const { showSuccess, showError } = useToast();
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [systemJobs, setSystemJobs] = useState<SystemCronJob[]>([]);
   const [heartbeat, setHeartbeat] = useState<HeartbeatData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<CronJob | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeTab, setActiveTab] = useState<CronTab>("openclaw");
-  const [runToast, setRunToast] = useState<{
-    id: string;
-    status: "success" | "error";
-    name: string;
-  } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<CronJob | null>(null);
-  const [saveToast, setSaveToast] = useState<{
-    status: "success" | "error";
-    message: string;
-  } | null>(null);
 
   const [logsModal, setLogsModal] = useState<{
     isOpen: boolean;
@@ -112,14 +106,6 @@ export default function CronJobsPage() {
     fetchAllData();
   }, [fetchAllData]);
 
-  // Reset delete confirmation after 5 seconds
-  useEffect(() => {
-    if (deleteConfirm) {
-      const timer = setTimeout(() => setDeleteConfirm(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [deleteConfirm]);
-
   const handleToggle = async (id: string, enabled: boolean) => {
     try {
       const res = await fetch("/api/cron", {
@@ -137,19 +123,24 @@ export default function CronJobsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (deleteConfirm !== id) {
-      setDeleteConfirm(id);
-      return;
-    }
+  const handleDeleteClick = (job: CronJob) => {
+    setJobToDelete(job);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/cron?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/cron?id=${jobToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete job");
-      setJobs((prev) => prev.filter((job) => job.id !== id));
-      setDeleteConfirm(null);
+      setJobs((prev) => prev.filter((job) => job.id !== jobToDelete.id));
+      setJobToDelete(null);
+      showSuccess(t("cron.jobDeleted"));
     } catch (err) {
       console.error("Delete error:", err);
-      setError("Failed to delete job");
+      showError(t("cron.deleteError"));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -164,13 +155,11 @@ export default function CronJobsPage() {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      setRunToast({ id, status: "error", name: job?.name || id });
-      setTimeout(() => setRunToast(null), 4000);
+      showError(t("cron.failedToTrigger") + ` "${job?.name || id}"`);
       throw new Error(data.error || "Trigger failed");
     }
 
-    setRunToast({ id, status: "success", name: job?.name || id });
-    setTimeout(() => setRunToast(null), 4000);
+    showSuccess(`"${job?.name || id}" ${t("cron.triggered")}!`);
   };
 
   const handleSystemRun = async (id: string) => {
@@ -184,13 +173,11 @@ export default function CronJobsPage() {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      setRunToast({ id, status: "error", name: job?.name || id });
-      setTimeout(() => setRunToast(null), 4000);
+      showError(t("cron.failedToTrigger") + ` "${job?.name || id}"`);
       throw new Error(data.error || "Run failed");
     }
 
-    setRunToast({ id, status: "success", name: job?.name || id });
-    setTimeout(() => setRunToast(null), 4000);
+    showSuccess(`"${job?.name || id}" ${t("cron.triggered")}!`);
   };
 
   const handleViewLogs = (id: string, logPath?: string) => {
@@ -244,13 +231,7 @@ export default function CronJobsPage() {
         throw new Error(data.error || "Failed to save job");
       }
 
-      setSaveToast({
-        status: "success",
-        message: isEditing
-          ? t("cron.jobUpdated")
-          : t("cron.jobCreated"),
-      });
-      setTimeout(() => setSaveToast(null), 4000);
+      showSuccess(isEditing ? t("cron.jobUpdated") : t("cron.jobCreated"));
 
       setIsModalOpen(false);
       setEditingJob(null);
@@ -258,8 +239,7 @@ export default function CronJobsPage() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to save job";
-      setSaveToast({ status: "error", message });
-      setTimeout(() => setSaveToast(null), 4000);
+      showError(message);
       throw err;
     }
   };
@@ -355,8 +335,8 @@ export default function CronJobsPage() {
               onToggle={handleToggle}
               onEdit={handleEdit}
               onRun={handleRun}
-              onDelete={handleDelete}
-              isDeleting={deleteConfirm === job.id}
+              onDelete={() => handleDeleteClick(job)}
+              isDeleting={isDeleting && jobToDelete?.id === job.id}
             />
           ))}
         
@@ -897,82 +877,17 @@ export default function CronJobsPage() {
         logPath={logsModal.logPath}
       />
 
-      {runToast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "2.5rem",
-            right: "1.5rem",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.875rem 1.25rem",
-            borderRadius: "0.75rem",
-            backdropFilter: "blur(12px)",
-            backgroundColor:
-              runToast.status === "success"
-                ? "color-mix(in srgb, var(--success) 15%, rgba(12,12,12,0.95))"
-                : "color-mix(in srgb, var(--error) 15%, rgba(12,12,12,0.95))",
-            border: `1px solid ${
-              runToast.status === "success"
-                ? "color-mix(in srgb, var(--success) 40%, transparent)"
-                : "color-mix(in srgb, var(--error) 40%, transparent)"
-            }`,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            color: "var(--text-primary)",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            animation: "slideInRight 0.3s ease",
-          }}
-        >
-          <Zap
-            className="w-4 h-4"
-            style={{
-              color:
-                runToast.status === "success"
-                  ? "var(--success)"
-                  : "var(--error)",
-            }}
-          />
-          {runToast.status === "success"
-            ? `✓ "${runToast.name}" ${t("cron.triggered")}!`
-            : `✗ ${t("cron.failedToTrigger")} "${runToast.name}"`}
-        </div>
-      )}
-
-      {saveToast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "2.5rem",
-            right: "1.5rem",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.875rem 1.25rem",
-            borderRadius: "0.75rem",
-            backdropFilter: "blur(12px)",
-            backgroundColor:
-              saveToast.status === "success"
-                ? "color-mix(in srgb, var(--success) 15%, rgba(12,12,12,0.95))"
-                : "color-mix(in srgb, var(--error) 15%, rgba(12,12,12,0.95))",
-            border: `1px solid ${
-              saveToast.status === "success"
-                ? "color-mix(in srgb, var(--success) 40%, transparent)"
-                : "color-mix(in srgb, var(--error) 40%, transparent)"
-            }`,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            color: "var(--text-primary)",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            animation: "slideInRight 0.3s ease",
-          }}
-        >
-          {saveToast.status === "success" ? "✓" : "✗"} {saveToast.message}
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={jobToDelete !== null}
+        title={t("cron.deleteJob")}
+        message={t("cron.deleteConfirm", { name: jobToDelete?.name || "" })}
+        confirmLabel={t("cron.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setJobToDelete(null)}
+      />
 
       <style jsx global>{`
         @keyframes slideInRight {
