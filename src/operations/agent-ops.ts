@@ -25,7 +25,8 @@ function discoverAgentSkills(workspace: string): string[] {
   try {
     const entries = readdirSync(skillsDir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.isDirectory()) {
+      // Accept both directories and symlinks (which may point to directories)
+      if (entry.isDirectory() || entry.isSymbolicLink()) {
         const skillMdPath = join(skillsDir, entry.name, "SKILL.md");
         if (existsSync(skillMdPath)) {
           skills.push(entry.name);
