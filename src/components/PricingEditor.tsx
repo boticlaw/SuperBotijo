@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DollarSign, RotateCcw, Save, Check, X, RefreshCw, Loader2 } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
+import { useToast } from "@/components/Toast";
 
 interface ModelPricingEntry {
   id: string;
@@ -249,12 +250,12 @@ function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, isLoading 
 
 export function PricingEditor() {
   const { t } = useI18n();
+  const { showSuccess, showError } = useToast();
   const [pricing, setPricing] = useState<PricingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [localChanges, setLocalChanges] = useState<LocalChanges>({});
-  const [toast, setToast] = useState<ToastState | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
   const fetchPricing = useCallback(async () => {
@@ -264,7 +265,7 @@ export function PricingEditor() {
       setPricing(data);
     } catch (error) {
       console.error("Failed to fetch pricing:", error);
-      showToast("error", t("pricing.loadError"));
+      showError(t("pricing.loadError"));
     } finally {
       setLoading(false);
     }
@@ -273,11 +274,6 @@ export function PricingEditor() {
   useEffect(() => {
     fetchPricing();
   }, [fetchPricing]);
-
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const hasChanges = Object.keys(localChanges).some((modelId) => {
     const changes = localChanges[modelId];
@@ -318,11 +314,11 @@ export function PricingEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", t("pricing.saved"));
+      showSuccess(t("pricing.saved"));
       fetchPricing();
     } catch (error) {
       console.error("Failed to save pricing:", error);
-      showToast("error", t("pricing.saveError"));
+      showError(t("pricing.saveError"));
     } finally {
       setSaving(false);
     }
@@ -339,11 +335,11 @@ export function PricingEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", t("pricing.resetSuccess"));
+      showSuccess(t("pricing.resetSuccess"));
       fetchPricing();
     } catch (error) {
       console.error("Failed to reset pricing:", error);
-      showToast("error", t("pricing.resetError"));
+      showError(t("pricing.resetError"));
     } finally {
       setResetting(false);
       setShowResetDialog(false);
@@ -352,7 +348,7 @@ export function PricingEditor() {
 
   const handleDiscard = () => {
     setLocalChanges({});
-    showToast("success", t("pricing.discardSuccess"));
+    showSuccess(t("pricing.discardSuccess"));
   };
 
   if (loading) return <PricingSkeleton />;
@@ -383,17 +379,6 @@ export function PricingEditor() {
 
   return (
     <div className="space-y-4">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
-            toast.type === "success" ? "bg-success" : "bg-error"
-          } text-white`}
-        >
-          {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-          {toast.message}
-        </div>
-      )}
-
       <div
         className="p-4 rounded-lg flex items-start gap-3"
         style={{

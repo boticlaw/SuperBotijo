@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/Toast";
 
 interface ConfigSection {
   editable: boolean;
@@ -293,6 +294,7 @@ function ConfigDataViewer({ data, editable, path, onChange, depth = 0 }: ConfigD
 
 export function ConfigEditor() {
   const { t } = useI18n();
+  const { showSuccess, showError } = useToast();
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -300,7 +302,6 @@ export function ConfigEditor() {
   const [restoring, setRestoring] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(["env"]);
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const fetchConfig = useCallback(async () => {
@@ -310,7 +311,7 @@ export function ConfigEditor() {
       setConfig(data);
     } catch (error) {
       console.error("Failed to fetch config:", error);
-      showToast("error", "Failed to load configuration");
+      showError("Failed to load configuration");
     } finally {
       setLoading(false);
     }
@@ -330,11 +331,6 @@ export function ConfigEditor() {
     fetchConfig();
     fetchBackupInfo();
   }, [fetchConfig, fetchBackupInfo]);
-
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const hasChanges = Object.keys(localChanges).some((section) =>
     Object.keys(localChanges[section] || {}).length > 0
@@ -400,12 +396,12 @@ export function ConfigEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", "Configuration saved successfully");
+      showSuccess("Configuration saved successfully");
       fetchConfig();
       fetchBackupInfo();
     } catch (error) {
       console.error("Failed to save config:", error);
-      showToast("error", error instanceof Error ? error.message : "Failed to save configuration");
+      showError(error instanceof Error ? error.message : "Failed to save configuration");
     } finally {
       setSaving(false);
     }
@@ -427,12 +423,12 @@ export function ConfigEditor() {
       }
 
       setLocalChanges({});
-      showToast("success", `Restored from backup (${formatTimestamp(data.restoredFrom.timestamp)})`);
+      showSuccess("Configuration saved successfully");
       fetchConfig();
       fetchBackupInfo();
     } catch (error) {
       console.error("Failed to restore config:", error);
-      showToast("error", error instanceof Error ? error.message : "Failed to restore configuration");
+      showError(error instanceof Error ? error.message : "Failed to restore configuration");
     } finally {
       setRestoring(false);
     }
@@ -440,7 +436,7 @@ export function ConfigEditor() {
 
   const handleDiscard = () => {
     setLocalChanges({});
-    showToast("success", "Changes discarded");
+    showSuccess("Changes discarded");
   };
 
   if (loading) return <ConfigSkeleton />;
@@ -469,17 +465,6 @@ export function ConfigEditor() {
 
   return (
     <div className="space-y-4">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
-            toast.type === "success" ? "bg-success" : "bg-error"
-          } text-white`}
-        >
-          {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-          {toast.message}
-        </div>
-      )}
-
       <div
         className="p-4 rounded-lg flex items-start gap-3"
         style={{
