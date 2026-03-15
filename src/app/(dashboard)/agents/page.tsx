@@ -14,6 +14,7 @@ import {
   Zap,
   TrendingUp,
   Clock,
+  Wrench,
 } from "lucide-react";
 import { AgentOrganigrama } from "@/components/AgentOrganigrama";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -394,6 +395,33 @@ export default function AgentsPage() {
                           <span className="text-xs font-medium ml-2" style={{ color: "var(--text-primary)" }}>
                             {agent.dmPolicy}
                           </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Skills */}
+                    {agent.skills && agent.skills.length > 0 && (
+                      <div className="flex items-start gap-3">
+                        <Wrench className="w-4 h-4 shrink-0 mt-0.5" style={{ color: agent.color }} />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs block mb-1.5" style={{ color: "var(--text-muted)" }}>
+                            {t("agents.skills")}:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {agent.skills.map((skill) => (
+                              <span
+                                key={skill}
+                                className="text-xs px-2 py-0.5 rounded font-mono"
+                                style={{
+                                  backgroundColor: "var(--card-elevated)",
+                                  border: "1px solid var(--border)",
+                                  color: "var(--text-secondary)",
+                                }}
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}

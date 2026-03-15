@@ -110,6 +110,7 @@
     "model": "Modelo",
     "workspace": "Workspace",
     "dmPolicy": "Política DM",
+    "skills": "Skills",
     "canSpawn": "Puede spawnear subagentes ({count})",
     "lastActivity": "Última actividad",
     "active": "activo",
