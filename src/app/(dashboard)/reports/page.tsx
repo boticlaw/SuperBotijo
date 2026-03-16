@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { FileBarChart, FileText, RefreshCw, Clock, HardDrive, Download, Share2, Plus, Loader2 } from "lucide-react";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
+import { useToast } from "@/components/Toast";
 
 interface Report {
   name: string;
@@ -38,12 +39,7 @@ export default function ReportsPage() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
-  }, []);
+  const { showSuccess, showError } = useToast();
 
   const loadReports = useCallback(async () => {
     try {
@@ -93,18 +89,18 @@ export default function ReportsPage() {
         body: JSON.stringify({ name, type, period: type }),
       });
       if (res.ok) {
-        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated!`);
+        showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated!`);
         loadReports();
       } else {
-        showToast("Failed to generate report");
+        showError("Failed to generate report");
       }
     } catch (err) {
       console.error(err);
-      showToast("Error generating report");
+      showError("Error generating report");
     } finally {
       setIsGenerating(false);
     }
-  }, [loadReports, showToast]);
+  }, [loadReports, showError, showSuccess]);
 
   const handleExport = useCallback((reportPath: string) => {
     const id = reportPath.split('/').pop()?.replace('.md', '') || reportPath;
@@ -119,17 +115,17 @@ export default function ReportsPage() {
       if (res.ok) {
         const data = await res.json();
         await navigator.clipboard.writeText(data.shareUrl);
-        showToast("Link copied to clipboard!");
+        showSuccess("Link copied to clipboard!");
       } else {
-        showToast("Failed to share report");
+        showError("Failed to share report");
       }
     } catch (err) {
       console.error(err);
-      showToast("Error sharing report");
+      showError("Error sharing report");
     } finally {
       setSharingId(null);
     }
-  }, [showToast]);
+  }, [showError, showSuccess]);
 
   useEffect(() => {
     loadReports();
@@ -143,20 +139,6 @@ export default function ReportsPage() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Toast notification */}
-      {toast && (
-        <div
-          className="fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg"
-          style={{
-            backgroundColor: "var(--accent)",
-            color: "white",
-            animation: "fadeIn 0.3s ease",
-          }}
-        >
-          {toast}
-        </div>
-      )}
-
       {/* Header */}
       <div
         className="flex items-center justify-between p-3 md:p-4"

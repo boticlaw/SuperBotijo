@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/provider";
-import { Cpu, HardDrive, MemoryStick, Activity, Network, Server, ShieldCheck, RotateCw, Wifi, Monitor, Play, Square, X, Loader2, Terminal, ArrowDown, ArrowUp } from "lucide-react";
+import { useToast } from "@/components/Toast";
+import { Cpu, HardDrive, MemoryStick, Network, Server, ShieldCheck, RotateCw, Wifi, Monitor, Play, Square, X, Loader2, Terminal, ArrowDown, ArrowUp } from "lucide-react";
 
 interface SystemdService {
   name: string;
@@ -70,8 +71,8 @@ export default function SystemMonitorPage() {
   const [selectedTab, setSelectedTab] = useState<"hardware" | "services">("hardware");
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [logsModal, setLogsModal] = useState<LogsModal | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const { t } = useI18n();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     const fetchSystemData = async () => {
@@ -93,11 +94,6 @@ export default function SystemMonitorPage() {
     const interval = setInterval(fetchSystemData, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const handleServiceAction = async (svc: SystemdService, action: "restart" | "stop" | "start" | "logs") => {
     const key = `${svc.name}-${action}`;
@@ -121,7 +117,7 @@ export default function SystemMonitorPage() {
       if (action === "logs") {
         setLogsModal({ name: svc.name, backend: svc.backend || "pm2", content: data.output, loading: false });
       } else {
-        showToast(`✅ ${svc.name}: ${action} ${t("system.actionSuccessful")}`);
+        showSuccess(`${svc.name}: ${action} ${t("system.actionSuccessful")}`);
         // Refresh data after action
         setTimeout(async () => {
           const r = await fetch("/api/system/monitor");
@@ -133,7 +129,7 @@ export default function SystemMonitorPage() {
       if (action === "logs") {
         setLogsModal({ name: svc.name, backend: svc.backend || "pm2", content: `Error: ${msg}`, loading: false });
       } else {
-        showToast(`❌ ${svc.name}: ${msg}`, "error");
+        showError(`${svc.name}: ${msg}`);
       }
     } finally {
       setActionLoading((prev) => ({ ...prev, [key]: false }));
@@ -171,21 +167,6 @@ export default function SystemMonitorPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: "fixed", top: "1rem", right: "1rem", zIndex: 1000,
-          padding: "0.75rem 1.25rem", borderRadius: "0.75rem",
-          backgroundColor: toast.type === "success" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-          border: `1px solid ${toast.type === "success" ? "var(--success)" : "var(--error)"}`,
-          color: toast.type === "success" ? "var(--success)" : "var(--error)",
-          fontSize: "0.9rem", fontWeight: 500,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-        }}>
-          {toast.msg}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
