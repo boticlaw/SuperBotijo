@@ -27,6 +27,7 @@ import { MemoryModal } from './MemoryModal';
 import { RoadmapModal } from './RoadmapModal';
 import { EnergyModal } from './EnergyModal';
 import WalkingAvatar from './WalkingAvatar';
+import RestingAvatar from './RestingAvatar';
 import { CollabTable } from './CollabTable';
 import { LoungeChair } from './LoungeChair';
 import { AreaRug } from './AreaRug';
@@ -919,7 +920,6 @@ export default function Office3D() {
           ))}
 
           {/* Walking avatars - only idle agents walk around the office */}
-          {/* offline agents are NOT in the office, working/thinking are at their desks */}
           {agents.map((agent) => {
             const status = getAgentState(agent.id).status;
             const shouldWalk = status === 'idle';
@@ -933,6 +933,19 @@ export default function Office3D() {
                 obstacles={obstacles}
                 otherAvatarPositions={walkingAvatarPositionsRef.current}
                 onPositionUpdate={handleWalkingPositionUpdate}
+              />
+            );
+          })}
+
+          {/* Resting avatars - offline agents rest in break zones */}
+          {agents.map((agent) => {
+            const status = getAgentState(agent.id).status;
+            const shouldRest = status === 'offline';
+            return (
+              <RestingAvatar
+                key={`resting-${agent.id}`}
+                agent={agent}
+                visible={shouldRest}
               />
             );
           })}
@@ -986,6 +999,18 @@ export default function Office3D() {
                 obstacles={obstacles}
                 otherAvatarPositions={walkingAvatarPositionsRef.current}
                 onPositionUpdate={handleWalkingPositionUpdate}
+              />
+            );
+          })}
+
+          {/* Offline subagents rest in break zones */}
+          {subagentConfigs.map((subagent) => {
+            const status = subagentStateById.get(subagent.id) ?? "offline";
+            return (
+              <RestingAvatar
+                key={`subagent-resting-${subagent.id}`}
+                agent={subagent}
+                visible={status === "offline"}
               />
             );
           })}
