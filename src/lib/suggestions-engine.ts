@@ -641,16 +641,55 @@ function analyzeAgents(data: UsageData, dismissed: Set<string>): Suggestion[] {
   return suggestions;
 }
 
+function invalidateStaleSuggestions(existing: Suggestion[], stats: UsageData): Suggestion[] {
+  const validIds = new Set<string>();
+
+  if (stats.kanbanStats) {
+    if (stats.kanbanStats.overdueTasks > 0) validIds.add("kanban-overdue");
+    if (stats.kanbanStats.unassignedTasks > 5) validIds.add("kanban-unassigned");
+    const inProgress = stats.kanbanStats.tasksByStatus["in_progress"] || 0;
+    const done = stats.kanbanStats.tasksByStatus["done"] || stats.kanbanStats.tasksByStatus["completed"] || 0;
+    if (inProgress > 10 && done < inProgress / 3) validIds.add("kanban-bottleneck");
+  }
+
+  if (stats.memoryStats) {
+    if (stats.memoryStats.memoryAgeDays !== null && stats.memoryStats.memoryAgeDays > 30) validIds.add("memory-old");
+    if (stats.memoryStats.totalFiles > 0 && stats.memoryStats.totalSize < 5000) validIds.add("memory-small");
+    if (stats.memoryStats.totalFiles === 0) validIds.add("memory-none");
+  }
+
+  if (stats.fileStats) {
+    if (stats.fileStats.totalFiles > 1000) validIds.add("files-large");
+    if (stats.fileStats.lastModified) {
+      const lastMod = new Date(stats.fileStats.lastModified);
+      const daysSince = Math.floor((Date.now() - lastMod.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSince > 14 && stats.fileStats.totalFiles > 0) validIds.add("files-inactive");
+    }
+  }
+
+  if (stats.agentStats) {
+    if (stats.agentStats.agentsWithoutIdentity > 0) validIds.add("agent-no-identity");
+    if (stats.agentStats.totalAgents === 0) validIds.add("agent-none");
+    const agentsWithoutHeartbeat = stats.agentStats.totalAgents - stats.agentStats.agentsWithHeartbeat;
+    if (agentsWithoutHeartbeat > 0 && stats.agentStats.totalAgents > 1) validIds.add("agent-no-heartbeat");
+  }
+
+  if (stats.heartbeatFrequency > 0 && stats.heartbeatFrequency < 30000) validIds.add("heartbeat-frequency");
+
+  return existing.filter((s) => {
+    if (validIds.has(s.id)) return true;
+    const categoryPrefixesToInvalidate = ["kanban-", "memory-", "files-", "agent-", "heartbeat-"];
+    return !categoryPrefixesToInvalidate.some((prefix) => s.id.startsWith(prefix));
+  });
+}
+
 export function generateSuggestions(data?: Partial<UsageData>): Suggestion[] {
   const dismissed = loadDismissed();
   const existing = loadSuggestions();
-  const existingIds = new Set(existing.map((s) => s.id));
 
-  // Collect full data if not provided
   let fullData: UsageData;
 
   if (data) {
-    // Use provided data with fallbacks for new stats
     fullData = {
       modelUsage: data.modelUsage || [],
       recentErrors: data.recentErrors || [],
@@ -663,7 +702,6 @@ export function generateSuggestions(data?: Partial<UsageData>): Suggestion[] {
       agentStats: data.agentStats || getAgentStats(),
     };
   } else {
-    // Collect all data from OpenClaw
     const collected = collectSuggestionsData();
     fullData = {
       modelUsage: [],
@@ -678,6 +716,9 @@ export function generateSuggestions(data?: Partial<UsageData>): Suggestion[] {
     };
   }
 
+  const validatedExisting = invalidateStaleSuggestions(existing, fullData);
+  const validatedExistingIds = new Set(validatedExisting.map((s) => s.id));
+
   const newSuggestions: Suggestion[] = [
     ...analyzeModelUsage(fullData, dismissed),
     ...analyzeCronHealth(fullData, dismissed),
@@ -688,15 +729,15 @@ export function generateSuggestions(data?: Partial<UsageData>): Suggestion[] {
     ...analyzeFiles(fullData, dismissed),
     ...analyzeKanban(fullData, dismissed),
     ...analyzeAgents(fullData, dismissed),
-  ].filter((s) => !existingIds.has(s.id) && !dismissed.has(s.id));
+  ].filter((s) => !validatedExistingIds.has(s.id) && !dismissed.has(s.id));
 
-  if (newSuggestions.length > 0) {
-    const allSuggestions = [...newSuggestions, ...existing].slice(0, 20);
+  if (newSuggestions.length > 0 || validatedExisting.length !== existing.length) {
+    const allSuggestions = [...newSuggestions, ...validatedExisting].slice(0, 20);
     saveSuggestions(allSuggestions);
     return allSuggestions.filter((s) => !s.dismissedAt && !s.appliedAt);
   }
 
-  return existing.filter((s) => !s.dismissedAt && !s.appliedAt);
+  return validatedExisting.filter((s) => !s.dismissedAt && !s.appliedAt);
 }
 
 export function getSuggestions(): Suggestion[] {

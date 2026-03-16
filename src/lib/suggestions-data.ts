@@ -247,9 +247,14 @@ export function getKanbanStats(): KanbanStats {
         .get() as { count: number };
       stats.overdueTasks = overdueCount?.count || 0;
 
-      // Get unassigned tasks
+      // Get unassigned tasks (exclude done/review and archived)
       const unassignedCount = db
-        .prepare("SELECT COUNT(*) as count FROM kanban_tasks WHERE assignee IS NULL OR assignee = ''")
+        .prepare(`
+          SELECT COUNT(*) as count FROM kanban_tasks 
+          WHERE (assignee IS NULL OR assignee = '') 
+          AND status NOT IN ('done', 'review')
+          AND archived = 0
+        `)
         .get() as { count: number };
       stats.unassignedTasks = unassignedCount?.count || 0;
     } finally {
