@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Cylinder, Box, Text } from '@react-three/drei';
-import type { Group } from 'three';
+import type { Group, Mesh } from 'three';
 
 interface WallClockProps {
   position: [number, number, number];
@@ -14,19 +14,19 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
   const hourHandRef = useRef<Group>(null);
   const minuteHandRef = useRef<Group>(null);
   const secondHandRef = useRef<Group>(null);
-  const [time, setTime] = useState(new Date());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const textRef = useRef<Mesh>(null);
+  // Track last displayed minute to avoid updating text geometry every frame
+  const lastMinuteRef = useRef(-1);
 
   useFrame(() => {
-    const hours = time.getHours() % 12;
-    const minutes = time.getMinutes();
-    const seconds = time.getSeconds();
+    const now = new Date();
+    const hours = now.getHours() % 12;
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    const ms = now.getMilliseconds();
+
+    // Smooth second hand movement with milliseconds
+    const smoothSeconds = seconds + ms / 1000;
 
     if (hourHandRef.current) {
       hourHandRef.current.rotation.z = -((hours + minutes / 60) * (Math.PI / 6));
@@ -35,7 +35,18 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
       minuteHandRef.current.rotation.z = -(minutes * (Math.PI / 30));
     }
     if (secondHandRef.current) {
-      secondHandRef.current.rotation.z = -(seconds * (Math.PI / 30));
+      secondHandRef.current.rotation.z = -(smoothSeconds * (Math.PI / 30));
+    }
+
+    // Only update text when minute changes (avoids re-creating text geometry every frame)
+    if (textRef.current && minutes !== lastMinuteRef.current) {
+      lastMinuteRef.current = minutes;
+      // Text component from drei doesn't support direct text mutation via ref,
+      // but the troika-three-text underneath does
+      const textMesh = textRef.current as unknown as { text: string };
+      if (textMesh.text !== undefined) {
+        textMesh.text = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      }
     }
   });
 
@@ -112,15 +123,16 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
         </Box>
       </group>
 
-      {/* Digital time display at bottom (small text) */}
+      {/* Digital time display at bottom (small text) — updated via ref in useFrame */}
       <Text
+        ref={textRef}
         position={[0, -0.18, 0.055]}
         fontSize={0.06}
         color="#1f2937"
         anchorX="center"
         anchorY="middle"
       >
-        {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
       </Text>
     </group>
   );

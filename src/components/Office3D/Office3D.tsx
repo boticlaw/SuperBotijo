@@ -29,6 +29,7 @@ import { EnergyModal } from './EnergyModal';
 import WalkingAvatar from './WalkingAvatar';
 import { CollabTable } from './CollabTable';
 import { LoungeChair } from './LoungeChair';
+import { AreaRug } from './AreaRug';
 
 interface Visitor {
   id: string;
@@ -105,65 +106,68 @@ interface WalkwayLane {
   size: [number, number];
   rotationY?: number;
   color: string;
-  emissive?: string;
 }
 
 const PLANT_DECORATIONS: PlantDecoration[] = [
-  // Entrada: árboles en esquinas para marcar recepción
-  { position: [-8.8, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
-  { position: [8.8, 0, 7.2], size: "large", type: "tree", radius: 0.65 },
+  // Entrance foyer: large trees flanking the glass doors
+  { position: [-5.2, 0, 8.6], size: "large", type: "tree", radius: 0.65 },
+  { position: [5.2, 0, 8.6], size: "large", type: "tree", radius: 0.65 },
 
-  // Esquinas de servicio: un poco de verde en coffee/archive corners
-  { position: [-7.2, 0, -3.9], size: "medium", type: "bush", radius: 0.52 },
-  { position: [7.2, 0, -3.9], size: "medium", type: "bush", radius: 0.52 },
+  // Back corners: medium bushes softening the back wall
+  { position: [-12.8, 0, -8.6], size: "medium", type: "bush", radius: 0.52 },
+  { position: [12.8, 0, -8.6], size: "medium", type: "bush", radius: 0.52 },
 
-  // Laterales de pizarra: plantas chicas de apoyo visual
-  { position: [-1.9, 0, -7.0], size: "small", type: "succulent", radius: 0.36 },
-  { position: [1.9, 0, -7.0], size: "small", type: "succulent", radius: 0.36 },
+  // Near bookshelves: succulents on the floor beside the shelves
+  { position: [-10.1, 0, -3.8], size: "small", type: "succulent", radius: 0.36 },
+  { position: [10.1, 0, -3.8], size: "small", type: "succulent", radius: 0.36 },
+
+  // Mid-office accents: medium tree near collaboration area
+  { position: [-3.2, 0, -3.2], size: "medium", type: "tree", radius: 0.52 },
+
+  // Break zone corner: small succulent for warmth
+  { position: [11.2, 0, -6.2], size: "small", type: "succulent", radius: 0.36 },
 ];
 
-const FILE_CABINET_POSITION: [number, number, number] = [-8.6, 0, -5.4];
+const FILE_CABINET_POSITION: [number, number, number] = [-12.5, 0, -7.5];
 const WHITEBOARD_POSITION: [number, number, number] = [0, 0, -8];
-const COFFEE_MACHINE_POSITION: [number, number, number] = [8.6, 0, -5.4];
+const COFFEE_MACHINE_POSITION: [number, number, number] = [12.5, 0, -7.5];
 
-const LEFT_BOOKSHELF_POSITION: [number, number, number] = [-10.1, 0, -1.8];
-const RIGHT_BOOKSHELF_POSITION: [number, number, number] = [10.1, 0, -1.8];
+const LEFT_BOOKSHELF_POSITION: [number, number, number] = [-14.1, 0, -5.0];
+const RIGHT_BOOKSHELF_POSITION: [number, number, number] = [14.1, 0, -5.0];
 
 const FRONT_WINDOW_POSITION: [number, number, number] = [5.2, 2.5, -9.85];
-const SIDE_WINDOW_POSITION: [number, number, number] = [-14.85, 2.5, 0.4];
+const SIDE_WINDOW_LEFT: [number, number, number] = [-14.85, 2.5, 0.4];
+const SIDE_WINDOW_RIGHT: [number, number, number] = [14.85, 2.5, 0.4];
 
 const COLLAB_ZONE_CENTER: [number, number, number] = [0, 0, -5.9];
-const FOCUS_ZONE_CENTER: [number, number, number] = [-10.5, 0, -3.2];
-const BREAK_ZONE_CENTER: [number, number, number] = [9.2, 0, -4.9];
+const FOCUS_ZONE_CENTER: [number, number, number] = [-11.5, 0, -7.5];
+const BREAK_ZONE_CENTER: [number, number, number] = [11.5, 0, -7.5];
 
+// Walkway lanes — subtle floor runner strips, NO emissive glow
 const WALKWAY_LANES: WalkwayLane[] = [
   {
     id: "main-corridor",
-    position: [0, 0.012, 1.3],
+    position: [0, 0.006, 1.3],
     size: [14.5, 1.25],
-    color: "#2f394a",
-    emissive: "#1e3a8a",
+    color: "#474136",
   },
   {
     id: "collab-connector",
-    position: [0, 0.012, -2.9],
+    position: [0, 0.006, -2.9],
     size: [1.25, 6.2],
-    color: "#364152",
-    emissive: "#0f766e",
+    color: "#4a4238",
   },
   {
-    id: "left-focus-connector",
-    position: [-6.6, 0.012, -2.6],
+    id: "left-aisle",
+    position: [-6.6, 0.006, -2.6],
     size: [4.1, 1.1],
-    color: "#303949",
-    emissive: "#6b7280",
+    color: "#474136",
   },
   {
-    id: "right-break-connector",
-    position: [6.2, 0.012, -3.55],
+    id: "right-aisle",
+    position: [6.2, 0.006, -3.55],
     size: [4.4, 0.95],
-    color: "#2f3d46",
-    emissive: "#0f766e",
+    color: "#4a4238",
   },
 ];
 
@@ -339,6 +343,8 @@ export default function Office3D() {
           agentsApiList.forEach((parentAgent) => {
             const allowed = parentAgent.allowAgents || [];
             allowed.forEach((subagentId) => {
+              if (topLevelAgentIds.has(subagentId)) return;
+              
               const details = parentAgent.allowAgentsDetails?.find((entry) => entry.id === subagentId);
               nextConfiguredSubagents.push({
                 id: buildSubagentOfficeId(parentAgent.id, subagentId),
@@ -757,13 +763,21 @@ export default function Office3D() {
           {/* Suelo */}
           <Floor />
 
+          {/* Large area rug under main work zone */}
+          <AreaRug
+            position={[0, 0, 0.5]}
+            size={[18, 10]}
+            color="#3d3a34"
+            borderColor="#2e2b26"
+          />
+
           {/* Paredes */}
           <Walls />
 
           {/* Techo: visible solo en modo FPS para no bloquear la vista cenital */}
           {controlMode === 'fps' && <Ceiling />}
 
-          {/* Open Office Premium: circulation lanes */}
+          {/* Walkway runner strips — subtle floor delineation */}
           {WALKWAY_LANES.map((lane) => (
             <mesh
               key={lane.id}
@@ -774,20 +788,20 @@ export default function Office3D() {
               <planeGeometry args={lane.size} />
               <meshStandardMaterial
                 color={lane.color}
-                roughness={0.92}
-                metalness={0.06}
-                emissive={lane.emissive || "#000000"}
-                emissiveIntensity={0.12}
+                roughness={0.94}
+                metalness={0.02}
               />
             </mesh>
           ))}
 
           {/* Open Office Premium: collaboration zone near whiteboard */}
           <group>
-            <mesh position={[COLLAB_ZONE_CENTER[0], 0.015, COLLAB_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-              <planeGeometry args={[4.8, 2.6]} />
-              <meshStandardMaterial color="#2b3445" roughness={0.9} metalness={0.05} />
-            </mesh>
+            <AreaRug
+              position={[COLLAB_ZONE_CENTER[0], 0, COLLAB_ZONE_CENTER[2]]}
+              size={[5.2, 3.0]}
+              color="#2b3445"
+              borderColor="#1e2736"
+            />
 
             <CollabTable position={[COLLAB_ZONE_CENTER[0], 0, COLLAB_ZONE_CENTER[2]]} />
 
@@ -818,12 +832,14 @@ export default function Office3D() {
             <pointLight position={[COLLAB_ZONE_CENTER[0] + 1.9, 1.7, COLLAB_ZONE_CENTER[2] - 0.1]} intensity={0.12} distance={6} color="#fde68a" />
           </group>
 
-          {/* Open Office Premium: focus zone by bookshelves */}
+          {/* Open Office Premium: focus zone — back-left corner by bookshelves */}
           <group>
-            <mesh position={[FOCUS_ZONE_CENTER[0], 0.015, FOCUS_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-              <planeGeometry args={[2.8, 1.8]} />
-              <meshStandardMaterial color="#3f2f2f" roughness={0.92} metalness={0.02} />
-            </mesh>
+            <AreaRug
+              position={[FOCUS_ZONE_CENTER[0], 0, FOCUS_ZONE_CENTER[2]]}
+              size={[3.4, 2.4]}
+              color="#3d2f2f"
+              borderColor="#2a1f1f"
+            />
 
             <Box args={[1.5, 0.1, 0.7]} position={[FOCUS_ZONE_CENTER[0], 0.74, FOCUS_ZONE_CENTER[2] + 0.05]} castShadow>
               <meshStandardMaterial color="#65473a" roughness={0.72} />
@@ -836,7 +852,7 @@ export default function Office3D() {
               color="#0f172a"
             />
 
-            {/* Floor lamp with proper stand */}
+            {/* Floor lamp */}
             <mesh position={[FOCUS_ZONE_CENTER[0] - 0.55, 0, FOCUS_ZONE_CENTER[2] - 0.2]} castShadow>
               <cylinderGeometry args={[0.04, 0.04, 0.02, 12]} />
               <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.4} />
@@ -854,12 +870,14 @@ export default function Office3D() {
             <pointLight position={[FOCUS_ZONE_CENTER[0] + 1.2, 1.5, FOCUS_ZONE_CENTER[2] + 0.2]} intensity={0.08} distance={3.2} color="#60a5fa" />
           </group>
 
-          {/* Open Office Premium: break accent around coffee point */}
+          {/* Open Office Premium: break zone — back-right corner near coffee */}
           <group>
-            <mesh position={[BREAK_ZONE_CENTER[0], 0.015, BREAK_ZONE_CENTER[2]]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-              <planeGeometry args={[2.3, 1.6]} />
-              <meshStandardMaterial color="#1f3b3b" roughness={0.9} metalness={0.05} />
-            </mesh>
+            <AreaRug
+              position={[BREAK_ZONE_CENTER[0], 0, BREAK_ZONE_CENTER[2]]}
+              size={[2.8, 2.0]}
+              color="#1f3b3b"
+              borderColor="#162d2d"
+            />
 
             <mesh position={[BREAK_ZONE_CENTER[0] - 0.55, 0.42, BREAK_ZONE_CENTER[2] - 0.35]} castShadow>
               <cylinderGeometry args={[0.23, 0.23, 0.82, 20]} />
@@ -987,11 +1005,16 @@ export default function Office3D() {
             onClick={handleCoffeeClick}
           />
 
-          {/* Ventanas */}
+          {/* Ventanas — symmetric on both walls + back */}
           <Window position={FRONT_WINDOW_POSITION} size={[2.6, 1.8]} />
           <Window
-            position={SIDE_WINDOW_POSITION}
+            position={SIDE_WINDOW_LEFT}
             rotation={[0, Math.PI / 2, 0]}
+            size={[2.2, 1.6]}
+          />
+          <Window
+            position={SIDE_WINDOW_RIGHT}
+            rotation={[0, -Math.PI / 2, 0]}
             size={[2.2, 1.6]}
           />
 
