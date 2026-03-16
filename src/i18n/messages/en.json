@@ -46,6 +46,7 @@
     "dashboard": "Dashboard",
     "agents": "Agents",
     "kanban": "Kanban",
+    "chat": "Chat",
     "office": "Office",
     "memory": "Memory",
     "files": "Files",
@@ -71,6 +72,10 @@
     "kanban": {
       "title": "Kanban",
       "description": "Task board for managing agent work. Create, organize, and track tasks across columns."
+    },
+    "chat": {
+      "title": "Direct Chat",
+      "description": "Chat directly with OpenClaw agents using canonical sessions and live gateway streaming."
     },
     "memory": {
       "title": "Memory Browser",
@@ -449,6 +454,41 @@
     "user": "user",
     "assistant": "assistant",
     "toolCalls": "tool calls"
+  },
+  "chat": {
+    "title": "Direct Chat",
+    "subtitle": "Gateway-powered chat with canonical OpenClaw history",
+    "agent": "Agent",
+    "session": "Session",
+    "newSession": "New Session",
+    "loading": "Loading chat history...",
+    "empty": "No transcript messages yet",
+    "you": "You",
+    "assistant": "Assistant",
+    "streaming": "streaming",
+    "assistantThinking": "Assistant is preparing a response...",
+    "placeholder": "Write a message...",
+    "technicalSummary": "Show technical events ({count})",
+    "roles": {
+      "system": "System",
+      "tool": "Tool"
+    },
+    "readOnlyTitle": "Read-only mode: gateway unavailable",
+    "readOnlyPlaceholder": "Gateway offline. You can read history but cannot send messages.",
+    "errors": {
+      "sendFailed": "Failed to send message",
+      "streamFailed": "Streaming interrupted",
+      "unexpectedResponse": "Server returned an unexpected response",
+      "missingWriteScope": "Gateway is authenticated without write permission. Re-pair this machine (openclaw doctor --pair) or configure OPENCLAW_GATEWAY_TOKEN with operator.write scope."
+    },
+    "toasts": {
+      "loadFailedTitle": "Chat unavailable",
+      "loadAgentsFailed": "Failed to load agents",
+      "loadHistoryFailed": "Failed to load chat history",
+      "sendFailedTitle": "Message failed",
+      "readOnlyTitle": "Read-only mode",
+      "readOnlyDescription": "Gateway is offline. Sending is disabled until it reconnects."
+    }
   },
   "activity": {
     "title": "Activity Log",

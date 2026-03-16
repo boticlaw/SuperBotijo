@@ -45,6 +45,7 @@
   "dock": {
     "dashboard": "Panel",
     "agents": "Agentes",
+    "chat": "Chat",
     "office": "Oficina",
     "memory": "Memoria",
     "files": "Archivos",
@@ -226,6 +227,10 @@
     "settings": {
       "title": "Configuración",
       "description": "Configurar OpenClaw, editar precios de modelos y gestionar ajustes del sistema."
+    },
+    "chat": {
+      "title": "Chat Directo",
+      "description": "Chateá con agentes de OpenClaw usando sesiones canónicas y streaming en vivo del gateway."
     }
   },
   "about": {
@@ -339,6 +344,41 @@
       "about": "Acerca de"
     },
     "lastUpdated": "Última actualización"
+  },
+  "chat": {
+    "title": "Chat Directo",
+    "subtitle": "Chat vía gateway con historial canónico de OpenClaw",
+    "agent": "Agente",
+    "session": "Sesión",
+    "newSession": "Nueva Sesión",
+    "loading": "Cargando historial de chat...",
+    "empty": "Todavía no hay mensajes en el transcript",
+    "you": "Vos",
+    "assistant": "Asistente",
+    "streaming": "transmitiendo",
+    "assistantThinking": "El asistente está preparando la respuesta...",
+    "placeholder": "Escribí un mensaje...",
+    "technicalSummary": "Ver eventos técnicos ({count})",
+    "roles": {
+      "system": "Sistema",
+      "tool": "Herramienta"
+    },
+    "readOnlyTitle": "Modo solo lectura: gateway no disponible",
+    "readOnlyPlaceholder": "Gateway offline. Podés leer historial pero no enviar mensajes.",
+    "errors": {
+      "sendFailed": "No se pudo enviar el mensaje",
+      "streamFailed": "El streaming se interrumpió",
+      "unexpectedResponse": "El servidor devolvió una respuesta inesperada",
+      "missingWriteScope": "El gateway está autenticado sin permiso de escritura. Volvé a vincular esta maquina (openclaw doctor --pair) o configurá OPENCLAW_GATEWAY_TOKEN con scope operator.write."
+    },
+    "toasts": {
+      "loadFailedTitle": "Chat no disponible",
+      "loadAgentsFailed": "No se pudieron cargar los agentes",
+      "loadHistoryFailed": "No se pudo cargar el historial de chat",
+      "sendFailedTitle": "Falló el envío",
+      "readOnlyTitle": "Modo solo lectura",
+      "readOnlyDescription": "El gateway está offline. El envío queda deshabilitado hasta reconectar."
+    }
   },
   "integrations": {
     "title": "Integraciones",

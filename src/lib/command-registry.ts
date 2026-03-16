@@ -10,6 +10,7 @@ import {
   Brain,
   FolderOpen,
   Timer,
+  MessagesSquare,
   Activity,
   Calendar,
   Bell,
@@ -115,6 +116,14 @@ export const NAV_COMMANDS: Command[] = [
     href: "/sessions",
     group: "Data",
     keywords: ["sesiones", "history", "historial"],
+  },
+  {
+    id: "nav-chat",
+    label: "Chat",
+    icon: MessagesSquare,
+    href: "/chat",
+    group: "Data",
+    keywords: ["conversation", "mensajes", "gateway"],
   },
 
   // Analytics

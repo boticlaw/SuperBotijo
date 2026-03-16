@@ -28,4 +28,20 @@ describe("proxy auth boundary", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("rejects unauthenticated chat send API requests", async () => {
+    const request = createRequest("/api/chat/agents/developer/send");
+    const response = proxy(request);
+
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data.message).toBe("Authentication required");
+  });
+
+  it("allows authenticated chat send API requests", () => {
+    const request = createRequest("/api/chat/agents/developer/send", "mc_authenticated_session_token_2026");
+    const response = proxy(request);
+
+    expect(response.status).toBe(200);
+  });
 });
