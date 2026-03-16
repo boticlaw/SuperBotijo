@@ -275,7 +275,15 @@
     "path": "Path",
     "lastModified": "Last Modified",
     "directory": "Directory",
-    "items": "items"
+    "items": "items",
+    "pdf": {
+      "page": "Page {current} of {total}",
+      "zoom": "Zoom",
+      "loading": "Loading PDF...",
+      "error": "Failed to load PDF",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
+    }
   },
   "memory": {
     "title": "Memory Browser",

@@ -57,11 +57,12 @@ export async function GET(request: NextRequest) {
         webp: "image/webp",
         svg: "image/svg+xml",
         ico: "image/x-icon",
+        pdf: "application/pdf",
       };
       const contentType = mimeTypes[ext];
       if (!contentType) {
         return NextResponse.json(
-          { error: "Raw mode only supports image files" },
+          { error: "Raw mode only supports image and PDF files" },
           { status: 400 }
         );
       }

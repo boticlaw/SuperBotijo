@@ -41,7 +41,7 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 | Característica | Descripción |
 |----------------|-------------|
 | **Navegador de Memoria** | Edita MEMORY.md con vista previa en vivo, nube de palabras |
-| **Navegador de Archivos** | Navega workspaces con visualización 2D/3D |
+| **Navegador de Archivos** | Navega workspaces con visualización 2D/3D, visor PDF con pantalla completa |
 | **Búsqueda Global** | Búsqueda de texto completo en archivos de memoria y workspace |
 | **Dashboard Git** | Estado del repositorio, info de branches, acciones rápidas |
 
@@ -52,6 +52,12 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 | **Analíticas** | Tendencias diarias, desglose de costos por agente/modelo, métricas de eficiencia |
 | **Reportes** | Genera reportes semanales/mensuales con exportación PDF y compartir |
 | **Sugerencias Inteligentes** | Métricas de eficiencia e insights de optimización |
+
+### 💬 Comunicación
+
+| Característica | Descripción |
+|----------------|-------------|
+| **Chat Directo** | Chat en tiempo real con agentes de OpenClaw vía gateway streaming |
 
 ### 🤖 Inteligencia de Agentes
 
@@ -160,7 +166,7 @@ Un dashboard en tiempo real y centro de control para instancias de agentes de IA
 ├─────────────────────────────────────────────────────────────┤
 │                    Next.js 16 App Router                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  20 Páginas │  │ 102 APIs    │  │    Auth Middleware   │  │
+│  │  21 Páginas │  │ 105 APIs    │  │    Auth Middleware   │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Fuentes de Datos                        │
@@ -337,8 +343,8 @@ superbotijo.tudominio.com {
 superbotijo/
 ├── src/
 │   ├── app/
-│   │   ├── (dashboard)/     # 17 páginas del dashboard
-│   │   ├── api/             # 102 endpoints API
+│   │   ├── (dashboard)/     # 18 páginas del dashboard
+│   │   ├── api/             # 105 endpoints API
 │   │   ├── login/           # Página de login
 │   │   └── office/          # Oficina 3D (público)
 │   ├── components/          # ~117 componentes React
@@ -366,6 +372,7 @@ superbotijo/
 | `/` | Dashboard | Resumen, stats, feed de actividad |
 | `/agents` | Agentes | Vista del sistema multi-agente |
 | `/sessions` | Sesiones | Historial de sesiones y transcripciones |
+| `/chat` | Chat | Chat directo con agentes vía gateway streaming |
 | `/analytics` | Analíticas | Gráficos, costos, métricas de eficiencia |
 | `/memory` | Memoria | Editor de base de conocimientos |
 | `/files` | Archivos | Navegador de archivos (2D/3D) |
@@ -392,6 +399,7 @@ superbotijo/
 | Auth | 2 | Login, logout |
 | Agents | 12 | CRUD, estado, métricas, mood |
 | Sessions | 3 | Lista, transcripción, cambio de modelo |
+| **Chat** | 3 | Snapshots de agente, enviar mensajes, estado del gateway |
 | Files | 9 | CRUD, upload, download, árbol |
 | Activities | 5 | CRUD, stats, stream, approve |
 | Analytics | 4 | Datos, flujos de tokens/tareas/tiempo |
@@ -510,6 +518,7 @@ Comparado con el TenecitOS original:
 | Dashboard Git | Gestión de repositorio |
 | Streaming de Logs | Visor de logs en tiempo real |
 | i18n | Soporte inglés + español |
+| **Chat Directo** | Chat en tiempo real con agentes vía gateway streaming de OpenClaw |
 | **Skills de Agentes** | Ver skills descubiertas para cada agente en tarjetas y organigrama |
 | **Gestión de Tareas** | Kanban con dependencias, estados blocked/waiting, comentarios y auto-archivado |
 | **Cron Rediseñado** | Vista moderna con timeline de tareas programadas |

@@ -41,7 +41,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | Feature | Description |
 |---------|-------------|
 | **Memory Browser** | Edit MEMORY.md with live preview, word cloud |
-| **File Browser** | Navigate workspaces with 2D/3D visualization |
+| **File Browser** | Navigate workspaces with 2D/3D visualization, PDF viewer with fullscreen |
 | **Global Search** | Full-text search across memory and workspace files |
 | **Git Dashboard** | Repository status, branch info, quick actions |
 
@@ -52,6 +52,12 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 | **Analytics** | Daily trends, cost breakdown by agent/model, efficiency metrics |
 | **Reports** | Generate weekly/monthly reports with PDF export and sharing |
 | **Smart Suggestions** | Efficiency metrics and optimization insights |
+
+### 💬 Communication
+
+| Feature | Description |
+|---------|-------------|
+| **Direct Chat** | Real-time chat with OpenClaw agents via gateway streaming |
 
 ### 🤖 Agent Intelligence
 
@@ -160,7 +166,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 ├─────────────────────────────────────────────────────────────┤
 │                    Next.js 16 App Router                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  20 Pages   │  │ 102 APIs    │  │    Auth Middleware   │  │
+│  │  21 Pages   │  │ 105 APIs    │  │    Auth Middleware   │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                      Data Sources                            │
@@ -337,8 +343,8 @@ superbotijo.yourdomain.com {
 superbotijo/
 ├── src/
 │   ├── app/
-│   │   ├── (dashboard)/     # 17 dashboard pages
-│   │   ├── api/             # 102 API endpoints
+│   │   ├── (dashboard)/     # 18 dashboard pages
+│   │   ├── api/             # 105 API endpoints
 │   │   ├── login/           # Login page
 │   │   └── office/          # 3D office (public)
 │   ├── components/          # ~117 React components
@@ -366,6 +372,7 @@ superbotijo/
 | `/` | Dashboard | Overview, stats, activity feed |
 | `/agents` | Agents | Multi-agent system overview |
 | `/sessions` | Sessions | Session history & transcripts |
+| `/chat` | Chat | Direct chat with agents via gateway streaming |
 | `/analytics` | Analytics | Charts, costs, efficiency metrics |
 | `/memory` | Memory | Knowledge base editor |
 | `/files` | Files | File browser (2D/3D) |
@@ -392,6 +399,7 @@ superbotijo/
 | Auth | 2 | Login, logout |
 | Agents | 12 | CRUD, status, metrics, mood |
 | Sessions | 3 | List, transcript, model change |
+| **Chat** | 3 | Agent snapshots, send messages, gateway health |
 | Files | 9 | CRUD, upload, download, tree |
 | Activities | 5 | CRUD, stats, stream, approve |
 | Analytics | 4 | Data, token/task/time flows |
@@ -510,6 +518,7 @@ Compared to the original TenecitOS:
 | Git Dashboard | Repository management |
 | Log Streaming | Real-time log viewer |
 | i18n | English + Spanish support |
+| **Direct Chat** | Real-time chat with agents via OpenClaw gateway streaming |
 | **Agent Skills Display** | View discovered skills for each agent in cards and organigrama |
 | **Task Management** | Kanban with dependencies, blocked/waiting states, agent assignment, comments, and soft-archiving |
 | **Cron Redesign** | Modern cron view with scheduled tasks timeline |

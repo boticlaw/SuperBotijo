@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import {
   X,
@@ -12,6 +13,11 @@ import {
   Check,
 } from "lucide-react";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
+
+const PdfViewer = dynamic(
+  () => import("@/components/PdfViewer").then((mod) => mod.PdfViewer),
+  { ssr: false }
+);
 
 interface FilePreviewProps {
   workspace: string;
@@ -52,18 +58,23 @@ function isCodeFile(ext: string): boolean {
   ].includes(ext);
 }
 
+function isPdfFile(ext: string): boolean {
+  return ext === "pdf";
+}
+
 export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps) {
   const [content, setContent] = useState<string | null>(null);
   const ext = getFileExtension(name);
   const isImage = isImageFile(ext);
   const isMd = isMarkdown(ext);
   const isCode = isCodeFile(ext);
-  const [loading, setLoading] = useState(!isImage);
+  const isPdf = isPdfFile(ext);
+  const [loading, setLoading] = useState(!isImage && !isPdf);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (isImage) {
+    if (isImage || isPdf) {
       return;
     }
 
@@ -80,7 +91,7 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
         setError(err.message);
         setLoading(false);
       });
-  }, [workspace, path, isImage]);
+  }, [workspace, path, isImage, isPdf]);
 
   const handleDownload = () => {
     const blob = new Blob([content || ""], { type: "text/plain" });
@@ -237,6 +248,13 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
             </div>
           )}
 
+          {!loading && !error && isPdf && (
+            <PdfViewer
+              url={`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}&raw=true`}
+              fileName={name}
+            />
+          )}
+
           {!loading && !error && isMd && content && (
             <MarkdownPreview content={content} withContainer={false} />
           )}
@@ -255,7 +273,7 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
             </pre>
           )}
 
-          {!loading && !error && !isImage && !isMd && !isCode && content && (
+          {!loading && !error && !isImage && !isPdf && !isMd && !isCode && content && (
             <pre
               className="p-4 rounded-lg overflow-x-auto text-sm whitespace-pre-wrap"
               style={{
