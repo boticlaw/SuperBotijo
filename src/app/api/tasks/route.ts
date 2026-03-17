@@ -7,6 +7,20 @@ export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 
+/**
+ * Parse duration string like "1m", "5m", "15m", "30m", "1h" to milliseconds
+ */
+function parseDurationToMs(duration: string): number {
+  const match = duration.match(/^(\d+)(m|h)$/);
+  if (!match) return 0;
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  if (unit === "h") return value * 60 * 60 * 1000;
+  return value * 60 * 1000;
+}
+
 export interface UnifiedTask {
   id: string;
   name: string;
@@ -82,44 +96,41 @@ export async function GET() {
       console.error("[tasks API] Error fetching cron jobs:", error);
     }
 
-    // 2. Get Heartbeat configuration
+    // 2. Get Heartbeat configuration from agents.list
     try {
       const configPath = join(OPENCLAW_DIR, "openclaw.json");
       if (existsSync(configPath)) {
         const raw = readFileSync(configPath, "utf-8");
         const json = JSON.parse(raw);
-        const hb = json.agents?.defaults?.heartbeat;
+        const agentsList = json.agents?.list || [];
 
-        if (hb && hb.every) {
-          const heartbeatPath = join(OPENCLAW_DIR, "HEARTBEAT.md");
-          const wsHeartbeatPath = join(OPENCLAW_DIR, "workspace", "HEARTBEAT.md");
+        for (const agent of agentsList) {
+          const hb = agent.heartbeat;
+          if (hb && hb.every) {
+            const everyMs = parseDurationToMs(hb.every);
+            if (everyMs <= 0) continue;
 
-          let heartbeatMd = "";
-          if (existsSync(heartbeatPath)) {
-            heartbeatMd = readFileSync(heartbeatPath, "utf-8");
-          } else if (existsSync(wsHeartbeatPath)) {
-            heartbeatMd = readFileSync(wsHeartbeatPath, "utf-8");
+            let scheduleDisplay = "Custom";
+            if (everyMs === 1800000) scheduleDisplay = "Every 30 min";
+            else if (everyMs === 3600000) scheduleDisplay = "Every hour";
+            else if (everyMs === 60000) scheduleDisplay = "Every min";
+            else if (everyMs === 300000) scheduleDisplay = "Every 5 min";
+            else if (everyMs === 900000) scheduleDisplay = "Every 15 min";
+            else scheduleDisplay = `Every ${everyMs / 60000} min`;
+
+            tasks.push({
+              id: `heartbeat-${agent.id}`,
+              name: `Heartbeat (${agent.name || agent.id})`,
+              type: "heartbeat",
+              agentId: agent.id,
+              schedule: `*/${everyMs / 60000} * * * *`,
+              scheduleDisplay,
+              enabled: true,
+              nextRun: null,
+              lastRun: null,
+              description: `Periodic self-check for ${agent.name || agent.id}`,
+            });
           }
-
-          const everyMs = parseInt(hb.every) || 1800000;
-          let scheduleDisplay = "Custom";
-          if (everyMs === 1800000) scheduleDisplay = "Every 30 min";
-          else if (everyMs === 3600000) scheduleDisplay = "Every hour";
-          else if (everyMs === 60000) scheduleDisplay = "Every min";
-          else scheduleDisplay = `Every ${everyMs / 60000} min`;
-
-          tasks.push({
-            id: "heartbeat",
-            name: "Heartbeat",
-            type: "heartbeat",
-            agentId: json.agents?.defaults?.id || "main",
-            schedule: `*/${everyMs / 60000} * * * *`,
-            scheduleDisplay,
-            enabled: true,
-            nextRun: null, // Calculated dynamically
-            lastRun: null,
-            description: heartbeatMd.slice(0, 200) || "Periodic agent self-check",
-          });
         }
       }
     } catch (error) {

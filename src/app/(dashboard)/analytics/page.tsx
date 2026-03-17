@@ -435,7 +435,7 @@ export default function AnalyticsPage() {
                         onClick={saveBudget}
                         disabled={savingBudget}
                         className="p-1 rounded hover:bg-green-500/20 transition-colors"
-                        title="Save"
+                        title={t("common.save")}
                       >
                         {savingBudget ? (
                           <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--success)" }} />
@@ -446,7 +446,7 @@ export default function AnalyticsPage() {
                       <button
                         onClick={() => setEditingBudget(false)}
                         className="p-1 rounded hover:bg-red-500/20 transition-colors"
-                        title="Cancel"
+                        title={t("common.cancel")}
                       >
                         <X className="w-3 h-3" style={{ color: "var(--error)" }} />
                       </button>
@@ -479,7 +479,7 @@ export default function AnalyticsPage() {
                         }}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="cost" stroke="var(--accent)" strokeWidth={2} name="Cost ($)" />
+                      <Line type="monotone" dataKey="cost" stroke="var(--accent)" strokeWidth={2} name={t("analytics.costLegend")} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -500,7 +500,7 @@ export default function AnalyticsPage() {
                           borderRadius: "8px",
                         }}
                       />
-                      <Bar dataKey="cost" fill="var(--accent)" name="Cost ($)" />
+                      <Bar dataKey="cost" fill="var(--accent)" name={t("analytics.costLegend")} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -552,8 +552,8 @@ export default function AnalyticsPage() {
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="input" stackId="a" fill="#60A5FA" name="Input Tokens" />
-                      <Bar dataKey="output" stackId="a" fill="#F59E0B" name="Output Tokens" />
+                      <Bar dataKey="input" stackId="a" fill="#60A5FA" name={t("analytics.inputTokens")} />
+                      <Bar dataKey="output" stackId="a" fill="#F59E0B" name={t("analytics.outputTokens")} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -569,7 +569,7 @@ export default function AnalyticsPage() {
                   <table className="w-full">
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Model</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("analytics.model")}</th>
                         <th className="text-right py-3 px-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("analytics.input")}</th>
                         <th className="text-right py-3 px-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("analytics.output")}</th>
                         <th className="text-right py-3 px-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t("analytics.cacheRead")}</th>

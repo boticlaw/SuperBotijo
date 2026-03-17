@@ -572,7 +572,9 @@
     "agent": "Agent",
     "tokensCol": "Tokens",
     "cost": "Cost",
-    "percentOfTotal": "% of Total"
+    "percentOfTotal": "% of Total",
+    "model": "Model",
+    "costLegend": "Cost ($)"
   },
   "mission": {
     "title": "Mission Control",
