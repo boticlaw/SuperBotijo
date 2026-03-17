@@ -23,6 +23,7 @@ import {
   Eye,
   Code2,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { FilePreview } from "./FilePreview";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -97,6 +98,11 @@ function isMarkdownFile(name: string): boolean {
   return ext === "md" || ext === "mdx";
 }
 
+function isHtmlFile(name: string): boolean {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  return ext === "html" || ext === "htm";
+}
+
 // ─── Monaco Editor Modal ───────────────────────────────────────────────────────
 interface EditorModalProps {
   workspace: string;
@@ -113,6 +119,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">(initialViewMode);
+  const previewIsHtml = isHtmlFile(fileName);
 
   useEffect(() => {
     setLoading(true);
@@ -146,6 +153,19 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
       setSaving(false);
     }
   }, [workspace, filePath, content]);
+
+  const handleOpenPreviewInNewTab = useCallback(() => {
+    const htmlBlob = new Blob([content], { type: "text/html;charset=utf-8" });
+    const previewUrl = URL.createObjectURL(htmlBlob);
+    const newWindow = window.open(previewUrl, "_blank", "noopener,noreferrer");
+    if (newWindow) {
+      setTimeout(() => {
+        URL.revokeObjectURL(previewUrl);
+      }, 15000);
+      return;
+    }
+    URL.revokeObjectURL(previewUrl);
+  }, [content]);
 
   // Keyboard shortcut: Ctrl/Cmd+S to save
   useEffect(() => {
@@ -213,6 +233,26 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
             </button>
           </div>
 
+          {viewMode === "preview" && previewIsHtml && (
+            <button
+              onClick={handleOpenPreviewInNewTab}
+              title="Open preview in new tab"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0.375rem",
+                borderRadius: "0.375rem",
+                backgroundColor: "var(--card-elevated)",
+                color: "var(--text-secondary)",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           <button
             onClick={handleSave}
             disabled={saving}
@@ -269,6 +309,15 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           ) : viewMode === "preview" && isMarkdownFile(fileName) ? (
             <div style={{ height: "100%", overflow: "auto", padding: "1.5rem" }}>
               <MarkdownPreview content={content} withContainer={false} />
+            </div>
+          ) : viewMode === "preview" && previewIsHtml ? (
+            <div style={{ height: "100%", backgroundColor: "#fff" }}>
+              <iframe
+                title={`${fileName} preview`}
+                srcDoc={content}
+                sandbox="allow-forms allow-modals allow-popups allow-scripts"
+                style={{ width: "100%", height: "100%", border: "none" }}
+              />
             </div>
           ) : (
             <div style={{ height: "100%", overflow: "auto", padding: "1.5rem" }}>

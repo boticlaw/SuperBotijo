@@ -163,9 +163,9 @@ export function ArchivedTasksList({ tasks, onRestore, onTaskClick }: ArchivedTas
         {/* Labels filter */}
         {allLabels.length > 0 && (
           <div className="flex flex-wrap items-center gap-1">
-            {allLabels.map((label) => (
+            {allLabels.map((label, index) => (
               <button
-                key={label.name}
+                key={`${label.name}-${index}`}
                 onClick={() => toggleLabel(label.name)}
                 className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-all"
                 style={{
@@ -239,9 +239,9 @@ export function ArchivedTasksList({ tasks, onRestore, onTaskClick }: ArchivedTas
                 {/* Labels - compact */}
                 {(task.labels?.length ?? 0) > 0 && (
                   <div className="flex flex-wrap gap-0.5">
-                    {task.labels!.slice(0, 3).map((label) => (
+                    {task.labels!.slice(0, 3).map((label, index) => (
                       <span
-                        key={label.name}
+                        key={`${label.name}-${index}`}
                         className="rounded px-1.5 py-0.5 text-[10px]"
                         style={{
                           backgroundColor: `${label.color}20`,

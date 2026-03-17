@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import NextImage from "next/image";
 import {
   X,
   Download,
@@ -11,6 +10,7 @@ import {
   AlertCircle,
   Copy,
   Check,
+  ExternalLink,
 } from "lucide-react";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 
@@ -58,6 +58,10 @@ function isCodeFile(ext: string): boolean {
   ].includes(ext);
 }
 
+function isHtmlFile(ext: string): boolean {
+  return ext === "html" || ext === "htm";
+}
+
 function isPdfFile(ext: string): boolean {
   return ext === "pdf";
 }
@@ -68,6 +72,7 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
   const isImage = isImageFile(ext);
   const isMd = isMarkdown(ext);
   const isCode = isCodeFile(ext);
+  const isHtml = isHtmlFile(ext);
   const isPdf = isPdfFile(ext);
   const [loading, setLoading] = useState(!isImage && !isPdf);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +116,22 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
     }
   };
 
+  const handleOpenInNewTab = () => {
+    if (!content) {
+      return;
+    }
+    const htmlBlob = new Blob([content], { type: "text/html;charset=utf-8" });
+    const previewUrl = URL.createObjectURL(htmlBlob);
+    const newWindow = window.open(previewUrl, "_blank", "noopener,noreferrer");
+    if (newWindow) {
+      setTimeout(() => {
+        URL.revokeObjectURL(previewUrl);
+      }, 15000);
+      return;
+    }
+    URL.revokeObjectURL(previewUrl);
+  };
+
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50 p-4"
@@ -152,6 +173,24 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
           <div className="flex items-center gap-2">
             {content && (
               <>
+                {isHtml && (
+                  <button
+                    onClick={handleOpenInNewTab}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ color: "var(--text-secondary)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--border)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "var(--text-secondary)";
+                    }}
+                    title="Open in new tab"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                  </button>
+                )}
                 <button
                   onClick={handleCopy}
                   className="p-2 rounded-lg transition-colors"
@@ -235,13 +274,13 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
           {!loading && !error && isImage && (
             <div className="flex items-center justify-center h-full">
               <div className="relative w-full h-full">
-                <NextImage
+                {/* eslint-disable-next-line @next/next/no-img-element -- Keep native img for direct file preview URL */}
+                <img
                   src={`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}&raw=true`}
                   alt={name}
-                  fill
-                  sizes="(max-width: 768px) calc(100vw - 2rem), 56rem"
-                  quality={75}
-                  className="object-contain rounded-lg"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain rounded-lg"
                   onError={() => setError("Failed to load image")}
                 />
               </div>
@@ -259,7 +298,19 @@ export function FilePreview({ workspace, path, name, onClose }: FilePreviewProps
             <MarkdownPreview content={content} withContainer={false} />
           )}
 
-          {!loading && !error && isCode && content && (
+          {!loading && !error && isHtml && content && (
+            <div className="h-full min-h-[60vh] rounded-lg overflow-hidden" style={{ backgroundColor: "#fff" }}>
+              <iframe
+                title={`${name} preview`}
+                srcDoc={content}
+                sandbox="allow-forms allow-modals allow-popups allow-scripts"
+                className="w-full h-full"
+                style={{ border: "none" }}
+              />
+            </div>
+          )}
+
+          {!loading && !error && !isHtml && isCode && content && (
             <pre
               className="p-4 rounded-lg overflow-x-auto"
               style={{ backgroundColor: "var(--background)" }}
