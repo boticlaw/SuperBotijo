@@ -7,6 +7,23 @@ const DEFAULT_WORKSPACE_ID = "workspace";
 const WORKSPACE_PREFIX = "workspace-";
 const WORKSPACE_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
+interface OpenClawAgentWorkspaceConfig {
+  id?: string;
+  name?: string;
+  workspace?: string;
+}
+
+interface OpenClawWorkspaceConfig {
+  agents?: {
+    list?: OpenClawAgentWorkspaceConfig[];
+  };
+}
+
+interface WorkspaceCandidate {
+  path: string;
+  agentName?: string;
+}
+
 const LEGACY_WORKSPACE_ALIASES: Record<string, string> = {
   openclaw: ".",
   superbotijo: "workspace/superbotijo",
@@ -56,6 +73,30 @@ async function getRealPath(filePath: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+async function toSafeWorkspacePath(candidatePath: string, openclawRealPath: string): Promise<string | null> {
+  if (!(await isDirectoryPath(candidatePath))) {
+    return null;
+  }
+
+  const candidateRealPath = await getRealPath(candidatePath);
+  if (!candidateRealPath || !isWithinPath(openclawRealPath, candidateRealPath)) {
+    return null;
+  }
+
+  return candidateRealPath;
+}
+
+function toConfiguredWorkspaceAbsolutePath(workspace: string | undefined, agentId: string): string {
+  const configuredWorkspace = workspace?.trim();
+  if (configuredWorkspace) {
+    return path.isAbsolute(configuredWorkspace)
+      ? configuredWorkspace
+      : path.join(OPENCLAW_DIR, configuredWorkspace);
+  }
+
+  return path.join(OPENCLAW_DIR, DEFAULT_WORKSPACE_ID, "agents", agentId);
 }
 
 async function getAgentInfo(workspacePath: string): Promise<{ name: string; emoji: string } | null> {
@@ -133,12 +174,18 @@ function parseAllowlistFromEnv(): Record<string, string> {
   return parsed;
 }
 
-async function getDynamicWorkspaceMap(): Promise<Record<string, string>> {
-  const workspaceMap: Record<string, string> = {};
+async function getDynamicWorkspaceMap(): Promise<Record<string, WorkspaceCandidate>> {
+  const workspaceMap: Record<string, WorkspaceCandidate> = {};
+  const openclawRealPath = await getRealPath(OPENCLAW_DIR);
+
+  if (!openclawRealPath) {
+    return workspaceMap;
+  }
 
   const mainWorkspacePath = path.join(OPENCLAW_DIR, DEFAULT_WORKSPACE_ID);
-  if (await pathExists(mainWorkspacePath)) {
-    workspaceMap[DEFAULT_WORKSPACE_ID] = mainWorkspacePath;
+  const safeMainWorkspacePath = await toSafeWorkspacePath(mainWorkspacePath, openclawRealPath);
+  if (safeMainWorkspacePath) {
+    workspaceMap[DEFAULT_WORKSPACE_ID] = { path: safeMainWorkspacePath };
   }
 
   try {
@@ -153,13 +200,121 @@ async function getDynamicWorkspaceMap(): Promise<Record<string, string>> {
         continue;
       }
 
-      workspaceMap[entry.name] = path.join(OPENCLAW_DIR, entry.name);
+      const discoveredWorkspacePath = path.join(OPENCLAW_DIR, entry.name);
+      const safeWorkspacePath = await toSafeWorkspacePath(discoveredWorkspacePath, openclawRealPath);
+      if (safeWorkspacePath) {
+        workspaceMap[entry.name] = { path: safeWorkspacePath };
+      }
     }
-  } catch {
+  } catch (error) {
+    console.warn("[files-workspaces] Failed to discover workspace-* directories:", {
+      openclawDir: OPENCLAW_DIR,
+      error,
+    });
     return workspaceMap;
   }
 
   return workspaceMap;
+}
+
+async function getConfiguredWorkspaceMap(): Promise<Record<string, WorkspaceCandidate>> {
+  const workspaceMap: Record<string, WorkspaceCandidate> = {};
+  const configPath = path.join(OPENCLAW_DIR, "openclaw.json");
+
+  if (!(await pathExists(configPath))) {
+    return workspaceMap;
+  }
+
+  const openclawRealPath = await getRealPath(OPENCLAW_DIR);
+  if (!openclawRealPath) {
+    return workspaceMap;
+  }
+
+  try {
+    const rawConfig = await fs.readFile(configPath, "utf-8");
+    const parsedConfig = JSON.parse(rawConfig) as OpenClawWorkspaceConfig;
+    const agents = parsedConfig.agents?.list ?? [];
+
+    for (const agent of agents) {
+      const agentId = agent.id?.trim();
+      if (!agentId || !WORKSPACE_ID_PATTERN.test(agentId)) {
+        continue;
+      }
+
+      const workspacePath = toConfiguredWorkspaceAbsolutePath(agent.workspace, agentId);
+      const safeWorkspacePath = await toSafeWorkspacePath(workspacePath, openclawRealPath);
+      if (!safeWorkspacePath) {
+        continue;
+      }
+
+      workspaceMap[agentId] = {
+        path: safeWorkspacePath,
+        agentName: agent.name?.trim() || undefined,
+      };
+    }
+  } catch (error) {
+    console.warn("[files-workspaces] Failed to discover configured workspaces:", {
+      configPath,
+      error,
+    });
+    return {};
+  }
+
+  return workspaceMap;
+}
+
+async function getAllowlistedWorkspaceMap(): Promise<Record<string, WorkspaceCandidate>> {
+  const workspaceMap: Record<string, WorkspaceCandidate> = {};
+  const openclawRealPath = await getRealPath(OPENCLAW_DIR);
+
+  if (!openclawRealPath) {
+    return workspaceMap;
+  }
+
+  const configuredAllowlist = parseAllowlistFromEnv();
+  for (const [id, relativePath] of Object.entries(configuredAllowlist)) {
+    const candidatePath = path.join(OPENCLAW_DIR, relativePath);
+    const safeWorkspacePath = await toSafeWorkspacePath(candidatePath, openclawRealPath);
+    if (safeWorkspacePath) {
+      workspaceMap[id] = { path: safeWorkspacePath };
+    }
+  }
+
+  return workspaceMap;
+}
+
+function addWorkspaceCandidates(
+  targetMap: Record<string, WorkspaceCandidate>,
+  sourceMap: Record<string, WorkspaceCandidate>,
+  knownPaths: Set<string>,
+  dedupeByPath: boolean,
+): void {
+  for (const [id, workspace] of Object.entries(sourceMap)) {
+    const hasDuplicatePath = dedupeByPath && knownPaths.has(workspace.path);
+    if (targetMap[id] || hasDuplicatePath) {
+      continue;
+    }
+
+    targetMap[id] = workspace;
+    knownPaths.add(workspace.path);
+  }
+}
+
+async function getDiscoveredWorkspaceMap(): Promise<Record<string, WorkspaceCandidate>> {
+  const [dynamicMap, configuredMap, allowlistedMap] = await Promise.all([
+    getDynamicWorkspaceMap(),
+    getConfiguredWorkspaceMap(),
+    getAllowlistedWorkspaceMap(),
+  ]);
+
+  const mergedWorkspaces: Record<string, WorkspaceCandidate> = {};
+  const knownPaths = new Set<string>();
+
+  addWorkspaceCandidates(mergedWorkspaces, dynamicMap, knownPaths, true);
+  addWorkspaceCandidates(mergedWorkspaces, configuredMap, knownPaths, true);
+  addWorkspaceCandidates(mergedWorkspaces, allowlistedMap, knownPaths, false);
+
+  return mergedWorkspaces;
 }
 
 async function resolveWorkspaceBasePath(workspaceId?: string): Promise<{ workspaceId: string; workspacePath: string } | null> {
@@ -169,13 +324,13 @@ async function resolveWorkspaceBasePath(workspaceId?: string): Promise<{ workspa
     return null;
   }
 
-  const dynamicMap = await getDynamicWorkspaceMap();
+  const discoveredMap = await getDiscoveredWorkspaceMap();
   const allowlistMap = {
     ...LEGACY_WORKSPACE_ALIASES,
     ...parseAllowlistFromEnv(),
   };
 
-  const candidate = dynamicMap[requestedWorkspaceId]
+  const candidate = discoveredMap[requestedWorkspaceId]?.path
     || (allowlistMap[requestedWorkspaceId] ? path.join(OPENCLAW_DIR, allowlistMap[requestedWorkspaceId]) : null);
 
   if (!candidate || !(await isDirectoryPath(candidate))) {
@@ -232,33 +387,19 @@ function normalizeRelativePath(relativePath: string): string | null {
 }
 
 export async function listAvailableWorkspaces(): Promise<WorkspaceEntry[]> {
-  const dynamicMap = await getDynamicWorkspaceMap();
-  const configuredAllowlist = parseAllowlistFromEnv();
-  const allWorkspaces: Record<string, string> = { ...dynamicMap };
-
-  for (const [id, relativePath] of Object.entries(configuredAllowlist)) {
-    if (allWorkspaces[id]) {
-      continue;
-    }
-
-    const absolutePath = path.join(OPENCLAW_DIR, relativePath);
-    if (await isDirectoryPath(absolutePath)) {
-      allWorkspaces[id] = absolutePath;
-    }
-  }
-
+  const allWorkspaces = await getDiscoveredWorkspaceMap();
   const workspaceEntries = Object.entries(allWorkspaces);
   const workspaces: WorkspaceEntry[] = [];
 
-  for (const [id, workspacePath] of workspaceEntries) {
-    const agentInfo = await getAgentInfo(workspacePath);
+  for (const [id, workspace] of workspaceEntries) {
+    const agentInfo = await getAgentInfo(workspace.path);
 
     workspaces.push({
       id,
       name: toWorkspaceLabel(id),
       emoji: agentInfo?.emoji || (id === DEFAULT_WORKSPACE_ID ? "🫙" : "🤖"),
-      path: workspacePath,
-      agentName: agentInfo?.name || (id === DEFAULT_WORKSPACE_ID ? "SuperBotijo" : undefined),
+      path: workspace.path,
+      agentName: workspace.agentName || agentInfo?.name || (id === DEFAULT_WORKSPACE_ID ? "SuperBotijo" : undefined),
     });
   }
 

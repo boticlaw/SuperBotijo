@@ -117,4 +117,51 @@ describe("files-workspaces", () => {
       workspacePath: await fs.realpath(path.join(openclawDir, "workspace-frontend")),
     });
   });
+
+  it("discovers agent workspaces from openclaw config", async () => {
+    await fs.mkdir(path.join(openclawDir, "workspace", "agents", "dev"), { recursive: true });
+    await fs.mkdir(path.join(openclawDir, "workspace", "custom-studio"), { recursive: true });
+    await fs.writeFile(
+      path.join(openclawDir, "openclaw.json"),
+      JSON.stringify({
+        agents: {
+          list: [
+            { id: "dev", name: "Developer" },
+            { id: "studio", workspace: "workspace/custom-studio", name: "Studio" },
+          ],
+        },
+      }),
+      "utf-8",
+    );
+
+    const { listAvailableWorkspaces, resolveWorkspaceDirectory } = await importFilesWorkspaces();
+
+    const workspaces = await listAvailableWorkspaces();
+    const ids = workspaces.map((workspace) => workspace.id);
+
+    expect(ids).toContain("dev");
+    expect(ids).toContain("studio");
+
+    await expect(resolveWorkspaceDirectory("dev")).resolves.toMatchObject({
+      workspaceId: "dev",
+      workspacePath: await fs.realpath(path.join(openclawDir, "workspace", "agents", "dev")),
+    });
+
+    await expect(resolveWorkspaceDirectory("studio")).resolves.toMatchObject({
+      workspaceId: "studio",
+      workspacePath: await fs.realpath(path.join(openclawDir, "workspace", "custom-studio")),
+    });
+  });
+
+  it("keeps fallback discovery when openclaw config is invalid", async () => {
+    await fs.mkdir(path.join(openclawDir, "workspace-frontend"), { recursive: true });
+    await fs.writeFile(path.join(openclawDir, "openclaw.json"), "{invalid-json", "utf-8");
+
+    const { listAvailableWorkspaces } = await importFilesWorkspaces();
+    const workspaces = await listAvailableWorkspaces();
+    const ids = workspaces.map((workspace) => workspace.id);
+
+    expect(ids).toContain("workspace");
+    expect(ids).toContain("workspace-frontend");
+  });
 });
