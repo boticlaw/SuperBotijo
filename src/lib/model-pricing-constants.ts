@@ -2,6 +2,9 @@
  * Model Pricing Constants
  * Pure data - no FS operations, no server-only restriction
  * Used by both server and client code
+ * 
+ * Note: GLM models (zhipu/glm-*) are read from openclaw.json at runtime.
+ * This file contains fallback pricing for models NOT in openclaw.json.
  */
 
 import type { ModelPricing } from "./pricing";
@@ -72,4 +75,5 @@ export const MODEL_PRICING_CONSTANTS: ModelPricing[] = [
     outputPricePerMillion: 1.10,
     contextWindow: 1000000,
   },
+  // GLM models removed - now read from openclaw.json
 ];

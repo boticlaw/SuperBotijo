@@ -36,6 +36,31 @@ export interface ModelPricingEntry extends ModelPricing {
   defaults?: Partial<ModelPricing>;
 }
 
+interface OpenClawModelCost {
+  input?: number;
+  output?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+}
+
+interface OpenClawModelConfig {
+  id: string;
+  name?: string;
+  cost?: OpenClawModelCost;
+  contextWindow?: number;
+  maxTokens?: number;
+}
+
+interface OpenClawProviderConfig {
+  models?: OpenClawModelConfig[];
+}
+
+interface OpenClawModelsConfig {
+  models?: {
+    providers?: Record<string, OpenClawProviderConfig>;
+  };
+}
+
 export const MODEL_PRICING: ModelPricing[] = MODEL_PRICING_CONSTANTS;
 
 /**
@@ -59,9 +84,62 @@ export function normalizeModelId(modelId: string): string {
     // MiniMax
     minimax: "minimax/minimax-m2.5",
     "minimax-m2.5": "minimax/minimax-m2.5",
+    // Zhipu AI GLM (aliases for normalization when ID comes without provider)
+    glm5: "zai/glm-5",
+    "glm-5": "zai/glm-5",
+    glm47: "zai/glm-4.7",
+    "glm-4.7": "zai/glm-4.7",
+    "glm-4.7-flash": "zai/glm-4.7-flash",
+    "glm-4.7-flashx": "zai/glm-4.7-flashx",
+    "glm-5-turbo": "zai/glm-5-turbo",
   };
 
   return aliasMap[modelId] || modelId;
+}
+
+/**
+ * Read model definitions from openclaw.json
+ * @returns Array of ModelPricing entries from OpenClaw config
+ */
+export function getModelsFromOpenClawConfig(): ModelPricing[] {
+  try {
+    const configPath = join(OPENCLAW_DIR, "openclaw.json");
+    if (!existsSync(configPath)) {
+      return [];
+    }
+
+    const config = JSON.parse(readFileSync(configPath, "utf-8")) as OpenClawModelsConfig;
+    const providers = config.models?.providers;
+    if (!providers) {
+      return [];
+    }
+
+    const models: ModelPricing[] = [];
+
+    for (const [providerId, providerConfig] of Object.entries(providers) as [string, OpenClawProviderConfig][]) {
+      if (!providerConfig.models) continue;
+
+      for (const modelConfig of providerConfig.models) {
+        const fullId = `${providerId}/${modelConfig.id}`;
+        const cost = modelConfig.cost || {};
+
+        models.push({
+          id: fullId,
+          name: modelConfig.name || modelConfig.id,
+          inputPricePerMillion: cost.input ?? 0,
+          outputPricePerMillion: cost.output ?? 0,
+          contextWindow: modelConfig.contextWindow ?? modelConfig.maxTokens ?? 128000,
+          cacheReadPricePerMillion: cost.cacheRead,
+          cacheWritePricePerMillion: cost.cacheWrite,
+        });
+      }
+    }
+
+    return models;
+  } catch (error) {
+    console.warn("Failed to read models from openclaw.json:", error);
+    return [];
+  }
 }
 
 /**
@@ -132,6 +210,7 @@ export function getUsedModels(): string[] {
 
 /**
  * Merge default pricing with overrides, optionally filtering by used models
+ * Priority: OpenClaw config > MODEL_PRICING_CONSTANTS > user overrides
  * @param filterByUsedModels - If true, only return models used by agents
  * @returns Array of merged pricing entries with isCustomized flags
  */
@@ -142,33 +221,52 @@ export function getMergedPricing(filterByUsedModels = false): ModelPricingEntry[
     overrideMap.set(o.id, o);
   }
 
+  // Priority 1: Models from openclaw.json
+  const openClawModels = getModelsFromOpenClawConfig();
+  
+  // Priority 2: Constants as fallback
+  const constantModels = MODEL_PRICING_CONSTANTS;
+
+  // Merge: OpenClaw wins over constants by ID
+  const mergedBaseMap = new Map<string, ModelPricing>();
+  
+  // Add constants first
+  for (const model of constantModels) {
+    mergedBaseMap.set(model.id, model);
+  }
+  
+  // Override with OpenClaw config (OpenClaw wins)
+  for (const model of openClawModels) {
+    mergedBaseMap.set(model.id, model);
+  }
+
+  const mergedBase = [...mergedBaseMap.values()];
+
   // Get used models if filtering is enabled
   const usedModels = filterByUsedModels ? new Set(getUsedModels()) : null;
 
-  return MODEL_PRICING
-    .filter((defaultPricing) => {
-      // If not filtering, include all models
+  return mergedBase
+    .filter((basePricing) => {
       if (!usedModels) return true;
-      // Include if model ID is in used models
-      return usedModels.has(defaultPricing.id) || usedModels.has(defaultPricing.alias || "");
+      return usedModels.has(basePricing.id) || usedModels.has(basePricing.alias || "");
     })
-    .map((defaultPricing): ModelPricingEntry => {
-      const override = overrideMap.get(defaultPricing.id);
+    .map((basePricing): ModelPricingEntry => {
+      const override = overrideMap.get(basePricing.id);
       if (!override) {
-        return { ...defaultPricing, isCustomized: false };
+        return { ...basePricing, isCustomized: false };
       }
       return {
-        ...defaultPricing,
+        ...basePricing,
         inputPricePerMillion: override.inputPricePerMillion,
         outputPricePerMillion: override.outputPricePerMillion,
-        cacheReadPricePerMillion: override.cacheReadPricePerMillion ?? defaultPricing.cacheReadPricePerMillion,
-        cacheWritePricePerMillion: override.cacheWritePricePerMillion ?? defaultPricing.cacheWritePricePerMillion,
+        cacheReadPricePerMillion: override.cacheReadPricePerMillion ?? basePricing.cacheReadPricePerMillion,
+        cacheWritePricePerMillion: override.cacheWritePricePerMillion ?? basePricing.cacheWritePricePerMillion,
         isCustomized: true,
         defaults: {
-          inputPricePerMillion: defaultPricing.inputPricePerMillion,
-          outputPricePerMillion: defaultPricing.outputPricePerMillion,
-          cacheReadPricePerMillion: defaultPricing.cacheReadPricePerMillion,
-          cacheWritePricePerMillion: defaultPricing.cacheWritePricePerMillion,
+          inputPricePerMillion: basePricing.inputPricePerMillion,
+          outputPricePerMillion: basePricing.outputPricePerMillion,
+          cacheReadPricePerMillion: basePricing.cacheReadPricePerMillion,
+          cacheWritePricePerMillion: basePricing.cacheWritePricePerMillion,
         },
       };
     });

@@ -47,6 +47,14 @@ export function normalizeModelId(modelId: string): string {
     // MiniMax
     minimax: "minimax/minimax-m2.5",
     "minimax-m2.5": "minimax/minimax-m2.5",
+    // Zhipu AI GLM (aliases for normalization when ID comes without provider)
+    glm5: "zai/glm-5",
+    "glm-5": "zai/glm-5",
+    glm47: "zai/glm-4.7",
+    "glm-4.7": "zai/glm-4.7",
+    "glm-4.7-flash": "zai/glm-4.7-flash",
+    "glm-4.7-flashx": "zai/glm-4.7-flashx",
+    "glm-5-turbo": "zai/glm-5-turbo",
   };
 
   return aliasMap[modelId] || modelId;
@@ -54,6 +62,8 @@ export function normalizeModelId(modelId: string): string {
 
 /**
  * Default model pricing catalog
+ * Note: GLM models (zhipu/glm-*) are read from openclaw.json at runtime.
+ * This array contains fallback pricing for models NOT in openclaw.json.
  */
 export const MODEL_PRICING: ModelPricing[] = [
   // Anthropic models (with prompt caching support)
@@ -121,4 +131,5 @@ export const MODEL_PRICING: ModelPricing[] = [
     outputPricePerMillion: 1.10,
     contextWindow: 1000000,
   },
+  // GLM models removed - now read from openclaw.json
 ];
