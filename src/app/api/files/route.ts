@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+import { NextRequest, NextResponse } from "next/server";
+
+import { resolveWorkspaceDirectory, resolveWorkspacePath } from "@/lib/files-workspaces";
 
 // Files to show in the memory browser
 const ROOT_FILES = ["MEMORY.md", "SOUL.md", "USER.md", "AGENTS.md", "TOOLS.md", "IDENTITY.md"];
@@ -100,16 +101,15 @@ export async function GET(request: NextRequest) {
   const filePath = searchParams.get("path");
 
   try {
-    // Determine workspace path
-    const workspacePath = path.join(OPENCLAW_DIR, workspace);
-    
-    // Validate workspace exists
-    if (!(await fileExists(workspacePath))) {
+    const resolvedWorkspace = await resolveWorkspaceDirectory(workspace);
+    if (!resolvedWorkspace) {
       return NextResponse.json(
         { error: "Workspace not found" },
         { status: 404 }
       );
     }
+
+    const workspacePath = resolvedWorkspace.workspacePath;
 
     if (!filePath) {
       // Return file tree
@@ -126,15 +126,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const fullPath = path.join(workspacePath, safePath);
-    if (!(await fileExists(fullPath))) {
+    const resolvedPath = await resolveWorkspacePath(workspace, safePath);
+    if (!resolvedPath || !(await fileExists(resolvedPath.fullPath))) {
       return NextResponse.json(
         { error: "File not found" },
         { status: 404 }
       );
     }
 
-    const content = await fs.readFile(fullPath, "utf-8");
+    const content = await fs.readFile(resolvedPath.fullPath, "utf-8");
     return NextResponse.json({ path: safePath, content });
   } catch (error) {
     console.error("Error reading file:", error);
@@ -165,23 +165,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const workspacePath = path.join(OPENCLAW_DIR, workspace);
-    
-    // Validate workspace exists
-    if (!(await fileExists(workspacePath))) {
+    const resolvedWorkspace = await resolveWorkspaceDirectory(workspace);
+    if (!resolvedWorkspace) {
       return NextResponse.json(
         { error: "Workspace not found" },
         { status: 404 }
       );
     }
 
-    const fullPath = path.join(workspacePath, safePath);
+    const resolvedPath = await resolveWorkspacePath(workspace, safePath);
+    if (!resolvedPath) {
+      return NextResponse.json(
+        { error: "Invalid file path" },
+        { status: 400 }
+      );
+    }
 
     // Create memory directory if needed
-    const dir = path.dirname(fullPath);
+    const dir = path.dirname(resolvedPath.fullPath);
     await fs.mkdir(dir, { recursive: true });
 
-    await fs.writeFile(fullPath, content, "utf-8");
+    await fs.writeFile(resolvedPath.fullPath, content, "utf-8");
 
     return NextResponse.json({ success: true, path: safePath });
   } catch (error) {

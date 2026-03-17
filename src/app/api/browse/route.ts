@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+import { NextRequest, NextResponse } from "next/server";
+
+import { resolveWorkspacePath } from "@/lib/files-workspaces";
 
 interface FileEntry {
   name: string;
@@ -19,30 +20,16 @@ export async function GET(request: NextRequest) {
     const fileContent = searchParams.get("content") === "true";
     const rawMode = searchParams.get("raw") === "true";
     
-    // Determine BASE_PATH based on workspace
-    const BASE_PATH = path.join(OPENCLAW_DIR, workspace);
-    
-    // Validate workspace exists
-    try {
-      await fs.access(BASE_PATH);
-    } catch {
+    const resolvedPath = await resolveWorkspacePath(workspace, relativePath);
+    if (!resolvedPath) {
       return NextResponse.json(
-        { error: "Workspace not found" },
-        { status: 404 }
+        { error: "Invalid workspace or path" },
+        { status: 400 }
       );
     }
-    
-    // Normalize and validate path to prevent directory traversal
-    const normalizedPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, "");
-    const fullPath = path.join(BASE_PATH, normalizedPath);
-    
-    // Ensure the path is within BASE_PATH
-    if (!fullPath.startsWith(BASE_PATH)) {
-      return NextResponse.json(
-        { error: "Access denied: Path outside workspace" },
-        { status: 403 }
-      );
-    }
+
+    const normalizedPath = resolvedPath.relativePath;
+    const fullPath = resolvedPath.fullPath;
 
     const stats = await fs.stat(fullPath);
 

@@ -3,17 +3,13 @@
  * POST /api/files/write
  * Body: { workspace, path, content }
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { logActivity } from '@/lib/activities-db';
+import { promises as fs } from "fs";
+import path from "path";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
+import { NextRequest, NextResponse } from "next/server";
 
-const WORKSPACE_MAP: Record<string, string> = {
-  workspace: path.join(OPENCLAW_DIR, 'workspace'),
-  'superbotijo': path.join(OPENCLAW_DIR, 'workspace', 'superbotijo'),
-};
+import { logActivity } from "@/lib/activities-db";
+import { resolveWorkspacePath } from "@/lib/files-workspaces";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,32 +17,26 @@ export async function POST(request: NextRequest) {
     const { workspace, path: filePath, content } = body;
 
     if (!filePath || content === undefined) {
-      return NextResponse.json({ error: 'Missing path or content' }, { status: 400 });
+      return NextResponse.json({ error: "Missing path or content" }, { status: 400 });
     }
 
-    const base = WORKSPACE_MAP[workspace || 'workspace'];
-    if (!base) {
-      return NextResponse.json({ error: 'Unknown workspace' }, { status: 400 });
+    const resolvedPath = await resolveWorkspacePath(workspace, filePath);
+    if (!resolvedPath) {
+      return NextResponse.json({ error: "Invalid workspace or path" }, { status: 400 });
     }
 
-    const fullPath = path.resolve(base, filePath);
-    if (!fullPath.startsWith(base)) {
-      return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
-    }
+    await fs.mkdir(path.dirname(resolvedPath.fullPath), { recursive: true });
+    await fs.writeFile(resolvedPath.fullPath, content, "utf-8");
 
-    // Create parent directories if needed
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    await fs.writeFile(fullPath, content, 'utf-8');
+    const stat = await fs.stat(resolvedPath.fullPath);
 
-    const stat = await fs.stat(fullPath);
-
-    logActivity('file_write', `Edited file: ${filePath}`, 'success', {
+    logActivity("file_write", `Edited file: ${resolvedPath.relativePath}`, "success", {
       metadata: { workspace, filePath, size: stat.size },
     });
 
-    return NextResponse.json({ success: true, path: filePath, size: stat.size });
+    return NextResponse.json({ success: true, path: resolvedPath.relativePath, size: stat.size });
   } catch (error) {
-    console.error('[write] Error:', error);
-    return NextResponse.json({ error: 'Write failed' }, { status: 500 });
+    console.error("[write] Error:", error);
+    return NextResponse.json({ error: "Write failed" }, { status: 500 });
   }
 }

@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
+import { promises as fs } from "fs";
 import path from "path";
 
-export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from "next/server";
 
-const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
+import { resolveWorkspaceDirectory } from "@/lib/files-workspaces";
+
+export const dynamic = "force-dynamic";
 
 export interface FileNode3D {
   id: string;
@@ -93,26 +94,26 @@ function getMimeType(filename: string): string {
 function getColor(filename: string): string {
   const ext = path.extname(filename).toLowerCase().slice(1);
   if (EXTENSION_COLORS[ext]) return EXTENSION_COLORS[ext];
-  
+
   if (filename.startsWith(".")) {
     if (filename === ".gitignore") return EXTENSION_COLORS.gitignore;
     if (filename.includes("env")) return EXTENSION_COLORS.env;
     return DEFAULT_COLOR;
   }
-  
+
   return DEFAULT_COLOR;
 }
 
-function buildTree(
+async function buildTree(
   dirPath: string,
   basePath: string,
   depth: number = 0,
   maxDepth: number = 5
-): FileNode3D[] {
+): Promise<FileNode3D[]> {
   const nodes: FileNode3D[] = [];
 
   try {
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
     const sortedEntries = entries.sort((a, b) => {
       if (a.isDirectory() && !b.isDirectory()) return -1;
       if (!a.isDirectory() && b.isDirectory()) return 1;
@@ -132,6 +133,8 @@ function buildTree(
       const relativePath = path.relative(basePath, fullPath);
 
       if (entry.isDirectory()) {
+        const stats = await fs.stat(fullPath);
+
         const node: FileNode3D = {
           id: relativePath.replace(/\//g, "-").replace(/\\/g, "-"),
           name: entry.name,
@@ -141,19 +144,19 @@ function buildTree(
           extension: "",
           mimeType: "inode/directory",
           color: "#8b949e",
-          lastModified: fs.statSync(fullPath).mtime.toISOString(),
+          lastModified: stats.mtime.toISOString(),
           depth,
         };
 
         if (depth < maxDepth) {
-          const children = buildTree(fullPath, basePath, depth + 1, maxDepth);
+          const children = await buildTree(fullPath, basePath, depth + 1, maxDepth);
           node.children = children;
           node.size = children.reduce((sum, child) => sum + child.size, 0);
         }
 
         nodes.push(node);
       } else {
-        const stats = fs.statSync(fullPath);
+        const stats = await fs.stat(fullPath);
         const ext = path.extname(entry.name).toLowerCase().slice(1);
 
         nodes.push({
@@ -183,30 +186,22 @@ export async function GET(request: NextRequest) {
   const maxDepth = parseInt(searchParams.get("maxDepth") || "4", 10);
 
   try {
-    let workspacePath: string;
-
-    if (workspace === "workspace") {
-      workspacePath = path.join(OPENCLAW_DIR, "workspace");
-    } else if (workspace === "openclaw") {
-      workspacePath = OPENCLAW_DIR;
-    } else {
-      workspacePath = path.join(OPENCLAW_DIR, workspace);
-    }
-
-    if (!fs.existsSync(workspacePath)) {
+    const resolvedWorkspace = await resolveWorkspaceDirectory(workspace);
+    if (!resolvedWorkspace) {
       return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
     }
 
-    const tree = buildTree(workspacePath, workspacePath, 0, maxDepth);
+    const workspacePath = resolvedWorkspace.workspacePath;
+    const resolvedTree = await buildTree(workspacePath, workspacePath, 0, maxDepth);
 
-    const totalFiles = tree.reduce((sum, node) => {
+    const totalFiles = resolvedTree.reduce((sum, node) => {
       if (node.type === "file") return sum + 1;
       return sum + (node.children?.length || 0);
     }, 0);
 
     return NextResponse.json({
       workspace,
-      tree,
+      tree: resolvedTree,
       stats: {
         totalFiles,
         maxDepth,
