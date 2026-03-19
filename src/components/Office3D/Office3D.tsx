@@ -118,15 +118,8 @@ const PLANT_DECORATIONS: PlantDecoration[] = [
   { position: [-12.8, 0, -8.6], size: "medium", type: "bush", radius: 0.52 },
   { position: [12.8, 0, -8.6], size: "medium", type: "bush", radius: 0.52 },
 
-  // Near bookshelves: succulents on the floor beside the shelves
-  { position: [-10.1, 0, -3.8], size: "small", type: "succulent", radius: 0.36 },
-  { position: [10.1, 0, -3.8], size: "small", type: "succulent", radius: 0.36 },
-
   // Mid-office accents: medium tree near collaboration area
   { position: [-3.2, 0, -3.2], size: "medium", type: "tree", radius: 0.52 },
-
-  // Break zone corner: small succulent for warmth
-  { position: [11.2, 0, -6.2], size: "small", type: "succulent", radius: 0.36 },
 ];
 
 const FILE_CABINET_POSITION: [number, number, number] = [-12.5, 0, -7.5];
