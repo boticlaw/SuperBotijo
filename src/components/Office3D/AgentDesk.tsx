@@ -32,6 +32,7 @@ export interface AgentDeskProps {
   onClick: () => void;
   isSelected: boolean;
   useSharedTable?: boolean;
+  isMainAgent?: boolean;
 }
 
 export default function AgentDesk({
@@ -47,6 +48,7 @@ export default function AgentDesk({
   onClick,
   isSelected,
   useSharedTable = false,
+  isMainAgent = false,
 }: AgentDeskProps) {
   const monitorRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -282,12 +284,12 @@ export default function AgentDesk({
         />
       )}
 
-      {/* Office Chair */}
+      {/* Office Chair - gold for main agent, dark gray for others */}
       <group scale={1.7}>
         <VoxelChair
           position={[0, 0, 0.95]}
           rotation={[0, Math.PI, 0]}
-          color="#1f2937"
+          color={isMainAgent ? '#d4af37' : '#1f2937'}
         />
       </group>
 
@@ -298,7 +300,6 @@ export default function AgentDesk({
               key={`leg-${i}-${j}`}
               args={[0.05, 0.7, 0.05]}
               position={[x, 0.35, z]}
-              castShadow
             >
               <meshStandardMaterial color="#5d4037" />
             </Box>

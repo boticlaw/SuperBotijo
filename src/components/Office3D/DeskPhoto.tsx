@@ -10,7 +10,7 @@ interface DeskPhotoProps {
 export default function DeskPhoto({ position, rotation = [0, 0, 0] }: DeskPhotoProps) {
   return (
     <group position={position} rotation={rotation}>
-      <Box args={[0.18, 0.12, 0.015]} position={[0, 0.09, 0]} castShadow receiveShadow>
+      <Box args={[0.18, 0.12, 0.015]} position={[0, 0.09, 0]} receiveShadow>
         <meshStandardMaterial color="#374151" roughness={0.7} />
       </Box>
 

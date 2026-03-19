@@ -8,14 +8,12 @@
 
 import { AgentConfig, AgentWithDesk, AvatarState } from "./agentsConfig";
 
-// Desk spacing optimized for the rug area
-// With spacing 3.5 in X: we can fit 5 columns (-7, -3.5, 0, 3.5, 7) within the 18-unit rug
-const DESK_SPACING_X = 3.5;
+// Desk spacing - wider for better separation
+const DESK_SPACING_X = 5;
 
-// Row offsets from center (z=0)
-// Positive = towards camera/entrance, Negative = towards back/collab zone
-// Fits within the 10-unit rug depth (z: -4.5 to 5.5)
-const ROW_OFFSETS = [2.5, 5, -2.5, -5] as const;
+// Simple row offsets - all facing forward (towards camera/entrance)
+// z positive = towards entrance, z negative = towards back wall
+const ROW_OFFSETS = [4, 1, -2] as const;
 
 /**
  * Calculate grid dimensions based on agent count
@@ -37,18 +35,14 @@ export function getGridDimensions(agentCount: number): { rows: number; cols: num
 
 /**
  * Calculate desk position for a given index in a grid
- * Uses an office-style layout:
- * - Main agent (index 0) at center, facing forward
- * - Other agents arranged in rows, facing the central corridor
+ * Simple office grid layout - all agents face forward (towards camera/entrance)
  *
- * Layout pattern:
- *   Row -2 (z=-5):   [8]  [9]  [10] [11]  <- towards back wall
- *   Row -1 (z=-2.5): [4]  [5]  [6]  [7]
- *   Row 0  (z=0):    [0]  <- MAIN AGENT
- *   Row 1  (z=2.5):  [1]  [2]  [3]  [4]
- *   Row 2  (z=5):    [5]  [6]  [7]  [8]  <- towards entrance
+ * Layout pattern (3 columns):
+ *   Row z=4:    [1]  [2]  [3]
+ *   Row z=1:    [4]  [0]  [5]   <- main agent at center
+ *   Row z=-2:   [6]  [7]  [8]
  *
- * @param index - Agent index in the grid (0 = main agent)
+ * @param index - Agent index in the grid (0 = main agent at center)
  * @param gridWidth - Number of columns in the grid
  * @returns { x, y, z, rotation } for the desk position (y is always 0 for floor level)
  */
@@ -58,49 +52,28 @@ export function calculateDeskPosition(index: number, gridWidth: number): {
   z: number;
   rotation: number;
 } {
+  // Main agent (index 0) at center, facing forward
   if (index === 0) {
-    // Main agent at center, facing forward (towards camera/entrance)
-    return { x: 0, y: 0, z: 0, rotation: 0 };
+    return { x: 0, y: 0, z: 1, rotation: 0 };
   }
 
   // Calculate grid position (excluding index 0 which is center)
   const gridIndex = index - 1;
 
   // Determine which row and column
-  // Rows alternate: first fill rows in front (positive Z), then behind (negative Z)
   const colsPerRow = gridWidth;
   const rowIndex = Math.floor(gridIndex / colsPerRow);
   const col = gridIndex % colsPerRow;
 
   // Get Z position from row offsets
-  // Clamp to available rows to avoid going outside the rug
   const zOffset = ROW_OFFSETS[Math.min(rowIndex, ROW_OFFSETS.length - 1)];
 
   // Calculate X position, centered
   const xOffset = (gridWidth - 1) * DESK_SPACING_X / 2;
   const x = col * DESK_SPACING_X - xOffset;
 
-  // Rotation: agents face towards the central corridor
-  // - Agents on the left (negative X) face right (towards center)
-  // - Agents on the right (positive X) face left (towards center)
-  // - Center column faces forward
-  let rotation = 0;
-  if (x > 0.5) {
-    rotation = Math.PI * 0.75; // Face left-forward
-  } else if (x < -0.5) {
-    rotation = -Math.PI * 0.75; // Face right-forward
-  } else {
-    // Center column - face forward (towards camera)
-    rotation = 0;
-  }
-
-  // Agents in back rows (negative Z) face forward
-  // Agents in front rows (positive Z) also face forward for consistency
-  // This creates a classroom-like layout where everyone faces the same direction
-  if (zOffset < 0) {
-    // Back rows: face towards the front
-    rotation = 0;
-  }
+  // All agents face forward (towards camera/entrance)
+  const rotation = 0;
 
   return { x, y: 0, z: zOffset, rotation };
 }

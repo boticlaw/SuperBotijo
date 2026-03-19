@@ -58,7 +58,6 @@ function BooksRow({ y, rowIndex }: { y: number; rowIndex: number }) {
             args={[book.width, book.height, 0.18]}
             position={[x, book.height / 2, 0]}
             rotation={[0, 0, book.tilt]}
-            castShadow
             receiveShadow
           >
             <meshStandardMaterial color={book.color} roughness={0.7} />

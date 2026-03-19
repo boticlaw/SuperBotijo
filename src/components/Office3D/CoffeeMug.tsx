@@ -10,7 +10,7 @@ interface CoffeeMugProps {
 export default function CoffeeMug({ position, rotation = [0, 0, 0] }: CoffeeMugProps) {
   return (
     <group position={position} rotation={rotation}>
-      <Cylinder args={[0.08, 0.085, 0.1, 16]} position={[0, 0.05, 0]} castShadow receiveShadow>
+      <Cylinder args={[0.08, 0.085, 0.1, 16]} position={[0, 0.05, 0]} receiveShadow>
         <meshStandardMaterial color="#f9fafb" roughness={0.7} />
       </Cylinder>
 
@@ -18,7 +18,7 @@ export default function CoffeeMug({ position, rotation = [0, 0, 0] }: CoffeeMugP
         <meshStandardMaterial color="#4b2e1f" roughness={0.95} />
       </Cylinder>
 
-      <Torus args={[0.032, 0.008, 12, 20]} position={[0.085, 0.055, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+      <Torus args={[0.032, 0.008, 12, 20]} position={[0.085, 0.055, 0]} rotation={[0, Math.PI / 2, 0]}>
         <meshStandardMaterial color="#e5e7eb" roughness={0.7} />
       </Torus>
 

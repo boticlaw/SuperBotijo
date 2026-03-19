@@ -55,6 +55,7 @@ const VALID_STATUSES: AgentStatus[] = ["idle", "working", "thinking", "error", "
 
 /**
  * Fetch all agents from the API and transform to AgentWithDesk format
+ * Falls back to /api/agents/config if main API fails
  * @returns Array of agents with desk positions
  */
 export async function fetchOfficeAgents(): Promise<AgentWithDesk[]> {
@@ -110,7 +111,39 @@ export async function fetchOfficeAgents(): Promise<AgentWithDesk[]> {
       };
     });
   } catch (error) {
-    console.error("Failed to fetch office agents:", error);
+    console.warn("[office-agents] Main API failed, trying config fallback:", error);
+    // Fallback: try /api/agents/config which reads directly from openclaw.json
+    try {
+      const configRes = await fetch("/api/agents/config");
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        const agentsList = configData.agents || [];
+        const { cols } = getGridDimensions(agentsList.length);
+        
+        return agentsList.map((agent: { id: string; name?: string; emoji?: string; color?: string }, index: number) => {
+          const deskPosition = calculateDeskPosition(index, cols);
+          return {
+            id: agent.id,
+            name: agent.name || agent.id,
+            emoji: agent.emoji || "🤖",
+            color: agent.color || "#666666",
+            role: agent.id === "main" ? "Main Agent" : "Agent",
+            deskPosition: {
+              x: deskPosition.x,
+              y: deskPosition.y,
+              z: deskPosition.z,
+              rotation: deskPosition.rotation,
+            },
+            currentAvatarState: "offline" as AvatarState,
+            accessories: getDefaultAccessories(agent.id),
+          };
+        });
+      }
+    } catch (configError) {
+      console.error("[office-agents] Config fallback also failed:", configError);
+    }
+    
+    // Last resort fallback: empty array (Office3D will use its internal fallback)
     return [];
   }
 }
@@ -133,7 +166,7 @@ export async function fetchAgentStatuses(): Promise<Map<string, ApiAgentStatus>>
     }
     return statusMap;
   } catch (error) {
-    console.error("Failed to fetch agent statuses:", error);
+    console.warn("[office-agents] fetchAgentStatuses API failed:", error);
     return new Map();
   }
 }

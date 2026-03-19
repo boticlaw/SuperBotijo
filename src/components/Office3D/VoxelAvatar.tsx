@@ -273,49 +273,80 @@ export default function VoxelAvatar({
         )}
 
         {/* Ears */}
-        <Box args={[0.02, 0.06, 0.04]} position={[-0.11, 0, 0]} rotation={[0, 0.25, 0]} castShadow>
+        <Box args={[0.02, 0.06, 0.04]} position={[-0.11, 0, 0]} rotation={[0, 0, 0.25]}>
           <meshStandardMaterial color={skinColor} />
         </Box>
-        <Box args={[0.02, 0.06, 0.04]} position={[0.11, 0, 0]} rotation={[0, -0.25, 0]} castShadow>
+        <Box args={[0.02, 0.06, 0.04]} position={[0.11, 0, 0]} rotation={[0, -0.25, 0]}>
           <meshStandardMaterial color={skinColor} />
         </Box>
 
         {/* Eyes with sclera and pupil */}
         <group position={[-0.05, 0.02, 0.1]}>
-          <Box args={[0.04, 0.04, 0.02]} castShadow>
+          <Box args={[0.04, 0.04, 0.02]}>
             <meshStandardMaterial color="#ffffff" />
           </Box>
-          <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]} castShadow>
+          <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]}>
             <meshStandardMaterial color="#1f2937" />
           </Box>
         </group>
         <group position={[0.05, 0.02, 0.1]}>
-          <Box args={[0.04, 0.04, 0.02]} castShadow>
+          <Box args={[0.04, 0.04, 0.02]}>
             <meshStandardMaterial color="#ffffff" />
           </Box>
-          <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]} castShadow>
+          <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]}>
             <meshStandardMaterial color="#1f2937" />
           </Box>
         </group>
 
         {/* Brows */}
-        <Box args={[0.045, 0.008, 0.01]} position={[-0.05, 0.065, 0.106]} rotation={[0, 0, 0.1]} castShadow>
+        <Box args={[0.045, 0.008, 0.01]} position={[-0.05, 0.065, 0.106]} rotation={[0, 0, 0.1]}>
           <meshStandardMaterial color={browColor} />
         </Box>
-        <Box args={[0.045, 0.008, 0.01]} position={[0.05, 0.065, 0.106]} rotation={[0, 0, -0.1]} castShadow>
+        <Box args={[0.045, 0.008, 0.01]} position={[0.05, 0.065, 0.106]} rotation={[0, 0, -0.1]}>
           <meshStandardMaterial color={browColor} />
         </Box>
 
         {/* Nose */}
-        <Box args={[0.03, 0.04, 0.02]} position={[0, -0.01, 0.115]} castShadow>
+        <Box args={[0.03, 0.04, 0.02]} position={[0, -0.01, 0.115]}>
           <meshStandardMaterial color={noseColor} />
         </Box>
 
         {/* Mouth by expression */}
         {expression === FACE_EXPRESSIONS.neutral && (
-          <Box args={[0.06, 0.014, 0.01]} position={[0, -0.05, 0.114]} castShadow>
+          <Box args={[0.06, 0.014, 0.01]} position={[0, -0.05, 0.114]}>
             <meshStandardMaterial color="#111111" />
           </Box>
+        )}
+        {expression === FACE_EXPRESSIONS.surprised && (
+          <Box args={[0.024, 0.024, 0.01]} position={[0, -0.052, 0.114]}>
+            <meshStandardMaterial color="#111111" />
+          </Box>
+        )}
+        {expression === FACE_EXPRESSIONS.smile && (
+          <group position={[0, -0.05, 0.114]}>
+            <Box args={[0.02, 0.012, 0.01]} position={[-0.028, -0.003, 0]} rotation={[0, 0, 0.25]}>
+              <meshStandardMaterial color="#111111" />
+            </Box>
+            <Box args={[0.02, 0.012, 0.01]} position={[0.028, -0.003, 0]} rotation={[0, 0, -0.25]}>
+              <meshStandardMaterial color="#111111" />
+            </Box>
+            <Box args={[0.028, 0.01, 0.01]} position={[0, -0.006, 0]}>
+              <meshStandardMaterial color="#111111" />
+            </Box>
+          </group>
+        )}
+        {expression === FACE_EXPRESSIONS.frown && (
+          <group position={[0, -0.06, 0.114]}>
+            <Box args={[0.02, 0.012, 0.01]} position={[-0.028, 0.003, 0]} rotation={[0, 0, -0.25]}>
+              <meshStandardMaterial color="#ef4444" />
+            </Box>
+            <Box args={[0.02, 0.012, 0.01]} position={[0.028, 0.003, 0]} rotation={[0, 0, 0.25]}>
+              <meshStandardMaterial color="#ef4444" />
+            </Box>
+            <Box args={[0.028, 0.01, 0.01]} position={[0, 0.006, 0]}>
+              <meshStandardMaterial color="#ef4444" />
+            </Box>
+          </group>
         )}
         {expression === FACE_EXPRESSIONS.surprised && (
           <Box args={[0.024, 0.024, 0.01]} position={[0, -0.052, 0.114]} castShadow>
@@ -349,17 +380,6 @@ export default function VoxelAvatar({
           </group>
         )}
 
-        {/* Emoji badge on forehead */}
-        <Text
-          position={[0, 0.08, 0.11]}
-          fontSize={0.08}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-        >
-          {agent.emoji}
-        </Text>
-
         {/* Thinking particles effect */}
         {isThinking && (
           <>
@@ -383,6 +403,18 @@ export default function VoxelAvatar({
       <Box args={[0.2, 0.25, 0.12]} position={[0, 0.125, 0]} castShadow>
         <meshStandardMaterial color={shirtColor} />
       </Box>
+
+      {/* Emoji badge on shirt/chest - positioned on front of torso */}
+      <Text
+        position={[0, 0.13, 0.065]}
+        fontSize={0.055}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        renderOrder={1}
+      >
+        {agent.emoji}
+      </Text>
 
       {/* ARMS */}
       <group ref={leftArmRef} position={[-0.12, 0.18, 0]}>

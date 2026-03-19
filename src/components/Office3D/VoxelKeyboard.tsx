@@ -21,7 +21,6 @@ export default function VoxelKeyboard({ position, rotation = [0, 0, 0] }: VoxelK
           key={`top-${i}`}
           args={[0.06, 0.03, 0.06]}
           position={[-0.32 + i * 0.072, 0.035, -0.08]}
-          castShadow
         >
           <meshStandardMaterial color="#1f2937" />
         </Box>
@@ -33,7 +32,6 @@ export default function VoxelKeyboard({ position, rotation = [0, 0, 0] }: VoxelK
           key={`mid-${i}`}
           args={[0.06, 0.03, 0.06]}
           position={[-0.28 + i * 0.072, 0.035, -0.01]}
-          castShadow
         >
           <meshStandardMaterial color="#1f2937" />
         </Box>
@@ -45,19 +43,18 @@ export default function VoxelKeyboard({ position, rotation = [0, 0, 0] }: VoxelK
           key={`low-${i}`}
           args={[0.06, 0.03, 0.06]}
           position={[-0.24 + i * 0.072, 0.035, 0.06]}
-          castShadow
         >
           <meshStandardMaterial color="#1f2937" />
         </Box>
       ))}
 
       {/* Barra espaciadora */}
-      <Box args={[0.35, 0.03, 0.06]} position={[0, 0.035, 0.13]} castShadow>
+      <Box args={[0.35, 0.03, 0.06]} position={[0, 0.035, 0.13]}>
         <meshStandardMaterial color="#374151" />
       </Box>
 
       {/* Cable */}
-      <Box args={[0.02, 0.02, 0.15]} position={[0.35, -0.01, 0.22]} castShadow>
+      <Box args={[0.02, 0.02, 0.15]} position={[0.35, -0.01, 0.22]}>
         <meshStandardMaterial color="#1f2937" />
       </Box>
     </group>

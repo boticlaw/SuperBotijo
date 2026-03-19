@@ -10,7 +10,7 @@ interface NotepadProps {
 export default function Notepad({ position, rotation = [0, 0, 0] }: NotepadProps) {
   return (
     <group position={position} rotation={rotation}>
-      <Box args={[0.24, 0.015, 0.18]} position={[0, 0.008, 0]} castShadow receiveShadow>
+      <Box args={[0.24, 0.015, 0.18]} position={[0, 0.008, 0]} receiveShadow>
         <meshStandardMaterial color="#fefce8" roughness={0.85} />
       </Box>
 

@@ -15,24 +15,28 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
   const steamRefs = useRef<Mesh[]>([]);
   const dripRef = useRef<Mesh>(null);
   const groupRef = useRef<Group>(null);
+  const lastSteamUpdateRef = useRef(0);
 
-  // Animate steam particles
+  // Animate steam particles (throttled to 200ms)
   useFrame((state) => {
     const time = state.clock.elapsedTime;
+    const now = time * 1000;
     
-    steamRefs.current.forEach((steam) => {
-      if (steam && steam.material) {
-        // Each steam particle has different timing
-        const offset = steamRefs.current.indexOf(steam) * 0.5;
-        const cycle = (time + offset) % 2;
-        
-        // Rise up and fade
-        steam.position.y = 1.45 + cycle * 0.3;
-        const mat = steam.material as MeshBasicMaterial;
-        mat.opacity = Math.max(0, 0.4 - cycle * 0.2);
-        steam.scale.setScalar(1 + cycle * 0.3);
-      }
-    });
+    if (now - lastSteamUpdateRef.current > 200) {
+      lastSteamUpdateRef.current = now;
+      
+      steamRefs.current.forEach((steam) => {
+        if (steam && steam.material) {
+          const offset = steamRefs.current.indexOf(steam) * 0.5;
+          const cycle = (time + offset) % 2;
+          
+          steam.position.y = 1.45 + cycle * 0.3;
+          const mat = steam.material as MeshBasicMaterial;
+          mat.opacity = Math.max(0, 0.4 - cycle * 0.2);
+          steam.scale.setScalar(1 + cycle * 0.3);
+        }
+      });
+    }
 
     // Coffee drip animation (subtle)
     if (dripRef.current) {
@@ -92,7 +96,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         <Cylinder
           args={[0.25, 0.3, 0.15, 32]}
           position={[0, 0.6, 0]}
-          castShadow
         >
           <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.1} />
         </Cylinder>
@@ -144,7 +147,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.08, 0.08, 0.12, 16]}
           position={[0, 0.18, 0.2]}
           rotation={[Math.PI / 2, 0, 0]}
-          castShadow
         >
           <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.1} />
         </Cylinder>
@@ -154,7 +156,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.03, 0.08, 0.15]}
           position={[0, 0.12, 0.28]}
           rotation={[0.3, 0, 0]}
-          castShadow
         >
           <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.8} />
         </Box>
@@ -175,7 +176,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           radius={0.01}
           smoothness={2}
           position={[0, 0.015, 0.1]}
-          castShadow
           receiveShadow
         >
           <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.4} />
@@ -199,7 +199,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         <Cylinder
           args={[0.045, 0.035, 0.1, 16]}
           position={[0, 0.05, 0.12]}
-          castShadow
         >
           <meshStandardMaterial color="#fafafa" metalness={0.1} roughness={0.3} />
         </Cylinder>
@@ -255,7 +254,6 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
       <Box
         args={[0.25, 0.35, 0.12]}
         position={[0, 1.15, -0.2]}
-        castShadow
       >
         <meshStandardMaterial
           color="#1e3a5f"

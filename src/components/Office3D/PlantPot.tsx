@@ -41,6 +41,7 @@ export default function PlantPot({
   type = PLANT_TYPES.bush,
 }: PlantPotProps) {
   const foliageRef = useRef<Group>(null);
+  const lastUpdateRef = useRef(0);
   const swayOffset = position[0] * 0.11 + position[2] * 0.07;
   const scale = size === PLANT_SIZES.small ? 0.6 : size === PLANT_SIZES.large ? 1.4 : 1;
   const typeScale = TYPE_SCALE[type];
@@ -50,7 +51,11 @@ export default function PlantPot({
     if (!foliageRef.current) {
       return;
     }
-
+    const now = state.clock.elapsedTime * 1000;
+    if (now - lastUpdateRef.current < 500) {
+      return;
+    }
+    lastUpdateRef.current = now;
     foliageRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.45 + swayOffset) * 0.02;
     foliageRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.6 + swayOffset + 1.2) * 0.015;
   });

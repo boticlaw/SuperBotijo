@@ -1,8 +1,8 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sky, Environment, Box } from '@react-three/drei';
-import { Bloom, EffectComposer, Vignette, ToneMapping } from '@react-three/postprocessing';
+import { OrbitControls, Sky, Box } from '@react-three/drei';
+import { Bloom, EffectComposer, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { Vector3 } from 'three';
@@ -236,11 +236,15 @@ function parseParentFromKey(key: string): string {
   return parts[1] || "main";
 }
 
-export default function Office3D() {
+interface Office3DProps {
+  initialAgents?: AgentConfig[];
+}
+
+export default function Office3D({ initialAgents }: Office3DProps = {}) {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [interactionModal, setInteractionModal] = useState<string | null>(null);
   const [controlMode, setControlMode] = useState<'orbit' | 'fps'>('orbit');
-  const [agents, setAgents] = useState<AgentConfig[]>([]);
+  const [agents, setAgents] = useState<AgentConfig[]>(initialAgents || []);
   const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [configuredSubagents, setConfiguredSubagents] = useState<ConfiguredSubagent[]>([]);
@@ -271,25 +275,36 @@ export default function Office3D() {
     let isMounted = true;
     let configInterval: NodeJS.Timeout | null = null;
     let statusInterval: NodeJS.Timeout | null = null;
+    let hasInitialAgents = initialAgents && initialAgents.length > 0;
+
+    // Convert initialAgents to the format used by the component
+    if (hasInitialAgents && agents.length === 0) {
+      // initialAgents already have position + deskRotation format
+      setAgents(initialAgents as AgentConfig[]);
+      setLoading(false);
+    }
 
     // Fetch full configuration (agents + statuses + subagents) - runs once and every 5 minutes
     const fetchFullConfig = async () => {
       try {
-        const agentsWithDesks = await fetchOfficeAgents();
+        let agentsWithDesks = await fetchOfficeAgents();
         
         if (agentsWithDesks.length === 0) {
-          setAgents([{
-            id: 'main',
-            name: 'Main Agent',
-            emoji: '🤖',
-            position: [0, 0, 0],
-            deskRotation: [0, 0, 0],
-            tableId: 'core-1',
-            color: '#ff6b35',
-            role: 'Main Agent',
-            department: 'core',
-          }]);
-          setConfiguredSubagents([]);
+          // Only set fallback if we don't have initial agents
+          if (!hasInitialAgents) {
+            setAgents([{
+              id: 'main',
+              name: 'Main Agent',
+              emoji: '🤖',
+              position: [0, 0, 0],
+              deskRotation: [0, 0, 0],
+              tableId: 'core-1',
+              color: '#ff6b35',
+              role: 'Main Agent',
+              department: 'core',
+            }]);
+            setConfiguredSubagents([]);
+          }
           setLoading(false);
           return;
         }
@@ -325,16 +340,25 @@ export default function Office3D() {
         // Fallback: if filtering removed ALL agents, use the unfiltered list
         const primaryAgents = filteredAgents.length > 0 ? filteredAgents : agentsWithDesks;
 
-        const configs = primaryAgents.map((desk) => ({
-          id: desk.id,
-          name: desk.name,
-          emoji: desk.emoji,
-          color: desk.color,
-          role: desk.role,
-          position: [desk.deskPosition.x, desk.deskPosition.y, desk.deskPosition.z] as [number, number, number],
-          deskRotation: [0, desk.deskPosition.rotation, 0] as [number, number, number],
-          accessories: desk.accessories,
-        }));
+        // Keep initialAgents positions if available - don't recalculate desk positions
+        const initialAgentsMap = new Map(
+          (initialAgents || []).map((a) => [a.id, a])
+        );
+
+        const configs = primaryAgents.map((desk) => {
+          const initial = initialAgentsMap.get(desk.id);
+          return {
+            id: desk.id,
+            name: desk.name,
+            emoji: desk.emoji,
+            color: desk.color,
+            role: desk.role,
+            // Use initial position if available, otherwise use fetched position
+            position: initial?.position || [desk.deskPosition.x, desk.deskPosition.y, desk.deskPosition.z] as [number, number, number],
+            deskRotation: initial?.deskRotation || [0, desk.deskPosition.rotation, 0] as [number, number, number],
+            accessories: desk.accessories,
+          };
+        });
         
         setAgents(configs);
 
@@ -759,7 +783,6 @@ export default function Office3D() {
 
           {/* Cielo y ambiente */}
           <Sky sunPosition={[100, 20, 100]} />
-          <Environment preset="sunset" />
 
           {/* Suelo */}
           <Floor />
@@ -901,7 +924,7 @@ export default function Office3D() {
           </group>
 
           {/* Escritorios de agentes */}
-          {agents.map((agent) => (
+          {agents.map((agent, index) => (
             <AgentDesk
               key={agent.id}
               agentId={agent.id}
@@ -916,6 +939,7 @@ export default function Office3D() {
               currentTask={getAgentState(agent.id).currentTask}
               onClick={() => handleDeskClick(agent.id)}
               isSelected={selectedAgent === agent.id}
+              isMainAgent={index === 0}
             />
           ))}
 
@@ -1073,22 +1097,15 @@ export default function Office3D() {
               <FirstPersonControls moveSpeed={5} />
             )}
 
-          {/* Post-processing - cinematic look with bloom, vignette, and tone mapping */}
+          {/* Post-processing - simplified for performance */}
           <EffectComposer>
             <Bloom
-              intensity={0.35}
-              luminanceThreshold={0.85}
+              intensity={0.15}
+              luminanceThreshold={0.9}
               luminanceSmoothing={0.9}
-              mipmapBlur
-            />
-            <Vignette
-              offset={0.4}
-              darkness={0.4}
-              eskil={false}
             />
             <ToneMapping
               mode={ToneMappingMode.ACES_FILMIC}
-              resolution={256}
             />
           </EffectComposer>
         </Suspense>
