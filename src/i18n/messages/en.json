@@ -537,6 +537,7 @@
     "days90": "90 days",
     "loadingCosts": "Loading cost data...",
     "loadCostsError": "Failed to load cost data",
+    "collectingData": "Collecting usage data...",
     "costToday": "Today",
     "vsYesterday": "vs {amount} yesterday",
     "costThisMonth": "This Month",

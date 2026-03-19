@@ -773,6 +773,7 @@
     "days90": "90 días",
     "loadingCosts": "Cargando datos de costos...",
     "loadCostsError": "Error al cargar datos de costos",
+    "collectingData": "Recopilando datos de uso...",
     "costToday": "Hoy",
     "vsYesterday": "vs {amount} ayer",
     "costThisMonth": "Este Mes",

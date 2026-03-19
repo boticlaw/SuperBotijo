@@ -11,6 +11,9 @@ import fs from "fs";
 
 const execAsync = promisify(exec);
 
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+const DB_PATH_DEFAULT = path.join(process.cwd(), "data", "usage-tracking.db");
+
 export interface SessionData {
   agentId: string;
   sessionKey: string;
@@ -21,6 +24,93 @@ export interface SessionData {
   totalTokens: number;
   updatedAt: number;
   percentUsed: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+}
+
+export interface RawSessionFile {
+  sessionKey: string;
+  sessionId: string;
+  updatedAt: number;
+  model: string;
+  modelProvider: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cacheRead: number;
+  cacheWrite: number;
+  percentUsed: number;
+  origin?: {
+    provider?: string;
+    surface?: string;
+    chatType?: string;
+    from?: string;
+  };
+  label?: string;
+  spawnedBy?: string;
+}
+
+export interface SessionFileData {
+  current?: RawSessionFile;
+  previous?: RawSessionFile[];
+}
+
+interface AgentSessionFile {
+  agent: string;
+  path: string;
+}
+
+function getAgentSessionFiles(): AgentSessionFile[] {
+  const agentsDir = path.join(OPENCLAW_DIR, "agents");
+  if (!fs.existsSync(agentsDir)) {
+    return [];
+  }
+
+  let agentDirs: string[];
+  try {
+    agentDirs = fs.readdirSync(agentsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name);
+  } catch {
+    return [];
+  }
+
+  return agentDirs.flatMap(agent => {
+    const sessionsPath = path.join(agentsDir, agent, "sessions", "sessions.json");
+    return fs.existsSync(sessionsPath) ? [{ agent, path: sessionsPath }] : [];
+  });
+}
+
+export function collectUsageFromFiles(): SessionData[] {
+  const sessionFiles = getAgentSessionFiles();
+  const sessions: SessionData[] = [];
+
+  for (const { agent, path: sessionsPath } of sessionFiles) {
+    try {
+      const content = fs.readFileSync(sessionsPath, "utf-8");
+      const data: SessionFileData = JSON.parse(content);
+
+      if (data.current) {
+        sessions.push({
+          agentId: agent,
+          sessionKey: data.current.sessionKey,
+          sessionId: data.current.sessionId,
+          model: normalizeModelId(data.current.model || "unknown"),
+          inputTokens: data.current.inputTokens || 0,
+          outputTokens: data.current.outputTokens || 0,
+          totalTokens: data.current.totalTokens || 0,
+          updatedAt: data.current.updatedAt || Date.now(),
+          percentUsed: data.current.percentUsed || 0,
+          cacheRead: data.current.cacheRead,
+          cacheWrite: data.current.cacheWrite,
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to read sessions file for agent ${agent}:`, error);
+    }
+  }
+
+  return sessions;
 }
 
 export interface UsageSnapshot {
@@ -128,7 +218,9 @@ export function calculateSnapshot(
     const inputTokens = group.reduce((sum, s) => sum + s.inputTokens, 0);
     const outputTokens = group.reduce((sum, s) => sum + s.outputTokens, 0);
     const totalTokens = group.reduce((sum, s) => sum + s.totalTokens, 0);
-    const cost = calculateCost(model, inputTokens, outputTokens);
+    const cacheRead = group.reduce((sum, s) => sum + (s.cacheRead || 0), 0);
+    const cacheWrite = group.reduce((sum, s) => sum + (s.cacheWrite || 0), 0);
+    const cost = calculateCost(model, inputTokens, outputTokens, cacheRead, cacheWrite);
 
     snapshots.push({
       timestamp,
@@ -239,6 +331,51 @@ export async function collectUsage(dbPath: string): Promise<void> {
     }
 
     console.log(`Collected ${snapshots.length} usage snapshots for ${date} ${hour}:00 UTC`);
+  } finally {
+    db.close();
+  }
+}
+
+export interface CollectionResult {
+  collected: number;
+  agents: string[];
+  timestamp: number;
+  date: string;
+  hour: number;
+}
+
+export async function collectUsageFromFilesAndSave(
+  dbPath: string = DB_PATH_DEFAULT
+): Promise<CollectionResult> {
+  const db = initDatabase(dbPath);
+  const timestamp = Date.now();
+  const hour = new Date(timestamp).getUTCHours();
+  const dateStr = new Date(timestamp).toISOString().split("T")[0];
+
+  try {
+    const sessions = collectUsageFromFiles();
+    const snapshots = calculateSnapshot(sessions, timestamp);
+
+    db.prepare(`
+      DELETE FROM usage_snapshots 
+      WHERE date = ? AND hour = ?
+    `).run(dateStr, hour);
+
+    for (const snapshot of snapshots) {
+      saveSnapshot(db, snapshot);
+    }
+
+    const agents = [...new Set(sessions.map(s => s.agentId))];
+    const result: CollectionResult = {
+      collected: snapshots.length,
+      agents,
+      timestamp,
+      date: dateStr,
+      hour,
+    };
+
+    console.log(`[usage-collector] File-based: Collected ${snapshots.length} snapshots for ${dateStr} ${hour}:00 UTC from ${agents.length} agents`);
+    return result;
   } finally {
     db.close();
   }

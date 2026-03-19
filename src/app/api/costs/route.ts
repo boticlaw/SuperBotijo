@@ -10,10 +10,12 @@ import {
 } from "@/lib/usage-queries";
 import path from "path";
 import fs from "fs";
+import Database from "better-sqlite3";
 
 const DB_PATH = path.join(process.cwd(), "data", "usage-tracking.db");
 const BUDGET_PATH = path.join(process.cwd(), "data", "budget-settings.json");
 const DEFAULT_BUDGET = 100.0;
+const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
 interface BudgetSettings {
   budget: number;
@@ -40,6 +42,44 @@ function saveBudgetSettings(settings: BudgetSettings): void {
   fs.writeFileSync(BUDGET_PATH, JSON.stringify(settings, null, 2));
 }
 
+function getLatestCollectionTimestamp(db: Database.Database): number | null {
+  try {
+    const result = db.prepare(`
+      SELECT MAX(timestamp) as latest FROM usage_snapshots
+    `).get() as { latest: number | null } | undefined;
+    return result?.latest ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureFreshData(): Promise<boolean> {
+  if (!fs.existsSync(DB_PATH)) {
+    return false;
+  }
+
+  const db = new Database(DB_PATH, { readonly: true });
+  try {
+    const latestTs = getLatestCollectionTimestamp(db);
+    db.close();
+
+    if (latestTs === null) {
+      return false;
+    }
+
+    const age = Date.now() - latestTs;
+    if (age > STALE_THRESHOLD_MS) {
+      const { collectUsageFromFilesAndSave } = await import("@/lib/usage-collector");
+      await collectUsageFromFilesAndSave(DB_PATH);
+      return true;
+    }
+    return false;
+  } catch {
+    db.close();
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const timeframe = searchParams.get("timeframe") || "30d";
@@ -47,6 +87,8 @@ export async function GET(request: NextRequest) {
   const budgetSettings = getBudgetSettings();
 
   try {
+    await ensureFreshData();
+
     const db = getDatabase(DB_PATH);
 
     if (!db) {

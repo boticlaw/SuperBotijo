@@ -49,6 +49,7 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [collecting, setCollecting] = useState(false);
 
   const [costData, setCostData] = useState<CostData | null>(null);
   const [costLoading, setCostLoading] = useState(true);
@@ -56,6 +57,21 @@ export default function AnalyticsPage() {
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [savingBudget, setSavingBudget] = useState(false);
+
+  useEffect(() => {
+    const triggerCollection = async () => {
+      setCollecting(true);
+      try {
+        await fetch("/api/collect-usage", { method: "POST" });
+      } catch (error) {
+        console.warn("Auto-collection failed:", error);
+      } finally {
+        setCollecting(false);
+      }
+    };
+
+    triggerCollection();
+  }, []);
 
   useEffect(() => {
     fetch("/api/analytics")
@@ -324,11 +340,13 @@ export default function AnalyticsPage() {
             </button>
           </div>
 
-          {costLoading && !costData ? (
+          {(costLoading || collecting) && !costData ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "var(--accent)" }}></div>
-                <p style={{ color: "var(--text-secondary)" }}>{t("analytics.loadingCosts")}</p>
+                <p style={{ color: "var(--text-secondary)" }}>
+                  {collecting ? t("analytics.collectingData") : t("analytics.loadingCosts")}
+                </p>
               </div>
             </div>
           ) : !costData ? (
