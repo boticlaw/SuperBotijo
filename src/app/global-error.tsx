@@ -2,6 +2,43 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import en from "@/i18n/messages/en.json";
+import es from "@/i18n/messages/es.json";
+
+type Messages = Record<string, unknown>;
+const DICTIONARY: Record<string, Messages> = { en, es };
+
+function getByPath(obj: Messages, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, part) => {
+    if (typeof acc === "object" && acc !== null && part in (acc as Record<string, unknown>)) {
+      return (acc as Record<string, unknown>)[part];
+    }
+    return undefined;
+  }, obj);
+}
+
+function interpolate(text: string, values?: Record<string, string | number>) {
+  if (!values) return text;
+  return text.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? `{${key}}`));
+}
+
+function detectLocale(): string {
+  if (typeof window === "undefined") return "en";
+  const cookie = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith("superbotijo-locale="))
+    ?.split("=")[1];
+  if (cookie === "en" || cookie === "es") return cookie;
+  return navigator.language.toLowerCase().startsWith("es") ? "es" : "en";
+}
+
+function getT(locale: string) {
+  const messages = DICTIONARY[locale] || DICTIONARY.en;
+  return (key: string, values?: Record<string, string | number>) => {
+    const raw = getByPath(messages, key) ?? getByPath(DICTIONARY.en, key) ?? key;
+    return typeof raw === "string" ? interpolate(raw, values) : key;
+  };
+}
 
 export default function GlobalError({
   error,
@@ -14,8 +51,11 @@ export default function GlobalError({
     console.error("[Global Error]", error);
   }, [error]);
 
+  const locale = typeof window !== "undefined" ? detectLocale() : "en";
+  const t = getT(locale);
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body style={{ 
         margin: 0, 
         padding: 0, 
@@ -72,7 +112,7 @@ export default function GlobalError({
                 letterSpacing: "-0.02em"
               }}
             >
-              Error crítico
+              {t("errors.globalError.title")}
             </h1>
 
             <p 
@@ -82,7 +122,7 @@ export default function GlobalError({
                 fontSize: "14px"
               }}
             >
-              Algo salió mal en la aplicación. Por favor, recarga la página.
+              {t("errors.globalError.description")}
             </p>
 
             {error.digest && (
@@ -94,7 +134,7 @@ export default function GlobalError({
                   fontFamily: "monospace"
                 }}
               >
-                Error ID: {error.digest}
+                {t("errors.globalError.errorId", { id: error.digest })}
               </p>
             )}
 
@@ -115,7 +155,7 @@ export default function GlobalError({
               }}
             >
               <RefreshCw style={{ width: "16px", height: "16px" }} />
-              Recargar aplicación
+              {t("errors.globalError.reload")}
             </button>
           </div>
         </div>

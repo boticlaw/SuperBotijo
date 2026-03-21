@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, MessageSquare, Send, Archive, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/provider";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type {
   KanbanColumn as KanbanColumnType,
   KanbanTask as KanbanTaskType,
@@ -93,6 +94,7 @@ export function TaskModal({
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Initialize form when modal opens
   useEffect(() => {
@@ -296,9 +298,13 @@ export function TaskModal({
 
   function handleDelete() {
     if (!editingTask) return;
-    if (!confirm(t("kanban.taskModal.deleteConfirm"))) return;
+    setShowDeleteConfirm(true);
+  }
 
+  function confirmDelete() {
+    if (!editingTask) return;
     onDelete(editingTask.id);
+    setShowDeleteConfirm(false);
     onClose();
   }
 
@@ -830,10 +836,22 @@ export function TaskModal({
               >
                 {isSaving ? t("kanban.taskModal.saving") : editingTask ? t("kanban.taskModal.update") : t("kanban.taskModal.create")}
               </button>
-            </div>
+</div>
           </div>
         </form>
       </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={t("kanban.taskModal.deleteTitle")}
+        message={t("kanban.taskModal.deleteConfirm")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

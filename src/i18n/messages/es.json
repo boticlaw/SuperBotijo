@@ -1,4 +1,40 @@
 {
+  "errors": {
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La página que buscas no existe o fue movida.",
+      "goHome": "Ir al inicio",
+      "goBack": "Volver atrás"
+    },
+    "error": {
+      "title": "Algo salió mal",
+      "description": "Ha ocurrido un error inesperado. Por favor, intenta de nuevo.",
+      "errorId": "ID de error: {id}",
+      "retry": "Intentar de nuevo"
+    },
+    "globalError": {
+      "title": "Error crítico",
+      "description": "Algo salió mal en la aplicación. Por favor, recarga la página.",
+      "errorId": "ID de error: {id}",
+      "reload": "Recargar aplicación"
+    }
+  },
+  "reports": {
+    "shared": {
+      "notFound": "Reporte no encontrado o expirado",
+      "loadError": "Error al cargar el reporte",
+      "fallback": "Reporte no encontrado",
+      "totalActivities": "Actividades Totales",
+      "successRate": "Tasa de Éxito",
+      "tokensUsed": "Tokens Usados",
+      "totalCost": "Costo Total",
+      "highlights": "Destacados",
+      "topModels": "Modelos Principales",
+      "requests": "solicitudes",
+      "generatedBy": "Generado por SuperBotijo el {date}",
+      "linkExpires": "Enlace expira: {date}"
+    }
+  },
   "common": {
     "loading": "Cargando...",
     "refresh": "Actualizar",
@@ -316,6 +352,8 @@
     "subtitle": "Skills disponibles en el sistema OpenClaw",
     "browseClawHub": "Explorar ClawHub",
     "updateAll": "Actualizar Todas ({count})",
+    "updateAllTitle": "Actualizar Todas las Skills",
+    "updateAllConfirm": "¿Actualizar {count} skills?",
     "totalSkills": "Total de Skills",
     "workspaceSkills": "Skills del Workspace",
     "systemSkills": "Skills del Sistema",
@@ -325,6 +363,7 @@
     "system": "Sistema",
     "noSkills": "No se encontraron skills",
     "files": "archivos",
+    "disableTitle": "Deshabilitar Skill",
     "disableSkill": "¿Deshabilitar skill \"{name}\"? Esto puede afectar la funcionalidad de OpenClaw.",
     "skillEnabled": "Skill habilitada",
     "skillDisabled": "Skill deshabilitada",
@@ -825,6 +864,7 @@
       "saving": "Guardando...",
       "update": "Actualizar",
       "create": "Crear",
+      "deleteTitle": "Eliminar Tarea",
       "deleteConfirm": "¿Estás seguro de que querés eliminar esta tarea?"
     },
     "priorities": {

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 export default function Error({
   error,
@@ -10,6 +11,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useI18n();
+
   useEffect(() => {
     console.error("[Error Boundary]", error);
   }, [error]);
@@ -43,14 +46,14 @@ export default function Error({
             fontFamily: "var(--font-heading)"
           }}
         >
-          Algo salió mal
+          {t("errors.error.title")}
         </h1>
 
         <p 
           className="text-sm mb-6"
           style={{ color: "var(--text-secondary)" }}
         >
-          Ha ocurrido un error inesperado. Por favor, intenta de nuevo.
+          {t("errors.error.description")}
         </p>
 
         {error.digest && (
@@ -58,7 +61,7 @@ export default function Error({
             className="text-xs mb-4 font-mono"
             style={{ color: "var(--text-muted)" }}
           >
-            Error ID: {error.digest}
+            {t("errors.error.errorId", { id: error.digest })}
           </p>
         )}
 
@@ -71,7 +74,7 @@ export default function Error({
           }}
         >
           <RefreshCw className="w-4 h-4" />
-          Intentar de nuevo
+          {t("errors.error.retry")}
         </button>
       </div>
     </div>

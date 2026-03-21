@@ -2,8 +2,11 @@
 
 import { FileQuestion, Home, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/i18n/provider";
 
 export default function NotFound() {
+  const { t } = useI18n();
+
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
@@ -33,14 +36,14 @@ export default function NotFound() {
             color: "var(--text-primary)"
           }}
         >
-          Página no encontrada
+          {t("errors.notFound.title")}
         </h1>
 
         <p 
           className="mb-8"
           style={{ color: "var(--text-muted)" }}
         >
-          La página que buscas no existe o fue movida.
+          {t("errors.notFound.description")}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -53,7 +56,7 @@ export default function NotFound() {
             }}
           >
             <Home className="w-4 h-4" />
-            Ir al inicio
+            {t("errors.notFound.goHome")}
           </Link>
 
           <button
@@ -66,7 +69,7 @@ export default function NotFound() {
             }}
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver atrás
+            {t("errors.notFound.goBack")}
           </button>
         </div>
       </div>

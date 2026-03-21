@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { SectionHeader, MetricCard } from "@/components/SuperBotijo";
 import { ClawHubBrowser } from "@/components/ClawHubBrowser";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useI18n } from "@/i18n/provider";
 
 interface Skill {
   id: string;
@@ -38,6 +40,7 @@ interface SkillsData {
 }
 
 export default function SkillsPage() {
+  const { t } = useI18n();
   const [data, setData] = useState<SkillsData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSource, setFilterSource] = useState<"all" | "workspace" | "system">("all");
@@ -50,6 +53,9 @@ export default function SkillsPage() {
     latestVersion: string;
     hasUpdate: boolean;
   }>>([]);
+  const [skillToDisable, setSkillToDisable] = useState<Skill | null>(null);
+  const [showUpdateAllConfirm, setShowUpdateAllConfirm] = useState(false);
+  const [isUpdatingAll, setIsUpdatingAll] = useState(false);
 
   useEffect(() => {
     fetch("/api/skills")
@@ -89,12 +95,16 @@ export default function SkillsPage() {
   };
 
   const handleToggleSkill = async (skillId: string, currentlyEnabled: boolean) => {
-    if (currentlyEnabled) {
-      if (!confirm(`Disable skill "${skillId}"? This may affect OpenClaw functionality.`)) {
-        return;
-      }
+    const skill = data?.skills.find(s => s.id === skillId);
+    if (currentlyEnabled && skill) {
+      setSkillToDisable(skill);
+      return;
     }
 
+    await executeToggleSkill(skillId, currentlyEnabled);
+  };
+
+  const executeToggleSkill = async (skillId: string, currentlyEnabled: boolean) => {
     setTogglingSkill(skillId);
     try {
       const res = await fetch(`/api/skills/${encodeURIComponent(skillId)}/toggle`, {
@@ -121,7 +131,30 @@ export default function SkillsPage() {
       console.error("Failed to toggle skill:", error);
     } finally {
       setTogglingSkill(null);
+      setSkillToDisable(null);
     }
+  };
+
+  const handleConfirmDisable = () => {
+    if (skillToDisable) {
+      executeToggleSkill(skillToDisable.id, true);
+    }
+  };
+
+  const handleUpdateAll = async () => {
+    setIsUpdatingAll(true);
+    for (const update of updates.filter(u => u.hasUpdate)) {
+      try {
+        await fetch(`/api/skills/${encodeURIComponent(update.slug)}/update`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.error(`Failed to update ${update.slug}:`, err);
+      }
+    }
+    setIsUpdatingAll(false);
+    setShowUpdateAllConfirm(false);
+    window.location.reload();
   };
 
   if (!data) {
@@ -202,21 +235,7 @@ export default function SkillsPage() {
           
           {updates.filter(u => u.hasUpdate).length > 0 && (
             <button
-              onClick={async () => {
-                if (confirm(`Update ${updates.filter(u => u.hasUpdate).length} skills?`)) {
-                  for (const update of updates.filter(u => u.hasUpdate)) {
-                    try {
-                      await fetch(`/api/skills/${encodeURIComponent(update.slug)}/update`, {
-                        method: "POST",
-                      });
-                    } catch (err) {
-                      console.error(`Failed to update ${update.slug}:`, err);
-                    }
-                  }
-                  // Refresh
-                  window.location.reload();
-                }
-              }}
+              onClick={() => setShowUpdateAllConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{
                 backgroundColor: "var(--warning)",
@@ -224,7 +243,7 @@ export default function SkillsPage() {
               }}
             >
               <Download className="w-4 h-4" />
-              Update All ({updates.filter(u => u.hasUpdate).length})
+              {t("skills.updateAll", { count: updates.filter(u => u.hasUpdate).length })}
             </button>
           )}
         </div>
@@ -455,6 +474,32 @@ export default function SkillsPage() {
           </div>
         </div>
       )}
+
+      {/* Disable Skill Confirmation */}
+      <ConfirmDialog
+        isOpen={skillToDisable !== null}
+        title={t("skills.disableTitle")}
+        message={t("skills.disableSkill", { name: skillToDisable?.name || "" })}
+        confirmLabel={t("skills.disable")}
+        cancelLabel={t("common.cancel")}
+        variant="warning"
+        isLoading={togglingSkill === skillToDisable?.id}
+        onConfirm={handleConfirmDisable}
+        onCancel={() => setSkillToDisable(null)}
+      />
+
+      {/* Update All Confirmation */}
+      <ConfirmDialog
+        isOpen={showUpdateAllConfirm}
+        title={t("skills.updateAllTitle")}
+        message={t("skills.updateAllConfirm", { count: updates.filter(u => u.hasUpdate).length })}
+        confirmLabel={t("common.confirm")}
+        cancelLabel={t("common.cancel")}
+        variant="info"
+        isLoading={isUpdatingAll}
+        onConfirm={handleUpdateAll}
+        onCancel={() => setShowUpdateAllConfirm(false)}
+      />
     </div>
   );
 }
