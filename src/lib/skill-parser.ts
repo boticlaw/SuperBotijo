@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 export interface SkillInfo {
   id: string;
@@ -7,6 +8,7 @@ export interface SkillInfo {
   description: string;
   location: string;
   source: 'workspace' | 'system';
+  workspace?: string;
   homepage?: string;
   emoji?: string;
   fileCount: number;
@@ -38,7 +40,17 @@ interface SkillsConfig {
 }
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'configured-skills.json');
-const DEFAULT_SYSTEM_PATH = '/usr/lib/node_modules/openclaw/skills';
+
+// Detect npm global path dynamically instead of hardcoding /usr/lib/...
+function getNpmGlobalPath(): string {
+  try {
+    return execSync('npm root -g', { encoding: 'utf-8' }).trim();
+  } catch {
+    return '/usr/lib/node_modules';
+  }
+}
+
+const DEFAULT_SYSTEM_PATH = path.join(getNpmGlobalPath(), 'openclaw', 'skills');
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 const DEFAULT_WORKSPACE_PATH = path.join(OPENCLAW_DIR, 'workspace/skills');
 
@@ -153,12 +165,21 @@ export function parseSkill(skillPath: string, skillName: string, agents: string[
     
     const source = skillPath.includes('/workspace') ? 'workspace' : 'system';
     
+    let workspace: string | undefined;
+    if (source === 'workspace') {
+      // Match: /workspace/skills → 'default'
+      // Match: /workspace/agents/<name>/... → '<name>'
+      const workspaceMatch = skillPath.match(/\/workspace(?:\/agents\/([^/]+))?/);
+      workspace = workspaceMatch ? (workspaceMatch[1] || 'default') : undefined;
+    }
+    
     return {
       id: skillName,
       name: frontMatter.name || skillName,
       description: frontMatter.description || extractFirstParagraph(body),
       location: skillPath,
       source,
+      workspace,
       homepage: frontMatter.homepage,
       emoji: frontMatter.metadata?.openclaw?.emoji,
       fileCount: count,
@@ -273,37 +294,70 @@ function autoDiscoverSkills(): ConfiguredSkill[] {
 }
 
 /**
+ * Auto-discover bundled (system) skills from npm global openclaw/skills
+ */
+function autoDiscoverSystemSkills(): { name: string; location: string }[] {
+  const skills: { name: string; location: string }[] = [];
+  const systemPath = DEFAULT_SYSTEM_PATH;
+
+  try {
+    if (!fs.existsSync(systemPath)) {
+      console.log(`[skill-parser] System skills path not found: ${systemPath}`);
+      return skills;
+    }
+
+    const entries = fs.readdirSync(systemPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        const skillPath = path.join(systemPath, entry.name);
+        const skillMdPath = path.join(skillPath, 'SKILL.md');
+        if (fs.existsSync(skillMdPath)) {
+          skills.push({ name: entry.name, location: skillPath });
+        }
+      }
+    }
+    console.log(`[skill-parser] Auto-discovered ${skills.length} system skills`);
+  } catch (error) {
+    console.error(`[skill-parser] Error scanning system skills:`, error);
+  }
+
+  return skills;
+}
+
+/**
  * Scan only configured skills and return parsed skills
  */
 export function scanAllSkills(): SkillInfo[] {
   const skills: SkillInfo[] = [];
-  
+  const seenSkills = new Set<string>();
+
   try {
     let config: SkillsConfig;
-    
+
     // Try to read config file, fall back to auto-discovery
     if (fs.existsSync(CONFIG_PATH)) {
       const content = fs.readFileSync(CONFIG_PATH, 'utf-8');
       config = JSON.parse(content);
     } else {
-      // Auto-discover from multiple possible locations
+      // Auto-discover from workspace only (system auto-discovery happens below)
       const discoveredSkills = autoDiscoverSkills();
       config = {
         workspaceSkillsPath: path.join(OPENCLAW_DIR, 'workspace/skills'),
         skills: discoveredSkills,
       };
-      console.log(`[skill-parser] Auto-discovered ${discoveredSkills.length} skills`);
+      console.log(`[skill-parser] Auto-discovered ${discoveredSkills.length} workspace skills`);
     }
-    
+
     const systemPath = config.systemSkillsPath || DEFAULT_SYSTEM_PATH;
     const workspacePath = config.workspaceSkillsPath || DEFAULT_WORKSPACE_PATH;
 
     // Build agent->skills map for workspace skills
     const agentSkillMap = buildAgentSkillMap();
-    
+
+    // First: process configured/discovered workspace skills
     for (const { name, location } of config.skills) {
       let skillPath: string;
-      
+
       // Resolve path based on location type
       if (location === 'system') {
         skillPath = path.join(systemPath, name);
@@ -313,7 +367,7 @@ export function scanAllSkills(): SkillInfo[] {
         // Full path provided
         skillPath = location;
       }
-      
+
       if (!fs.existsSync(skillPath)) {
         console.warn(`Skill not found: ${name} at ${skillPath}`);
         continue;
@@ -321,10 +375,26 @@ export function scanAllSkills(): SkillInfo[] {
 
       // Determine which agents have this skill
       const agents = agentSkillMap.get(name) || [];
-      
+
       const skill = parseSkill(skillPath, name, agents);
       if (skill) {
         skills.push(skill);
+        seenSkills.add(name);
+      }
+    }
+
+    // Second: auto-discover and add system skills not already present
+    const systemSkills = autoDiscoverSystemSkills();
+    for (const { name, location } of systemSkills) {
+      if (seenSkills.has(name)) {
+        // Skip if already added (workspace version takes precedence)
+        continue;
+      }
+
+      const skill = parseSkill(location, name, []);
+      if (skill) {
+        skills.push(skill);
+        seenSkills.add(name);
       }
     }
     

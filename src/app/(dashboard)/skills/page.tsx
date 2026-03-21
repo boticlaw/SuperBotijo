@@ -23,6 +23,7 @@ interface Skill {
   description: string;
   location: string;
   source: "workspace" | "system";
+  workspace?: string;
   homepage?: string;
   emoji?: string;
   fileCount: number;
@@ -555,7 +556,7 @@ function SkillCard({
               textTransform: "uppercase",
             }}
           >
-            {skill.source}
+            {skill.source === "system" ? "system" : (skill.workspace || "workspace")}
           </div>
           {!skill.enabled && (
             <div
@@ -732,7 +733,7 @@ function SkillDetailModal({
                 {skill.description}
               </p>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                <div className="badge-positive">{skill.source}</div>
+                <div className="badge-positive">{skill.source === "system" ? "system" : (skill.workspace || "workspace")}</div>
                 <div className="badge-info">{skill.fileCount} archivos</div>
                 {!skill.enabled && (
                   <div
