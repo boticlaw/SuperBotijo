@@ -4,7 +4,7 @@
  * Checks for available updates for installed skills
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile, isValidSlug } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,13 +24,12 @@ interface UpdateInfo {
 export async function GET() {
   try {
     // Get installed skills
-    const listOutput = execSync('clawhub list 2>&1', {
+    const listResult = safeExecFile("clawhub", ["list"], {
       timeout: 5000,
-      encoding: 'utf-8',
     });
 
     const installedSkills: InstalledSkill[] = [];
-    const lines = listOutput.trim().split('\n').filter(l => l);
+    const lines = listResult.stdout.trim().split('\n').filter(l => l);
 
     for (const line of lines) {
       const match = line.match(/^(\S+)\s+(\S+)$/);
@@ -47,17 +46,28 @@ export async function GET() {
 
     for (const skill of installedSkills) {
       try {
+        if (!isValidSlug(skill.slug)) {
+          console.error(`[skills/updates] Invalid slug: ${skill.slug}`);
+          continue;
+        }
+
         // Get latest version info
-        const inspectOutput = execSync(
-          `clawhub inspect "${skill.slug}" --json 2>&1`,
-          {
-            timeout: 5000,
-            encoding: 'utf-8',
-          }
-        );
+        const inspectResult = safeExecFile("clawhub", ["inspect", skill.slug, "--json"], {
+          timeout: 5000,
+        });
+
+        if (inspectResult.status !== 0 || !inspectResult.stdout) {
+          updates.push({
+            slug: skill.slug,
+            currentVersion: skill.version,
+            latestVersion: skill.version,
+            hasUpdate: false,
+          });
+          continue;
+        }
 
         // Parse JSON (skip first line)
-        const jsonStr = inspectOutput.split('\n').slice(1).join('\n');
+        const jsonStr = inspectResult.stdout.split('\n').slice(1).join('\n');
         const data = JSON.parse(jsonStr);
 
         const latestVersion = data.latestVersion?.version || skill.version;

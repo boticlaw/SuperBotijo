@@ -4,9 +4,9 @@
  * GET /api/sessions?id=xxx   → get messages from a specific session (reads JSONL)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { safeExecFile } from '@/lib/safe-exec';
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 
@@ -118,12 +118,15 @@ export async function GET(request: NextRequest) {
 
 async function listSessions(): Promise<NextResponse> {
   try {
-    const output = execSync('openclaw sessions --json 2>/dev/null', {
+    const result = safeExecFile("openclaw", ["sessions", "--json"], {
       timeout: 10000,
-      encoding: 'utf-8',
     });
 
-    const data = JSON.parse(output);
+    if (result.status !== 0 || !result.stdout) {
+      return NextResponse.json({ error: 'Failed to list sessions', sessions: [] }, { status: 500 });
+    }
+
+    const data = JSON.parse(result.stdout);
     const rawSessions: RawSession[] = data.sessions || [];
 
     const sessions: ParsedSession[] = rawSessions

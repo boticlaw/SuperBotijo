@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { safeExecFile, isValidId } from "@/lib/safe-exec";
 
 async function createNotification(title: string, message: string, type: "info" | "success" | "warning" | "error" = "info") {
   try {
@@ -23,14 +23,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Job ID required" }, { status: 400 });
     }
 
-    // Validate id is safe (alphanumeric, hyphens, underscores only)
-    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
 
-    const output = execSync(`openclaw cron run ${id} --force 2>&1`, {
+    const result = safeExecFile("openclaw", ["cron", "run", id, "--force"], {
       timeout: 15000,
-      encoding: "utf-8",
     });
 
     // Create success notification
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       jobId: id,
-      message: output.trim() || "Job triggered successfully",
+      message: result.stdout.trim() || "Job triggered successfully",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to trigger job";

@@ -4,7 +4,7 @@
  * Installs a skill from ClawHub registry
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile, isValidSlug, isValidVersion } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,33 +20,46 @@ export async function POST(request: Request) {
       );
     }
 
-    // Install using ClawHub CLI
-    const versionArg = version ? ` --version ${version}` : '';
-    const command = `clawhub install --dir skills${versionArg} "${slug}" 2>&1`;
+    if (!isValidSlug(slug)) {
+      return NextResponse.json(
+        { error: 'Invalid skill slug format' },
+        { status: 400 }
+      );
+    }
 
-    console.log(`[clawhub/install] Running: ${command}`);
+    const args: string[] = ["install", "--dir", "skills", slug];
 
-    const output = execSync(command, {
+    if (version) {
+      if (!isValidVersion(version)) {
+        return NextResponse.json(
+          { error: 'Invalid version format' },
+          { status: 400 }
+        );
+      }
+      args.push("--version", version);
+    }
+
+    console.log(`[clawhub/install] Running: clawhub install --dir skills ${slug}${version ? ` --version ${version}` : ''}`);
+
+    const result = safeExecFile("clawhub", args, {
       timeout: 30000,
-      encoding: 'utf-8',
       cwd: process.cwd(),
     });
 
-    console.log(`[clawhub/install] Output:`, output);
-
-    // Check if installation was successful
-    if (output.includes('Error') || output.includes('Failed')) {
+    if (result.status !== 0 || result.stdout.includes('Error') || result.stdout.includes('Failed')) {
       return NextResponse.json(
-        { error: 'Installation failed', output },
+        { error: 'Installation failed', output: result.stdout || result.stderr },
         { status: 500 }
       );
     }
+
+    console.log(`[clawhub/install] Output:`, result.stdout);
 
     return NextResponse.json({
       success: true,
       slug,
       version: version || 'latest',
-      output,
+      output: result.stdout,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

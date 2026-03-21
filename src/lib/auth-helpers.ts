@@ -1,14 +1,34 @@
 /**
  * Authentication helpers for API routes.
  *
- * AUTHORIZATION MODEL FOR /api/heartbeat:
+ * AUTHORIZATION MODEL:
+ *
+ * /api/heartbeat:
  * - GET /api/heartbeat → PUBLIC (agents poll for config)
  * - GET /api/heartbeat/tasks → PUBLIC (agents poll for assigned tasks)
  * - PUT /api/heartbeat → AUTH REQUIRED (writes HEARTBEAT.md)
  * - PATCH /api/heartbeat/agents/[id] → AUTH REQUIRED (modifies agent config)
  *
- * Rationale: Agents need to poll heartbeat endpoints without human sessions,
- * but write operations must be restricted to authenticated dashboard users.
+ * /api/kanban/tasks (Human endpoints):
+ * - GET /api/kanban/tasks → PUBLIC (dashboard needs to list tasks)
+ * - GET /api/kanban/tasks/[id] → PUBLIC (dashboard needs to view tasks)
+ * - GET /api/kanban/tasks/[id]/comments → PUBLIC (dashboard needs to view comments)
+ * - POST /api/kanban/tasks → AUTH REQUIRED (create task)
+ * - PUT /api/kanban/tasks/[id] → AUTH REQUIRED (update task)
+ * - DELETE /api/kanban/tasks/[id] → AUTH REQUIRED (delete task)
+ * - POST /api/kanban/tasks/[id]/claim → AUTH REQUIRED (claim task)
+ * - DELETE /api/kanban/tasks/[id]/claim → AUTH REQUIRED (release claim)
+ * - POST /api/kanban/tasks/[id]/move → AUTH REQUIRED (move task)
+ * - POST /api/kanban/tasks/[id]/comments → AUTH REQUIRED (create comment)
+ *
+ * /api/kanban/agent (Agent endpoints):
+ * - All endpoints require X-Agent-Id and X-Agent-Key headers
+ * - Uses requireAgentAuth() from @/lib/agent-auth
+ *
+ * Rationale: 
+ * - Agents need to poll heartbeat and view tasks without human sessions
+ * - Human mutations require session authentication
+ * - Agent mutations require agent API key authentication
  */
 
 import { NextRequest, NextResponse } from "next/server";

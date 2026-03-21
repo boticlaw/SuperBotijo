@@ -4,7 +4,7 @@
  * Initiates reauthentication for an integration
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,17 +37,25 @@ export async function POST(
     case 'twitter':
       try {
         // Try to initiate bird auth
-        execSync('bird auth login --help 2>&1', {
+        const birdResult = safeExecFile("bird", ["auth", "login", "--help"], {
           timeout: 5000,
-          encoding: 'utf-8',
         });
         
-        result = {
-          success: true,
-          message: 'Twitter reauthentication available',
-          instructions: 'To reauthenticate Twitter, run: bird auth login',
-          timestamp: new Date().toISOString(),
-        };
+        if (birdResult.status === 0) {
+          result = {
+            success: true,
+            message: 'Twitter reauthentication available',
+            instructions: 'To reauthenticate Twitter, run: bird auth login',
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          result = {
+            success: false,
+            message: 'bird CLI not available',
+            instructions: 'Install bird CLI first',
+            timestamp: new Date().toISOString(),
+          };
+        }
       } catch {
         result = {
           success: false,
@@ -61,17 +69,25 @@ export async function POST(
     case 'google':
       try {
         // Try to initiate gog auth
-        execSync('gog auth login --help 2>&1', {
+        const gogResult = safeExecFile("gog", ["auth", "login", "--help"], {
           timeout: 5000,
-          encoding: 'utf-8',
         });
         
-        result = {
-          success: true,
-          message: 'Google reauthentication available',
-          instructions: 'To reauthenticate Google, run: gog auth login',
-          timestamp: new Date().toISOString(),
-        };
+        if (gogResult.status === 0) {
+          result = {
+            success: true,
+            message: 'Google reauthentication available',
+            instructions: 'To reauthenticate Google, run: gog auth login',
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          result = {
+            success: false,
+            message: 'gog CLI not available',
+            instructions: 'Install gog CLI first',
+            timestamp: new Date().toISOString(),
+          };
+        }
       } catch {
         result = {
           success: false,

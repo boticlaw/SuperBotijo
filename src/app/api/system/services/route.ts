@@ -4,7 +4,7 @@
  * Returns discovered services from systemd and PM2
  */
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { safeExecFile } from "@/lib/safe-exec";
 
 export const dynamic = "force-dynamic";
 
@@ -58,15 +58,14 @@ function discoverSystemdServices(): string[] {
   const services: Set<string> = new Set();
 
   try {
-    const stdout = execSync(
-      "systemctl list-units --type=service --state=running --no-pager -o json 2>/dev/null",
-      { encoding: "utf-8" }
-    );
-    const units = JSON.parse(stdout) as Array<{ unit: string }>;
-    for (const svc of units) {
-      const name = svc.unit.replace(".service", "");
-      if (isMatch(name)) {
-        services.add(name);
+    const result = safeExecFile("systemctl", ["list-units", "--type=service", "--state=running", "--no-pager", "-o", "json"], {});
+    if (result.status === 0 && result.stdout) {
+      const units = JSON.parse(result.stdout) as Array<{ unit: string }>;
+      for (const svc of units) {
+        const name = svc.unit.replace(".service", "");
+        if (isMatch(name)) {
+          services.add(name);
+        }
       }
     }
   } catch {
@@ -74,17 +73,16 @@ function discoverSystemdServices(): string[] {
   }
 
   try {
-    const stdout = execSync(
-      "systemctl list-unit-files --type=service --no-pager 2>/dev/null",
-      { encoding: "utf-8" }
-    );
-    const lines = stdout.split("\n");
-    for (const line of lines) {
-      const match = line.match(/^(\S+)\.service\s+/);
-      if (match) {
-        const name = match[1];
-        if (isMatch(name)) {
-          services.add(name);
+    const result = safeExecFile("systemctl", ["list-unit-files", "--type=service", "--no-pager"], {});
+    if (result.status === 0 && result.stdout) {
+      const lines = result.stdout.split("\n");
+      for (const line of lines) {
+        const match = line.match(/^(\S+)\.service\s+/);
+        if (match) {
+          const name = match[1];
+          if (isMatch(name)) {
+            services.add(name);
+          }
         }
       }
     }
@@ -99,12 +97,16 @@ function discoverPm2Services(): string[] {
   const services: string[] = [];
 
   try {
-    execSync("which pm2", { encoding: "utf-8", stdio: "pipe" });
-    const stdout = execSync("pm2 jlist 2>/dev/null", { encoding: "utf-8" });
-    const pm2List = JSON.parse(stdout) as Array<{ name: string }>;
-    for (const proc of pm2List) {
-      if (isMatch(proc.name)) {
-        services.push(proc.name);
+    const whichResult = safeExecFile("which", ["pm2"], {});
+    if (whichResult.status === 0) {
+      const pm2Result = safeExecFile("pm2", ["jlist"], {});
+      if (pm2Result.status === 0 && pm2Result.stdout) {
+        const pm2List = JSON.parse(pm2Result.stdout) as Array<{ name: string }>;
+        for (const proc of pm2List) {
+          if (isMatch(proc.name)) {
+            services.push(proc.name);
+          }
+        }
       }
     }
   } catch {

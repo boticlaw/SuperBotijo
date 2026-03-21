@@ -4,7 +4,7 @@
  * Searches skills on ClawHub registry
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile, isValidSlug } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,27 +40,38 @@ interface ClawHubSearchResult {
   score?: number;
 }
 
+const SAFE_QUERY_PATTERN = /^[a-zA-Z0-9_\-\s]+$/;
+
+function isValidSearchQuery(query: string): boolean {
+  if (!query || query.length === 0 || query.length > 100) return false;
+  return SAFE_QUERY_PATTERN.test(query);
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
-  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20', 10)), 100);
 
   if (!query) {
     return NextResponse.json({ skills: [], error: 'Query parameter required' });
   }
 
+  if (!isValidSearchQuery(query)) {
+    return NextResponse.json({ skills: [], error: 'Invalid query format' });
+  }
+
   try {
     // Search ClawHub using CLI
-    const output = execSync(
-      `clawhub search --limit ${limit} "${query.replace(/"/g, '\\"')}" 2>&1`,
-      {
-        timeout: 10000,
-        encoding: 'utf-8',
-      }
-    );
+    const searchResult = safeExecFile("clawhub", ["search", "--limit", String(limit), query], {
+      timeout: 10000,
+    });
+
+    if (searchResult.status !== 0) {
+      return NextResponse.json({ skills: [], error: 'Search failed' });
+    }
 
     // Parse the plain text output
-    const lines = output.trim().split('\n').filter(l => l && !l.startsWith('-'));
+    const lines = searchResult.stdout.trim().split('\n').filter(l => l && !l.startsWith('-'));
     const skills: ClawHubSearchResult[] = [];
 
     for (const line of lines) {
@@ -70,18 +81,23 @@ export async function GET(request: Request) {
 
       const [, slug, , scoreStr] = match;
 
+      if (!isValidSlug(slug)) {
+        console.error(`[clawhub/search] Invalid slug in search result: ${slug}`);
+        continue;
+      }
+
       // Get detailed info using inspect
       try {
-        const inspectOutput = execSync(
-          `clawhub inspect "${slug}" --json 2>&1`,
-          {
-            timeout: 5000,
-            encoding: 'utf-8',
-          }
-        );
+        const inspectResult = safeExecFile("clawhub", ["inspect", slug, "--json"], {
+          timeout: 5000,
+        });
+
+        if (inspectResult.status !== 0 || !inspectResult.stdout) {
+          continue;
+        }
 
         // Skip the "Fetching skill" line
-        const jsonStr = inspectOutput.split('\n').slice(1).join('\n');
+        const jsonStr = inspectResult.stdout.split('\n').slice(1).join('\n');
         const data = JSON.parse(jsonStr);
 
         skills.push({

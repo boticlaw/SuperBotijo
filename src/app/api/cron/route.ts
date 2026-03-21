@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execSync } from "child_process";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { isValidCron } from "@/lib/cron-parser";
+import { safeExecFile, isValidId, isValidCronAction } from "@/lib/safe-exec";
 
 export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const CRON_JOBS_FILE = join(OPENCLAW_DIR, "cron", "jobs.json");
-
-function escapeShellArg(arg: string): string {
-  return `'${arg.replace(/'/g, "'\\''")}'`;
-}
 
 interface CreateJobBody {
   name: string;
@@ -40,7 +36,6 @@ interface UpdateJobBody {
 
 export async function GET() {
   try {
-    // Read cron jobs directly from JSON file (more reliable than CLI)
     let rawJobs: Record<string, unknown>[] = [];
 
     if (existsSync(CRON_JOBS_FILE)) {
@@ -50,16 +45,13 @@ export async function GET() {
         rawJobs = (parsed.jobs as Record<string, unknown>[]) || [];
       } catch (parseError) {
         console.error("[cron API] Failed to parse cron jobs file:", parseError);
-        // Fallback to CLI if file can't be parsed
-        rawJobs = await fetchCronJobsFromCLI();
+        rawJobs = fetchCronJobsFromCLI();
       }
     } else {
-      // Fallback to CLI if file doesn't exist
       console.warn("[cron API] Cron jobs file not found, falling back to CLI");
-      rawJobs = await fetchCronJobsFromCLI();
+      rawJobs = fetchCronJobsFromCLI();
     }
 
-    // Transform to match CronJob interface expected by UI
     const cronJobs = rawJobs.map((job) => {
       const schedule = job.schedule as Record<string, unknown> | undefined;
       let scheduleDisplay = "Custom";
@@ -106,18 +98,21 @@ export async function GET() {
   }
 }
 
-// Fallback: Try to fetch from CLI (may fail if gateway has issues)
-async function fetchCronJobsFromCLI(): Promise<Record<string, unknown>[]> {
-  try {
-    const output = execSync("openclaw cron list --json --all 2>/dev/null", {
-      timeout: 5000,
-      encoding: "utf-8",
-    });
+function fetchCronJobsFromCLI(): Record<string, unknown>[] {
+  const result = safeExecFile("openclaw", ["cron", "list", "--json", "--all"], {
+    timeout: 5000,
+  });
 
-    const parsed = JSON.parse(output);
+  if (result.status !== 0 || !result.stdout) {
+    console.error("[cron API] CLI fallback failed");
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(result.stdout);
     return (parsed.jobs as Record<string, unknown>[]) || parsed || [];
   } catch {
-    console.error("[cron API] CLI fallback failed");
+    console.error("[cron API] CLI fallback JSON parse failed");
     return [];
   }
 }
@@ -139,57 +134,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid cron expression" }, { status: 400 });
     }
 
-    const args: string[] = ["openclaw", "cron", "add", "--json"];
-
-    args.push("--name", escapeShellArg(name));
+    const args: string[] = ["cron", "add", "--json", "--name", name];
 
     if (schedule) {
-      args.push("--cron", escapeShellArg(schedule));
+      args.push("--cron", schedule);
     }
 
     if (every) {
-      args.push("--every", escapeShellArg(every));
+      args.push("--every", every);
     }
 
     if (at) {
-      args.push("--at", escapeShellArg(at));
+      args.push("--at", at);
     }
 
-    // Default timezone: Europe/Madrid
     const tz = timezone || "Europe/Madrid";
-    if (tz) {
-      args.push("--tz", escapeShellArg(tz));
-    }
+    args.push("--tz", tz);
 
     if (agentId) {
-      args.push("--agent", escapeShellArg(agentId));
+      args.push("--agent", agentId);
     }
 
     if (message) {
-      args.push("--message", escapeShellArg(message));
+      args.push("--message", message);
     }
 
     if (description) {
-      args.push("--description", escapeShellArg(description));
+      args.push("--description", description);
     }
 
     if (disabled) {
       args.push("--disabled");
     }
 
-    const command = args.join(" ");
-    console.log("[cron API] Creating job:", command.replace(/--message '[^']*'/, "--message '[redacted]'"));
+    console.log("[cron API] Creating job:", `openclaw ${args.slice(0, 4).join(" ")}... (message redacted)`);
 
-    const output = execSync(command, {
+    const result = safeExecFile("openclaw", args, {
       timeout: 15000,
-      encoding: "utf-8",
     });
+
+    if (result.status !== 0) {
+      return NextResponse.json(
+        { error: "Failed to create cron job", details: result.stderr || result.stdout },
+        { status: 500 }
+      );
+    }
 
     let jobData;
     try {
-      jobData = JSON.parse(output);
+      jobData = JSON.parse(result.stdout);
     } catch {
-      jobData = { rawOutput: output };
+      jobData = { rawOutput: result.stdout };
     }
 
     await createNotification(
@@ -215,51 +210,58 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
     }
 
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
+    }
+
     if (schedule && !isValidCron(schedule)) {
       return NextResponse.json({ error: "Invalid cron expression" }, { status: 400 });
     }
 
     if (enabled !== undefined && !name && !schedule && !every && !at && !timezone && !agentId && !message && !description) {
       const action = enabled ? "enable" : "disable";
-      execSync(`openclaw cron ${action} ${id} --json 2>/dev/null`, {
+      if (!isValidCronAction(action)) {
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+      }
+
+      safeExecFile("openclaw", ["cron", action, id, "--json"], {
         timeout: 10000,
-        encoding: "utf-8",
       });
       return NextResponse.json({ success: true, id, enabled });
     }
 
-    const args: string[] = ["openclaw", "cron", "edit", id];
+    const args: string[] = ["cron", "edit", id];
 
     if (name) {
-      args.push("--name", escapeShellArg(name));
+      args.push("--name", name);
     }
 
     if (schedule) {
-      args.push("--cron", escapeShellArg(schedule));
+      args.push("--cron", schedule);
     }
 
     if (every) {
-      args.push("--every", escapeShellArg(every));
+      args.push("--every", every);
     }
 
     if (at) {
-      args.push("--at", escapeShellArg(at));
+      args.push("--at", at);
     }
 
     if (timezone) {
-      args.push("--tz", escapeShellArg(timezone));
+      args.push("--tz", timezone);
     }
 
     if (agentId) {
-      args.push("--agent", escapeShellArg(agentId));
+      args.push("--agent", agentId);
     }
 
     if (message) {
-      args.push("--message", escapeShellArg(message));
+      args.push("--message", message);
     }
 
     if (description) {
-      args.push("--description", escapeShellArg(description));
+      args.push("--description", description);
     }
 
     if (enabled === true) {
@@ -268,19 +270,24 @@ export async function PUT(request: NextRequest) {
       args.push("--disable");
     }
 
-    const command = args.join(" ");
-    console.log("[cron API] Updating job:", command.replace(/--message '[^']*'/, "--message '[redacted]'"));
+    console.log("[cron API] Updating job:", `openclaw ${args.slice(0, 3).join(" ")}... (message redacted)`);
 
-    const output = execSync(command, {
+    const result = safeExecFile("openclaw", args, {
       timeout: 15000,
-      encoding: "utf-8",
     });
+
+    if (result.status !== 0) {
+      return NextResponse.json(
+        { error: "Failed to update cron job", details: result.stderr || result.stdout },
+        { status: 500 }
+      );
+    }
 
     let jobData;
     try {
-      jobData = JSON.parse(output);
+      jobData = JSON.parse(result.stdout);
     } catch {
-      jobData = { rawOutput: output };
+      jobData = { rawOutput: result.stdout };
     }
 
     return NextResponse.json({ success: true, id, job: jobData });
@@ -300,13 +307,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
     }
 
-    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
 
-    execSync(`openclaw cron rm ${id} 2>/dev/null`, {
+    safeExecFile("openclaw", ["cron", "rm", id], {
       timeout: 10000,
-      encoding: "utf-8",
     });
 
     return NextResponse.json({ success: true, deleted: id });

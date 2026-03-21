@@ -3,6 +3,15 @@ import { NextRequest } from "next/server";
 import { GET, POST } from "./route";
 import { clearAllDataForTesting } from "@/lib/kanban-db";
 
+function createMockRequest(url: string, options?: { method?: string; body?: unknown }): NextRequest {
+  const fullUrl = new URL(url, "http://localhost");
+  return new NextRequest(fullUrl, {
+    method: options?.method ?? "GET",
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+    headers: options?.body ? { "Content-Type": "application/json" } : undefined,
+  });
+}
+
 describe("/api/kanban/tasks", () => {
   beforeEach(() => {
     clearAllDataForTesting();
@@ -16,14 +25,14 @@ describe("/api/kanban/tasks", () => {
     it("returns empty tasks array when no tasks exist", async () => {
       const request = createMockRequest("/api/kanban/tasks");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.tasks).toEqual([]);
     });
 
     it("returns all tasks", async () => {
-      // Create tasks via POST first
       const createRequest1 = createMockRequest("/api/kanban/tasks", {
         method: "POST",
         body: { title: "Task 1" },
@@ -37,14 +46,14 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.tasks.length).toBe(2);
     });
 
     it("filters by status", async () => {
-      // Create tasks
       const createRequest1 = createMockRequest("/api/kanban/tasks", {
         method: "POST",
         body: { title: "Backlog task", status: "backlog" },
@@ -58,7 +67,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?status=backlog");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].status).toBe("backlog");
@@ -73,7 +83,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?columnId=in_progress");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].status).toBe("in_progress");
@@ -93,7 +104,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?assignee=John");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].assignee).toBe("John");
@@ -113,7 +125,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?priority=high");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].priority).toBe("high");
@@ -133,7 +146,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?search=bug");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].title).toBe("Fix authentication bug");
@@ -153,7 +167,8 @@ describe("/api/kanban/tasks", () => {
 
       const request = createMockRequest("/api/kanban/tasks?status=backlog&priority=high");
       const response = await GET(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
       expect(data.tasks.length).toBe(1);
       expect(data.tasks[0].title).toBe("Bug in auth");
@@ -167,9 +182,10 @@ describe("/api/kanban/tasks", () => {
         body: { title: "New task" },
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(201);
+      expect(response!.status).toBe(201);
       expect(data.task.id).toBeDefined();
       expect(data.task.title).toBe("New task");
       expect(data.task.status).toBe("backlog");
@@ -189,9 +205,10 @@ describe("/api/kanban/tasks", () => {
         },
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(201);
+      expect(response!.status).toBe(201);
       expect(data.task.title).toBe("Full task");
       expect(data.task.description).toBe("Description");
       expect(data.task.status).toBe("in_progress");
@@ -206,9 +223,10 @@ describe("/api/kanban/tasks", () => {
         body: {},
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Title is required");
     });
 
@@ -218,9 +236,10 @@ describe("/api/kanban/tasks", () => {
         body: { title: 123 },
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Title is required");
     });
 
@@ -230,9 +249,10 @@ describe("/api/kanban/tasks", () => {
         body: { title: "a".repeat(201) },
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Title must be 200 characters or less");
     });
 
@@ -242,9 +262,10 @@ describe("/api/kanban/tasks", () => {
         body: { title: "Task", priority: "invalid" },
       });
       const response = await POST(request);
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toContain("Invalid priority");
     });
 
@@ -257,20 +278,12 @@ describe("/api/kanban/tasks", () => {
           body: { title: `Task ${priority}`, priority },
         });
         const response = await POST(request);
-        const data = await response.json();
+        expect(response).toBeDefined();
+        const data = await response!.json();
 
-        expect(response.status).toBe(201);
+        expect(response!.status).toBe(201);
         expect(data.task.priority).toBe(priority);
       }
     });
   });
 });
-
-function createMockRequest(url: string, options?: { method?: string; body?: unknown }): NextRequest {
-  const fullUrl = new URL(url, "http://localhost");
-  return new NextRequest(fullUrl, {
-    method: options?.method ?? "GET",
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-    headers: options?.body ? { "Content-Type": "application/json" } : undefined,
-  });
-}

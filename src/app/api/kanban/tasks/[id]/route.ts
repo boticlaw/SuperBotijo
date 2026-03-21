@@ -14,6 +14,7 @@ import {
   shouldRequireTransitionComment,
 } from "@/lib/kanban-comments";
 import { emitKanbanTaskUpdated, emitKanbanTaskDeleted } from "@/lib/runtime-events";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 /**
  * PUT /api/kanban/tasks/[id]
  * Update a task
+ * Authorization: Requires authenticated session
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 
@@ -194,8 +201,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE /api/kanban/tasks/[id]
  * Delete a task
+ * Authorization: Requires authenticated session
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { safeExecFile, isValidId } from "@/lib/safe-exec";
 
 export const dynamic = "force-dynamic";
 
@@ -17,34 +17,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Job ID required" }, { status: 400 });
     }
 
-    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
     }
 
     let runs: RunEntry[] = [];
 
     try {
-      const output = execSync(`openclaw cron runs ${id} --json 2>/dev/null`, {
+      const result = safeExecFile("openclaw", ["cron", "runs", id, "--json"], {
         timeout: 10000,
-        encoding: "utf-8",
       });
 
-      const data = JSON.parse(output);
-      const rawRuns: RawRun[] = data.runs || data || [];
+      if (result.status === 0 && result.stdout) {
+        const data = JSON.parse(result.stdout);
+        const rawRuns: RawRun[] = data.runs || data || [];
 
-      runs = rawRuns.map((r: RawRun) => ({
-        id: r.id || `${id}-${r.startedAt}`,
-        jobId: id,
-        startedAt: r.startedAt || r.createdAt || null,
-        completedAt: r.completedAt || r.finishedAt || null,
-        status: r.status || "unknown",
-        durationMs:
-          r.durationMs ||
-          (r.startedAt && r.completedAt
-            ? new Date(r.completedAt).getTime() - new Date(r.startedAt).getTime()
-            : null),
-        error: r.error || null,
-      }));
+        runs = rawRuns.map((r: RawRun) => ({
+          id: r.id || `${id}-${r.startedAt}`,
+          jobId: id,
+          startedAt: r.startedAt || r.createdAt || null,
+          completedAt: r.completedAt || r.finishedAt || null,
+          status: r.status || "unknown",
+          durationMs:
+            r.durationMs ||
+            (r.startedAt && r.completedAt
+              ? new Date(r.completedAt).getTime() - new Date(r.startedAt).getTime()
+              : null),
+          error: r.error || null,
+        }));
+      }
     } catch {
       runs = [];
     }

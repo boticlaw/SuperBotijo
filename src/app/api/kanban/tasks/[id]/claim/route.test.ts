@@ -37,9 +37,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.claimedBy).toBe("agent-1");
       expect(data.task.claimedAt).toBeDefined();
     });
@@ -56,9 +57,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await POST(request, {
         params: createParams("non-existent"),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task not found");
     });
 
@@ -72,9 +74,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(409);
+      expect(response!.status).toBe(409);
       expect(data.error).toBe("Task already claimed by another agent");
       expect(data.claimedBy).toBe("agent-1");
     });
@@ -89,9 +92,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.claimedBy).toBe("agent-1");
     });
 
@@ -103,9 +107,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("agentName is required and must be a string");
     });
 
@@ -117,9 +122,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("agentName is required and must be a string");
     });
 
@@ -130,9 +136,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await POST(request, { params: createParams("") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Task ID is required");
     });
   });
@@ -153,9 +160,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(request, {
         params: createParams(task.id),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.claimedBy).toBeNull();
       expect(data.task.claimedAt).toBeNull();
     });
@@ -172,9 +180,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(request, {
         params: createParams("non-existent"),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task not found");
     });
 
@@ -193,9 +202,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(request, {
         params: createParams(task.id),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(403);
+      expect(response!.status).toBe(403);
       expect(data.error).toBe("Cannot release claim owned by another agent");
     });
 
@@ -213,9 +223,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(request, {
         params: createParams(task.id),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Task is not currently claimed");
     });
 
@@ -232,9 +243,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(request, {
         params: createParams(task.id),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("agentName is required and must be a string");
     });
 
@@ -245,9 +257,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       });
 
       const response = await DELETE(request, { params: createParams("") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Task ID is required");
     });
   });
@@ -266,9 +279,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const claimResponse = await POST(claimRequest, {
         params: createParams(task.id),
       });
-      const claimData = await claimResponse.json();
+      expect(claimResponse).toBeDefined();
+      const claimData = await claimResponse!.json();
 
-      expect(claimResponse.status).toBe(200);
+      expect(claimResponse!.status).toBe(200);
       expect(claimData.task.claimedBy).toBe("agent-1");
 
       const releaseRequest = createMockRequest(
@@ -281,9 +295,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const releaseResponse = await DELETE(releaseRequest, {
         params: createParams(task.id),
       });
-      const releaseData = await releaseResponse.json();
+      expect(releaseResponse).toBeDefined();
+      const releaseData = await releaseResponse!.json();
 
-      expect(releaseResponse.status).toBe(200);
+      expect(releaseResponse!.status).toBe(200);
       expect(releaseData.task.claimedBy).toBeNull();
 
       const reclaimRequest = createMockRequest(
@@ -296,9 +311,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const reclaimResponse = await POST(reclaimRequest, {
         params: createParams(task.id),
       });
-      const reclaimData = await reclaimResponse.json();
+      expect(reclaimResponse).toBeDefined();
+      const reclaimData = await reclaimResponse!.json();
 
-      expect(reclaimResponse.status).toBe(200);
+      expect(reclaimResponse!.status).toBe(200);
       expect(reclaimData.task.claimedBy).toBe("agent-2");
     });
 
@@ -324,9 +340,10 @@ describe("/api/kanban/tasks/[id]/claim", () => {
       const response = await DELETE(releaseRequest, {
         params: createParams(task.id),
       });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(403);
+      expect(response!.status).toBe(403);
       expect(data.error).toContain("another agent");
     });
   });

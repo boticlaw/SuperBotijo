@@ -42,17 +42,19 @@ describe("/api/kanban/tasks/[id]/comments", () => {
     });
 
     const postResponse = await POST(postRequest, { params: createParams(task.id) });
-    const postData = await postResponse.json();
+    expect(postResponse).toBeDefined();
+    const postData = await postResponse!.json();
 
-    expect(postResponse.status).toBe(201);
+    expect(postResponse!.status).toBe(201);
     expect(postData.comment.body).toBe("Looks good");
     expect(postData.comment.metadata.commentType).toBe("progress");
 
     const getRequest = createMockRequest(`/api/kanban/tasks/${task.id}/comments?limit=10`);
     const getResponse = await GET(getRequest, { params: createParams(task.id) });
-    const getData = await getResponse.json();
+    expect(getResponse).toBeDefined();
+    const getData = await getResponse!.json();
 
-    expect(getResponse.status).toBe(200);
+    expect(getResponse!.status).toBe(200);
     expect(getData.comments.length).toBe(1);
     expect(getData.comments[0].body).toBe("Looks good");
   });
@@ -60,9 +62,10 @@ describe("/api/kanban/tasks/[id]/comments", () => {
   it("returns 404 for unknown task", async () => {
     const request = createMockRequest("/api/kanban/tasks/missing/comments");
     const response = await GET(request, { params: createParams("missing") });
-    const data = await response.json();
+    expect(response).toBeDefined();
+    const data = await response!.json();
 
-    expect(response.status).toBe(404);
+    expect(response!.status).toBe(404);
     expect(data.error).toBe("Task not found");
   });
 
@@ -78,9 +81,10 @@ describe("/api/kanban/tasks/[id]/comments", () => {
     });
 
     const response = await POST(request, { params: createParams(task.id) });
-    const data = await response.json();
+    expect(response).toBeDefined();
+    const data = await response!.json();
 
-    expect(response.status).toBe(400);
+    expect(response!.status).toBe(400);
     expect(data.error).toContain("Comment rejected");
   });
 
@@ -94,7 +98,8 @@ describe("/api/kanban/tasks/[id]/comments", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      expect(response.status).toBe(201);
+      expect(response).toBeDefined();
+      expect(response!.status).toBe(201);
     }
 
     const blockedRequest = createMockRequest(`/api/kanban/tasks/${task.id}/comments`, {
@@ -103,6 +108,7 @@ describe("/api/kanban/tasks/[id]/comments", () => {
     });
 
     const blockedResponse = await POST(blockedRequest, { params: createParams(task.id) });
-    expect(blockedResponse.status).toBe(429);
+    expect(blockedResponse).toBeDefined();
+    expect(blockedResponse!.status).toBe(429);
   });
 });

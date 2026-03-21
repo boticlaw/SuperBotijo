@@ -4,7 +4,7 @@
  * Updates a specific skill to latest or specified version
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile, isValidSlug, isValidVersion } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,37 +15,50 @@ export async function POST(
   const { id } = await params;
   const slug = decodeURIComponent(id);
 
+  if (!isValidSlug(slug)) {
+    return NextResponse.json(
+      { error: 'Invalid skill slug' },
+      { status: 400 }
+    );
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const { version } = body;
 
-    // Update using ClawHub CLI
-    const versionArg = version ? ` --version ${version}` : '';
-    const command = `clawhub update${versionArg} "${slug}" 2>&1`;
+    const args: string[] = ["update", slug];
 
-    console.log(`[skills/update] Running: ${command}`);
+    if (version) {
+      if (!isValidVersion(version)) {
+        return NextResponse.json(
+          { error: 'Invalid version format' },
+          { status: 400 }
+        );
+      }
+      args.push("--version", version);
+    }
 
-    const output = execSync(command, {
+    console.log(`[skills/update] Running: clawhub update ${slug}${version ? ` --version ${version}` : ''}`);
+
+    const result = safeExecFile("clawhub", args, {
       timeout: 30000,
-      encoding: 'utf-8',
       cwd: process.cwd(),
     });
 
-    console.log(`[skills/update] Output:`, output);
-
-    // Check if update was successful
-    if (output.includes('Error') || output.includes('Failed')) {
+    if (result.status !== 0 || result.stdout.includes('Error') || result.stdout.includes('Failed')) {
       return NextResponse.json(
-        { error: 'Update failed', output },
+        { error: 'Update failed', output: result.stdout || result.stderr },
         { status: 500 }
       );
     }
+
+    console.log(`[skills/update] Output:`, result.stdout);
 
     return NextResponse.json({
       success: true,
       slug,
       version: version || 'latest',
-      output,
+      output: result.stdout,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

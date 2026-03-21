@@ -7,6 +7,7 @@ import {
   type ListTasksFilters,
 } from "@/lib/kanban-db";
 import { emitKanbanTaskCreated } from "@/lib/runtime-events";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -48,8 +49,14 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/kanban/tasks
  * Create a new task
+ * Authorization: Requires authenticated session
  */
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const body: CreateTaskInput = await request.json();
 

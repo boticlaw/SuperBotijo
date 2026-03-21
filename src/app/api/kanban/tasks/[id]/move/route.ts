@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { moveTask, getTask } from "@/lib/kanban-db";
 import { emitKanbanTaskMoved } from "@/lib/runtime-events";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,14 @@ interface MoveTaskBody {
 /**
  * POST /api/kanban/tasks/[id]/move
  * Move a task to a different column/position
+ * Authorization: Requires authenticated session
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

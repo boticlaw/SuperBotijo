@@ -4,7 +4,7 @@
  * Tests connectivity for a specific integration
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile } from '@/lib/safe-exec';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -45,17 +45,25 @@ async function testTelegram(): Promise<TestResult> {
 
     // Try to get bot info
     try {
-      execSync('openclaw message send --help 2>&1', {
+      const result = safeExecFile("openclaw", ["message", "send", "--help"], {
         timeout: 5000,
-        encoding: 'utf-8',
       });
       
-      return {
-        success: true,
-        message: 'Telegram CLI is available',
-        details: `${accounts.length} bot(s) configured`,
-        timestamp: new Date().toISOString(),
-      };
+      if (result.status === 0) {
+        return {
+          success: true,
+          message: 'Telegram CLI is available',
+          details: `${accounts.length} bot(s) configured`,
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Telegram CLI not available',
+          details: result.stderr || 'Unknown error',
+          timestamp: new Date().toISOString(),
+        };
+      }
     } catch (error) {
       return {
         success: false,
@@ -78,12 +86,11 @@ async function testTwitter(): Promise<TestResult> {
   try {
     // Check if bird CLI is available
     try {
-      const result = execSync('which bird 2>&1', {
+      const whichResult = safeExecFile("which", ["bird"], {
         timeout: 5000,
-        encoding: 'utf-8',
       });
       
-      if (!result.includes('bird')) {
+      if (whichResult.status !== 0 || !whichResult.stdout.includes('bird')) {
         return {
           success: false,
           message: 'bird CLI not found',
@@ -93,17 +100,25 @@ async function testTwitter(): Promise<TestResult> {
 
       // Try to get user info
       try {
-        execSync('bird user show --json 2>&1', {
+        const userResult = safeExecFile("bird", ["user", "show", "--json"], {
           timeout: 10000,
-          encoding: 'utf-8',
         });
         
-        return {
-          success: true,
-          message: 'Twitter connection successful',
-          details: 'bird CLI is configured',
-          timestamp: new Date().toISOString(),
-        };
+        if (userResult.status === 0) {
+          return {
+            success: true,
+            message: 'Twitter connection successful',
+            details: 'bird CLI is configured',
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Twitter authentication failed',
+            details: 'Run "bird auth login" to authenticate',
+            timestamp: new Date().toISOString(),
+          };
+        }
       } catch {
         return {
           success: false,
@@ -133,12 +148,11 @@ async function testGoogle(): Promise<TestResult> {
   try {
     // Check if gog is available
     try {
-      const result = execSync('which gog 2>&1', {
+      const whichResult = safeExecFile("which", ["gog"], {
         timeout: 5000,
-        encoding: 'utf-8',
       });
       
-      if (!result.includes('gog')) {
+      if (whichResult.status !== 0 || !whichResult.stdout.includes('gog')) {
         return {
           success: false,
           message: 'gog CLI not found',
@@ -148,17 +162,25 @@ async function testGoogle(): Promise<TestResult> {
 
       // Try to get user info
       try {
-        execSync('gog user show 2>&1', {
+        const userResult = safeExecFile("gog", ["user", "show"], {
           timeout: 10000,
-          encoding: 'utf-8',
         });
         
-        return {
-          success: true,
-          message: 'Google connection successful',
-          details: 'gog CLI is authenticated',
-          timestamp: new Date().toISOString(),
-        };
+        if (userResult.status === 0) {
+          return {
+            success: true,
+            message: 'Google connection successful',
+            details: 'gog CLI is authenticated',
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Google authentication failed',
+            details: 'Run "gog auth login" to authenticate',
+            timestamp: new Date().toISOString(),
+          };
+        }
       } catch {
         return {
           success: false,

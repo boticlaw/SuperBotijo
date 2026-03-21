@@ -1,23 +1,7 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { safeExecFile, isValidId } from "@/lib/safe-exec";
 
 export const dynamic = "force-dynamic";
-
-const SAFE_SESSION_KEY_PATTERN = /^[a-zA-Z0-9_\-./]+$/;
-
-function isValidSessionKey(key: string): boolean {
-  if (!key || key.length === 0 || key.length > 255) {
-    return false;
-  }
-  if (key.includes("..") || key.includes("\0")) {
-    return false;
-  }
-  return SAFE_SESSION_KEY_PATTERN.test(key);
-}
-
-function escapeShellArg(arg: string): string {
-  return arg.replace(/[^a-zA-Z0-9_\-./]/g, "");
-}
 
 interface ModelUpdateResponse {
   success: boolean;
@@ -43,32 +27,32 @@ export async function PATCH(
 
     const decodedKey = decodeURIComponent(key);
 
-    if (!isValidSessionKey(decodedKey)) {
+    if (!isValidId(decodedKey)) {
       return NextResponse.json(
         { success: false, error: "Invalid session key" },
         { status: 400 }
       );
     }
 
-    const safeKey = escapeShellArg(decodedKey);
-    const safeModel = escapeShellArg(model);
-
-    try {
-      execSync(`openclaw session set-model "${safeKey}" "${safeModel}"`, {
-        encoding: "utf-8",
-        timeout: 10000,
-      });
-
-      return NextResponse.json({ success: true, model });
-    } catch {
+    if (!isValidId(model)) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Model change not supported - command not available",
-        },
+        { success: false, error: "Invalid model identifier" },
         { status: 400 }
       );
     }
+
+    const result = safeExecFile("openclaw", ["session", "set-model", decodedKey, model], {
+      timeout: 10000,
+    });
+
+    if (result.status !== 0) {
+      return NextResponse.json(
+        { success: false, error: "Model change not supported - command not available" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true, model });
   } catch (error) {
     console.error("[session/model] Error:", error);
     return NextResponse.json(

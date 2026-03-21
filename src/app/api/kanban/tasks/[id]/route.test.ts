@@ -12,7 +12,6 @@ function createMockRequest(url: string, options?: { method?: string; body?: unkn
   });
 }
 
-// Helper to create params object like Next.js would
 function createParams(id: string): Promise<{ id: string }> {
   return Promise.resolve({ id });
 }
@@ -39,9 +38,10 @@ describe("/api/kanban/tasks/[id]", () => {
       const task = createTask({ title: "Test task" });
       const request = createMockRequest(`/api/kanban/tasks/${task.id}`);
       const response = await GET(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.id).toBe(task.id);
       expect(data.task.title).toBe("Test task");
     });
@@ -49,9 +49,10 @@ describe("/api/kanban/tasks/[id]", () => {
     it("returns 404 for non-existent task", async () => {
       const request = createMockRequest("/api/kanban/tasks/non-existent-id");
       const response = await GET(request, { params: createParams("non-existent-id") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task not found");
     });
   });
@@ -64,9 +65,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { title: "Updated title" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.title).toBe("Updated title");
     });
 
@@ -77,9 +79,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { description: "New description" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.description).toBe("New description");
     });
 
@@ -90,9 +93,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { status: "done" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("done");
     });
 
@@ -103,9 +107,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { priority: "critical" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.priority).toBe("critical");
     });
 
@@ -116,9 +121,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { assignee: "Jane Doe" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.assignee).toBe("Jane Doe");
     });
 
@@ -129,9 +135,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { labels: [{ name: "feature", color: "#00ff00" }] },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.labels).toEqual([{ name: "feature", color: "#00ff00" }]);
     });
 
@@ -147,9 +154,10 @@ describe("/api/kanban/tasks/[id]", () => {
         },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.title).toBe("Multi update");
       expect(data.task.description).toBe("New desc");
       expect(data.task.status).toBe("review");
@@ -162,9 +170,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { title: "New title" },
       });
       const response = await PUT(request, { params: createParams("non-existent-id") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task not found");
     });
 
@@ -175,9 +184,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { title: "" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Title must be a non-empty string");
     });
 
@@ -188,9 +198,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { title: "a".repeat(201) },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("Title must be 200 characters or less");
     });
 
@@ -201,9 +212,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { priority: "invalid" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toContain("Invalid priority");
     });
 
@@ -214,9 +226,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: {},
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.title).toBe("Test task");
     });
 
@@ -229,9 +242,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { status: "done" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toContain("comment is required");
     });
 
@@ -244,9 +258,10 @@ describe("/api/kanban/tasks/[id]", () => {
         body: { status: "review", comment: "Ready for review" },
       });
       const response = await PUT(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("review");
 
       const comments = listTaskComments({ taskId: task.id, limit: 10 });
@@ -265,9 +280,10 @@ describe("/api/kanban/tasks/[id]", () => {
         method: "DELETE",
       });
       const response = await DELETE(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.deleted).toBe(task.id);
     });
@@ -277,9 +293,10 @@ describe("/api/kanban/tasks/[id]", () => {
         method: "DELETE",
       });
       const response = await DELETE(request, { params: createParams("non-existent-id") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task not found");
     });
 
@@ -290,11 +307,11 @@ describe("/api/kanban/tasks/[id]", () => {
       });
       await DELETE(request, { params: createParams(task.id) });
 
-      // Try to get the deleted task
       const getRequest = createMockRequest(`/api/kanban/tasks/${task.id}`);
       const getResponse = await GET(getRequest, { params: createParams(task.id) });
+      expect(getResponse).toBeDefined();
 
-      expect(getResponse.status).toBe(404);
+      expect(getResponse!.status).toBe(404);
     });
   });
 });

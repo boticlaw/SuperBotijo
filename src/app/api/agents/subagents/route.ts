@@ -3,7 +3,7 @@
  * GET /api/agents/subagents - Returns currently active sub-agent sessions
  */
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { safeExecFile } from '@/lib/safe-exec';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,12 +44,15 @@ function parseSubagentKey(key: string): { parentId: string; subagentId: string }
 
 export async function GET() {
   try {
-    const output = execSync('openclaw sessions --json 2>/dev/null', {
+    const result = safeExecFile("openclaw", ["sessions", "--json"], {
       timeout: 10000,
-      encoding: 'utf-8',
     });
 
-    const data = JSON.parse(output);
+    if (result.status !== 0 || !result.stdout) {
+      return NextResponse.json({ subagents: [], total: 0 });
+    }
+
+    const data = JSON.parse(result.stdout);
     const rawSessions: RawSession[] = data.sessions || [];
 
     // Filter to only subagent sessions

@@ -33,9 +33,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "done" },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("done");
     });
 
@@ -46,9 +47,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "backlog", targetOrder: 500 },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("backlog");
     });
 
@@ -59,9 +61,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "in_progress", targetOrder: 1500 },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("in_progress");
     });
 
@@ -71,9 +74,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "done" },
       });
       const response = await POST(request, { params: createParams("non-existent") });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task or target column not found");
     });
 
@@ -84,9 +88,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "non-existent-column" },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(404);
+      expect(response!.status).toBe(404);
       expect(data.error).toBe("Task or target column not found");
     });
 
@@ -97,9 +102,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: {},
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("targetColumnId is required");
     });
 
@@ -110,9 +116,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: 123 },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("targetColumnId is required");
     });
 
@@ -123,9 +130,10 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "done", targetOrder: "not-a-number" },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(400);
+      expect(response!.status).toBe(400);
       expect(data.error).toBe("targetOrder must be a number if provided");
     });
 
@@ -136,14 +144,14 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "done", targetOrder: 0 },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("done");
     });
 
     it("appends at end when targetOrder is not provided", async () => {
-      // Create existing task in done column
       createTask({ status: "done", title: "Existing task" });
       
       const task = createTask({ status: "backlog", title: "To move" });
@@ -152,11 +160,11 @@ describe("/api/kanban/tasks/[id]/move", () => {
         body: { targetColumnId: "done" },
       });
       const response = await POST(request, { params: createParams(task.id) });
-      const data = await response.json();
+      expect(response).toBeDefined();
+      const data = await response!.json();
 
-      expect(response.status).toBe(200);
+      expect(response!.status).toBe(200);
       expect(data.task.status).toBe("done");
-      // Order should be high since it's appended at the end
       expect(data.task.order).toBeGreaterThan(1000);
     });
   });

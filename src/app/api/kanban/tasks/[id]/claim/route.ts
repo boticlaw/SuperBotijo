@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { claimTask, releaseTask, getTask } from "@/lib/kanban-db";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,15 @@ interface ClaimBody {
 /**
  * POST /api/kanban/tasks/[id]/claim
  * Atomically claim a task for an agent
+ * Authorization: Requires authenticated session
  * Returns 200 if claimed successfully, 409 if already claimed by another agent
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 
@@ -79,9 +86,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE /api/kanban/tasks/[id]/claim
  * Release a task claim
+ * Authorization: Requires authenticated session
  * Only the claiming agent can release their own claim
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

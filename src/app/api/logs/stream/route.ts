@@ -3,7 +3,8 @@
  * GET /api/logs/stream?service=<name>&backend=<pm2|systemd>
  */
 import { NextRequest } from "next/server";
-import { spawn, execSync } from "child_process";
+import { spawn } from "child_process";
+import { safeExecFile } from "@/lib/safe-exec";
 
 interface Pm2Process {
   name: string;
@@ -13,28 +14,11 @@ function discoverAllowedServices(): Set<string> {
   const allowed = new Set<string>();
 
   try {
-    const stdout = execSync(
-      "systemctl list-units --type=service --state=running --no-pager -o json 2>/dev/null",
-      { encoding: "utf-8" }
-    );
-    const units = JSON.parse(stdout) as Array<{ unit: string }>;
-    for (const svc of units) {
-      allowed.add(svc.unit.replace(".service", ""));
-    }
-  } catch {
-    // Ignore
-  }
-
-  try {
-    const stdout = execSync(
-      "systemctl list-unit-files --type=service --no-pager 2>/dev/null",
-      { encoding: "utf-8" }
-    );
-    const lines = stdout.split("\n");
-    for (const line of lines) {
-      const match = line.match(/^(\S+)\.service\s+/);
-      if (match) {
-        allowed.add(match[1]);
+    const result = safeExecFile("systemctl", ["list-units", "--type=service", "--state=running", "--no-pager", "-o", "json"], {});
+    if (result.status === 0 && result.stdout) {
+      const units = JSON.parse(result.stdout) as Array<{ unit: string }>;
+      for (const svc of units) {
+        allowed.add(svc.unit.replace(".service", ""));
       }
     }
   } catch {
@@ -42,11 +26,30 @@ function discoverAllowedServices(): Set<string> {
   }
 
   try {
-    execSync("which pm2", { encoding: "utf-8", stdio: "pipe" });
-    const stdout = execSync("pm2 jlist 2>/dev/null", { encoding: "utf-8" });
-    const pm2List = JSON.parse(stdout) as Pm2Process[];
-    for (const proc of pm2List) {
-      allowed.add(proc.name);
+    const result = safeExecFile("systemctl", ["list-unit-files", "--type=service", "--no-pager"], {});
+    if (result.status === 0 && result.stdout) {
+      const lines = result.stdout.split("\n");
+      for (const line of lines) {
+        const match = line.match(/^(\S+)\.service\s+/);
+        if (match) {
+          allowed.add(match[1]);
+        }
+      }
+    }
+  } catch {
+    // Ignore
+  }
+
+  try {
+    const whichResult = safeExecFile("which", ["pm2"], {});
+    if (whichResult.status === 0) {
+      const pm2Result = safeExecFile("pm2", ["jlist"], {});
+      if (pm2Result.status === 0 && pm2Result.stdout) {
+        const pm2List = JSON.parse(pm2Result.stdout) as Pm2Process[];
+        for (const proc of pm2List) {
+          allowed.add(proc.name);
+        }
+      }
     }
   } catch {
     // PM2 not available

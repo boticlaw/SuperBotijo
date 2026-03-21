@@ -11,6 +11,7 @@ import {
   isCommentRateLimited,
   normalizeStructuredCommentPayload,
 } from "@/lib/kanban-comments";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

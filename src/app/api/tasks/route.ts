@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { safeExecFile, isValidId } from "@/lib/safe-exec";
 
 export const dynamic = "force-dynamic";
 
@@ -46,51 +46,52 @@ export async function GET() {
 
     // 1. Get OpenClaw cron jobs
     try {
-      const output = execSync("openclaw cron list --json --all 2>/dev/null", {
+      const result = safeExecFile("openclaw", ["cron", "list", "--json", "--all"], {
         timeout: 10000,
-        encoding: "utf-8",
       });
 
-      const parsed = JSON.parse(output);
-      const cronJobs = parsed.jobs || [];
+      if (result.status === 0 && result.stdout) {
+        const parsed = JSON.parse(result.stdout);
+        const cronJobs = parsed.jobs || [];
 
-      for (const job of cronJobs) {
-        const schedule = job.schedule || {};
-        const state = job.state || {};
+        for (const job of cronJobs) {
+          const schedule = job.schedule || {};
+          const state = job.state || {};
 
-        let scheduleDisplay = "Custom";
-        let scheduleString = "* * * * *";
+          let scheduleDisplay = "Custom";
+          let scheduleString = "* * * * *";
 
-        if (schedule.kind === "every") {
-          const everyMs = schedule.everyMs;
-          if (everyMs === 1800000) scheduleDisplay = "Every 30 min";
-          else if (everyMs === 3600000) scheduleDisplay = "Every hour";
-          else if (everyMs === 86400000) scheduleDisplay = "Daily";
-          else scheduleDisplay = `Every ${everyMs / 60000} min`;
-          scheduleString = `*/${everyMs / 60000} * * * *`;
-        } else if (schedule.kind === "cron") {
-          scheduleString = schedule.expr || "* * * * *";
-          scheduleDisplay = scheduleString;
+          if (schedule.kind === "every") {
+            const everyMs = schedule.everyMs;
+            if (everyMs === 1800000) scheduleDisplay = "Every 30 min";
+            else if (everyMs === 3600000) scheduleDisplay = "Every hour";
+            else if (everyMs === 86400000) scheduleDisplay = "Daily";
+            else scheduleDisplay = `Every ${everyMs / 60000} min`;
+            scheduleString = `*/${everyMs / 60000} * * * *`;
+          } else if (schedule.kind === "cron") {
+            scheduleString = schedule.expr || "* * * * *";
+            scheduleDisplay = scheduleString;
+          }
+
+          let status: "success" | "error" | "running" | "pending" = "pending";
+          if (state.lastRunStatus === "success") status = "success";
+          else if (state.lastRunStatus === "error") status = "error";
+
+          tasks.push({
+            id: job.id,
+            name: job.name,
+            type: "cron",
+            agentId: job.agentId,
+            schedule: scheduleString,
+            scheduleDisplay,
+            enabled: job.enabled !== false,
+            nextRun: state.nextRunAtMs ? new Date(state.nextRunAtMs).toISOString() : null,
+            lastRun: state.lastRunAtMs ? new Date(state.lastRunAtMs).toISOString() : null,
+            description: job.description,
+            status,
+            error: state.lastError,
+          });
         }
-
-        let status: "success" | "error" | "running" | "pending" = "pending";
-        if (state.lastRunStatus === "success") status = "success";
-        else if (state.lastRunStatus === "error") status = "error";
-
-        tasks.push({
-          id: job.id,
-          name: job.name,
-          type: "cron",
-          agentId: job.agentId,
-          schedule: scheduleString,
-          scheduleDisplay,
-          enabled: job.enabled !== false,
-          nextRun: state.nextRunAtMs ? new Date(state.nextRunAtMs).toISOString() : null,
-          lastRun: state.lastRunAtMs ? new Date(state.lastRunAtMs).toISOString() : null,
-          description: job.description,
-          status,
-          error: state.lastError,
-        });
       }
     } catch (error) {
       console.error("[tasks API] Error fetching cron jobs:", error);
@@ -196,11 +197,13 @@ export async function DELETE(request: Request) {
     }
 
     // For cron jobs, use CLI (timeout 5 seconds)
+    if (!isValidId(jobId)) {
+      return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
+    }
+
     try {
-      execSync(`openclaw cron rm ${jobId}`, {
+      safeExecFile("openclaw", ["cron", "rm", jobId], {
         timeout: 5000,
-        encoding: "utf-8",
-        stdio: "pipe",
       });
       return NextResponse.json({ success: true, message: `Cron job ${jobId} deleted` });
     } catch (execError) {
