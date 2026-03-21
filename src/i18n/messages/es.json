@@ -45,6 +45,7 @@
   "dock": {
     "dashboard": "Panel",
     "agents": "Agentes",
+    "kanban": "Kanban",
     "chat": "Chat",
     "office": "Oficina",
     "memory": "Memoria",
@@ -54,6 +55,56 @@
     "system": "Sistema",
     "settings": "Config",
     "logout": "Salir"
+  },
+  "help": {
+    "dashboard": {
+      "title": "Panel Principal",
+      "description": "Resumen de la actividad del agente, estadísticas rápidas y eventos recientes. Tu centro de comando para monitorear OpenClaw."
+    },
+    "agents": {
+      "title": "Agentes",
+      "description": "Ver y gestionar tus agentes de IA. Ver jerarquía y crear subagentes."
+    },
+    "office": {
+      "title": "Oficina 3D",
+      "description": "Visualización 3D interactiva del workspace de tus agentes. Una forma divertida de ver a tus agentes en acción."
+    },
+    "kanban": {
+      "title": "Kanban",
+      "description": "Tablero de tareas para gestionar el trabajo de agentes. Crear, organizar y trackear tareas entre columnas."
+    },
+    "chat": {
+      "title": "Chat Directo",
+      "description": "Chateá con agentes de OpenClaw usando sesiones canónicas y streaming en vivo del gateway."
+    },
+    "memory": {
+      "title": "Explorador de Memoria",
+      "description": "Explorar y editar archivos de memoria del agente. Ver qué recuerdan tus agentes entre sesiones."
+    },
+    "files": {
+      "title": "Explorador de Archivos",
+      "description": "Navegar por workspaces y archivos del agente. Explorar el código en el que trabajan tus agentes."
+    },
+    "analytics": {
+      "title": "Analíticas y Costos",
+      "description": "Seguimiento de uso de tokens, costos por modelo y presupuesto. Mantener el gasto en IA bajo control."
+    },
+    "terminal": {
+      "title": "Terminal",
+      "description": "Terminal basada en navegador para comandos rápidos. Solo lectura por seguridad (ls, cat, git status, etc.)"
+    },
+    "system": {
+      "title": "Monitor del Sistema",
+      "description": "Monitoreo del servidor en tiempo real. CPU, RAM, disco, red y estado de servicios."
+    },
+    "settings": {
+      "title": "Configuración",
+      "description": "Configurar OpenClaw, editar precios de modelos y gestionar ajustes del sistema."
+    },
+    "mission": {
+      "title": "Centro de Misión",
+      "description": "Definir el propósito, objetivos y valores centrales de tu agente. Esto guía la toma de decisiones y priorización."
+    }
   },
   "topbar": {
     "search": "Buscar... ⌘K",
@@ -93,6 +144,22 @@
       "degradedTitle": "Telemetría degradada en {count} sección(es)",
       "degradedItem": "{section}: {message}"
     }
+  },
+  "fleet": {
+    "title": "Flota",
+    "loading": "Cargando flota...",
+    "loadError": "No se pudo cargar datos de la flota.",
+    "overview": "Vista general de agentes cross-instancia",
+    "instances": "instancias",
+    "totalAgents": "agentes totales",
+    "sessions": "sesiones",
+    "updatedSeconds": "Actualizado hace {count}s",
+    "updatedMinutes": "Actualizado hace {count}m",
+    "never": "Nunca",
+    "justNow": "Recién",
+    "minutesAgo": "hace {count}m",
+    "hoursAgo": "hace {count}h",
+    "daysAgo": "hace {count}d"
   },
   "agents": {
     "title": "Agentes",
@@ -173,6 +240,10 @@
     "failedToTrigger": "Error al activar",
     "jobUpdated": "Tarea actualizada",
     "jobCreated": "Tarea creada",
+    "jobDeleted": "Tarea eliminada",
+    "deleteError": "Error al eliminar tarea",
+    "delete": "Eliminar",
+    "deleteJob": "Eliminar Tarea",
     "confirmDelete": "¿Eliminar \"{name}\"?",
     "timelineView": "Línea de tiempo",
     "cardsView": "Tarjetas"
@@ -188,6 +259,7 @@
     "loading": "Cargando tareas...",
     "empty": "No hay tareas programadas",
     "delete": "Eliminar tarea",
+    "deleteTitle": "Eliminar Tarea",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{name}\"?",
     "count": "{count} tarea(s)"
   },
@@ -207,148 +279,59 @@
       "exitFullscreen": "Salir de pantalla completa"
     }
   },
-  "help": {
-    "dashboard": {
-      "title": "Panel Principal",
-      "description": "Resumen de la actividad del agente, estadísticas rápidas y eventos recientes. Tu centro de comando para monitorear OpenClaw."
-    },
-    "agents": {
-      "title": "Agentes",
-      "description": "Ver y gestionar tus agentes de IA. Ver jerarquía y crear subagentes."
-    },
-    "office": {
-      "title": "Oficina 3D",
-      "description": "Visualización 3D interactiva del workspace de tus agentes. Una forma divertida de ver a tus agentes en acción."
-    },
-    "memory": {
-      "title": "Explorador de Memoria",
-      "description": "Explorar y editar archivos de memoria del agente. Ver qué recuerdan tus agentes entre sesiones."
-    },
-    "files": {
-      "title": "Explorador de Archivos",
-      "description": "Navegar por workspaces y archivos del agente. Explorar el código en el que trabajan tus agentes."
-    },
-    "analytics": {
-      "title": "Analíticas y Costos",
-      "description": "Seguimiento de uso de tokens, costos por modelo y presupuesto. Mantener el gasto en IA bajo control."
-    },
-    "terminal": {
-      "title": "Terminal",
-      "description": "Terminal basada en navegador para comandos rápidos. Solo lectura por seguridad (ls, cat, git status, etc.)"
-    },
-    "system": {
-      "title": "Monitor del Sistema",
-      "description": "Monitoreo del servidor en tiempo real. CPU, RAM, disco, red y estado de servicios."
-    },
-    "settings": {
-      "title": "Configuración",
-      "description": "Configurar OpenClaw, editar precios de modelos y gestionar ajustes del sistema."
-    },
-    "chat": {
-      "title": "Chat Directo",
-      "description": "Chateá con agentes de OpenClaw usando sesiones canónicas y streaming en vivo del gateway."
-    }
+  "memory": {
+    "title": "Explorador de Memoria",
+    "subtitle": "Ver y editar archivos de memoria del agente",
+    "unsavedTitle": "Cambios sin Guardar",
+    "unsavedMessage": "Tenés cambios sin guardar. ¿Descartarlos?",
+    "discard": "Descartar",
+    "discardPrompt": "Tenés cambios sin guardar. ¿Descartarlos?",
+    "loadFilesError": "Error al cargar archivos",
+    "loadTreeError": "Error al cargar árbol de archivos",
+    "loadFileError": "Error al cargar archivo",
+    "saveFileError": "Error al guardar archivo",
+    "editor": "Editor",
+    "graph": "Gráfico",
+    "wordCloud": "Nube de Palabras",
+    "preview": "Vista previa",
+    "edit": "Editar",
+    "selectFile": "Seleccioná un archivo",
+    "selectWorkspace": "Seleccioná un workspace",
+    "noEntities": "No se encontraron entidades en memoria",
+    "runAgentToPopulate": "Ejecutá el agente para poblar la memoria"
   },
-  "about": {
-    "title": "Acerca de",
-    "description": "Conocés más sobre tu asistente de IA",
-    "online": "En línea",
-    "born": "Nacido",
-    "uptime": "tiempo activo",
-    "activities": "actividades",
-    "successRate": "tasa de éxito",
-    "skills": "skills",
-    "aboutSection": "Acerca de",
-    "aboutText1": "Soy {name}, un agente de IA ejecutándose en {openclaw} con {model} como cerebro.",
-    "aboutText2": "Mi propósito es asistir a {owner} con tareas diarias: gestionar comunicaciones, agenda, investigación, archivos y actuar como copiloto digital.",
-    "personality": "Rasgos",
-    "capabilities": "Habilidades ({count})",
-    "noSkills": "Sin habilidades configuradas",
-    "philosophy": "Cómo trabajo",
-    "builtWith": "Construido con {heart} en {link}",
-    "coPilot": "Tu copiloto de IA",
-    "model": "Modelo",
+  "terminal": {
+    "title": "Terminal del Navegador",
+    "subtitle": "Solo comandos de lectura (ls, cat, df, ps, git status, etc.)",
+    "copy": "Copiar",
+    "clear": "Limpiar",
+    "run": "Ejecutar",
+    "running": "Ejecutando...",
+    "enterCommand": "Ingresá un comando...",
+    "typeOrClick": "Escribí un comando o hacé clic en un comando rápido arriba",
+    "arrowHistory": "Flecha Arriba/Abajo para historial de comandos"
+  },
+  "skills": {
+    "title": "Gestor de Skills",
+    "subtitle": "Skills disponibles en el sistema OpenClaw",
+    "browseClawHub": "Explorar ClawHub",
+    "updateAll": "Actualizar Todas ({count})",
+    "totalSkills": "Total de Skills",
+    "workspaceSkills": "Skills del Workspace",
+    "systemSkills": "Skills del Sistema",
+    "searchPlaceholder": "Buscar skills...",
+    "all": "Todas",
     "workspace": "Workspace",
-    "platform": "Plataforma",
-    "memory": "Memoria",
-    "nodeVersion": "Node.js",
     "system": "Sistema",
-    "quickInfo": "Información",
-    "traits": {
-      "direct": "Directo",
-      "directDesc": "Sin vueltas, al grano",
-      "efficient": "Eficiente",
-      "efficientDesc": "Resultados sobre proceso",
-      "curious": "Curioso",
-      "curiousDesc": "Siempre aprendiendo",
-      "loyal": "Leal",
-      "loyalDesc": "Tu éxito es mi éxito"
-    },
-    "philosophy": {
-      "1": "Acciones sobre palabras. Menos hablar, más hacer.",
-      "2": "Tener opiniones está bien. Un asistente sin personalidad es solo un buscador.",
-      "3": "Intentar antes de pedir. Leer el archivo, buscar, explorar — luego preguntar si es necesario.",
-      "4": "La privacidad es sagrada. Acceso ≠ permiso para compartir."
-    },
-    "footer": "Hecho con ❤️ por {name}",
-    "builtWithSimple": "Hecho con"
-  },
-  "efficiency": {
-    "calculating": "Calculando eficiencia...",
-    "title": "Puntaje de Eficiencia",
-    "noData": "Sin datos disponibles. Completá algunas actividades para ver tu puntaje de eficiencia.",
-    "description": "Mide la productividad y tasa de éxito del agente",
-    "vsPrevious": "{percent}% vs período anterior",
-    "stable": "Estable",
-    "scoreComponents": "Componentes del Puntaje",
-    "successRate": "Tasa de Éxito",
-    "successRateTooltip": "Porcentaje de actividades completadas exitosamente (40% peso)",
-    "taskCompletion": "Completitud de Tareas",
-    "taskCompletionTooltip": "Tareas exitosas vs fallidas (excluye pendientes) (40% peso)",
-    "tokenEfficiency": "Eficiencia de Tokens",
-    "tokenEfficiencyTooltip": "Tokens de salida vs tokens totales (20% peso)",
-    "totalActivities": "Actividades Totales",
-    "successFailed": "Éxito / Fallidas",
-    "trendHistory": "Tendencia de Eficiencia (Últimos {days} días)",
-    "efficiencyScore": "Puntaje de Eficiencia",
-    "days": "{days}d",
-    "formula": "Fórmula:",
-    "formulaText": "Tasa de Éxito (40%) + Completitud de Tareas (40%) + Eficiencia de Tokens (20%)"
-  },
-  "topTasks": {
-    "loading": "Cargando top tasks...",
-    "title": "Top 5 Consumidores de Tokens",
-    "noData": "No hay datos de tokens disponibles",
-    "totalTokens": "{tokens} tokens totales",
-    "vsPrevious": "{percent}% vs período anterior",
-    "tasks": "{count} tareas",
-    "stable": "estable",
-    "averagePerType": "Promedio: {tokens} por tipo",
-    "viewAllActivities": "Ver todas las actividades",
-    "periodDay": "Hoy",
-    "periodWeek": "Semana",
-    "periodMonth": "Mes"
-  },
-  "heartbeat": {
-    "statusTitle": "Estado del Latido",
-    "status": "Estado",
-    "active": "✅ Activo",
-    "notConfigured": "⚪ No configurado",
-    "interval": "Intervalo",
-    "every": "Cada {interval}",
-    "target": "Objetivo",
-    "activeHours": "Horas activas",
-    "viewDocs": "Ver documentación de Latido",
-    "saving": "Guardando...",
-    "agentHeartbeatsTitle": "Heartbeats por Agente",
-    "editor": {
-      "title": "HEARTBEAT.md",
-      "preview": "Vista previa",
-      "edit": "Editar",
-      "noFile": "No se encontró archivo HEARTBEAT.md. Creá uno para habilitar los chequeos de latido.",
-      "useTemplate": "Usar Plantilla",
-      "saved": "¡Guardado!"
-    }
+    "noSkills": "No se encontraron skills",
+    "files": "archivos",
+    "disableSkill": "¿Deshabilitar skill \"{name}\"? Esto puede afectar la funcionalidad de OpenClaw.",
+    "skillEnabled": "Skill habilitada",
+    "skillDisabled": "Skill deshabilitada",
+    "disable": "Deshabilitar",
+    "enable": "Habilitar",
+    "disabled": "DESHABILITADA",
+    "homepage": "Página principal"
   },
   "logs": {
     "title": "Visor de Logs",
@@ -370,48 +353,15 @@
   },
   "settings": {
     "title": "Configuración",
-    "subtitle": "Ajustes del sistema y de OpenClaw",
+    "subtitle": "Estado del sistema, integraciones y configuración",
+    "lastUpdated": "Última actualización",
+    "footerLeft": "SuperBotijo v1.0.0",
+    "footerRight": "Panel de agentes OpenClaw",
     "tabs": {
       "system": "Sistema",
       "config": "Config",
       "pricing": "Precios",
       "about": "Acerca de"
-    },
-    "lastUpdated": "Última actualización"
-  },
-  "chat": {
-    "title": "Chat Directo",
-    "subtitle": "Chat vía gateway con historial canónico de OpenClaw",
-    "agent": "Agente",
-    "session": "Sesión",
-    "newSession": "Nueva Sesión",
-    "loading": "Cargando historial de chat...",
-    "empty": "Todavía no hay mensajes en el transcript",
-    "you": "Vos",
-    "assistant": "Asistente",
-    "streaming": "transmitiendo",
-    "assistantThinking": "El asistente está preparando la respuesta...",
-    "placeholder": "Escribí un mensaje...",
-    "technicalSummary": "Ver eventos técnicos ({count})",
-    "roles": {
-      "system": "Sistema",
-      "tool": "Herramienta"
-    },
-    "readOnlyTitle": "Modo solo lectura: gateway no disponible",
-    "readOnlyPlaceholder": "Gateway offline. Podés leer historial pero no enviar mensajes.",
-    "errors": {
-      "sendFailed": "No se pudo enviar el mensaje",
-      "streamFailed": "El streaming se interrumpió",
-      "unexpectedResponse": "El servidor devolvió una respuesta inesperada",
-      "missingWriteScope": "El gateway está autenticado sin permiso de escritura. Volvé a vincular esta maquina (openclaw doctor --pair) o configurá OPENCLAW_GATEWAY_TOKEN con scope operator.write."
-    },
-    "toasts": {
-      "loadFailedTitle": "Chat no disponible",
-      "loadAgentsFailed": "No se pudieron cargar los agentes",
-      "loadHistoryFailed": "No se pudo cargar el historial de chat",
-      "sendFailedTitle": "Falló el envío",
-      "readOnlyTitle": "Modo solo lectura",
-      "readOnlyDescription": "El gateway está offline. El envío queda deshabilitado hasta reconectar."
     }
   },
   "integrations": {
@@ -468,7 +418,63 @@
     "saved": "¡Guardado!",
     "restoreSuccess": "Copia de seguridad restaurada",
     "saveError": "Error al guardar",
-    "restoreError": "Error al restaurar"
+    "restoreError": "Error al restaurar",
+    "restoreConfirm": "¿Estás seguro de que querés restaurar la copia de seguridad? Los cambios actuales se perderán."
+  },
+  "about": {
+    "title": "Acerca de",
+    "description": "Conocés más sobre tu asistente de IA",
+    "online": "En línea",
+    "born": "Nacido",
+    "uptime": "tiempo activo",
+    "activities": "actividades",
+    "successRate": "tasa de éxito",
+    "skills": "skills",
+    "aboutSection": "Acerca de",
+    "aboutText1": "Soy {name}, un agente de IA ejecutándose en {openclaw} con {model} como cerebro.",
+    "aboutText2": "Mi propósito es asistir a {owner} con tareas diarias: gestionar comunicaciones, agenda, investigación, archivos y actuar como copiloto digital.",
+    "personality": "Rasgos",
+    "capabilities": "Habilidades ({count})",
+    "noSkills": "Sin habilidades configuradas. Agregá skills a tu workspace para verlas acá.",
+    "philosophy": "Cómo trabajo",
+    "builtWith": "Construido con {heart} en {link}",
+    "builtWithSimple": "Hecho con",
+    "coPilot": "Tu copiloto de IA",
+    "model": "Modelo",
+    "workspace": "Workspace",
+    "platform": "Plataforma",
+    "memory": "Memoria",
+    "nodeVersion": "Node.js",
+    "system": "Sistema",
+    "quickInfo": "Info Rápida",
+    "footer": "Hecho con ❤️ por {name}",
+    "traits": {
+      "direct": "Directo",
+      "directDesc": "Sin vueltas, al grano",
+      "efficient": "Eficiente",
+      "efficientDesc": "Resultados sobre proceso",
+      "curious": "Curioso",
+      "curiousDesc": "Siempre aprendiendo",
+      "loyal": "Leal",
+      "loyalDesc": "Tu éxito es mi éxito"
+    },
+    "philosophy": {
+      "1": "Acciones sobre palabras. Menos hablar, más hacer.",
+      "2": "Tener opiniones está bien. Un asistente sin personalidad es solo un buscador.",
+      "3": "Intentar antes de pedir. Leer el archivo, buscar, explorar — luego preguntar si es necesario.",
+      "4": "La privacidad es sagrada. Acceso ≠ permiso para compartir."
+    }
+  },
+  "systemInfo": {
+    "title": "Información del Sistema",
+    "agentName": "Nombre del Agente",
+    "uptime": "Tiempo Activo",
+    "nodeVersion": "Versión de Node.js",
+    "currentModel": "Modelo Actual",
+    "workspace": "Workspace",
+    "memory": "Memoria",
+    "free": "libre",
+    "provider": "proveedor"
   },
   "system": {
     "title": "Monitor del Sistema",
@@ -511,6 +517,241 @@
     "up": "activo",
     "restarts": "reinicios",
     "cpuLabel": "CPU"
+  },
+  "sessions": {
+    "title": "💬 Historial de Sesiones",
+    "subtitle": "Todas las sesiones de agentes OpenClaw — main, cron, sub-agentes y chats",
+    "totalSessions": "Total de Sesiones",
+    "totalTokens": "Tokens Totales",
+    "cronRuns": "Ejecuciones Cron",
+    "modelsUsed": "Modelos Usados",
+    "all": "Todas",
+    "main": "Main",
+    "cron": "Cron",
+    "subagents": "Sub-agentes",
+    "chats": "Chats",
+    "filterSessions": "Filtrar sesiones...",
+    "loadingSessions": "Cargando sesiones...",
+    "failedToLoad": "Error al cargar sesiones",
+    "noSessionsMatch": "Ninguna sesión coincide con tu filtro",
+    "session": "Sesión",
+    "tokensCtx": "Tokens / ctx",
+    "updated": "Actualizado",
+    "aborted": "Abortado",
+    "noSessionFile": "No hay archivo de sesión disponible",
+    "loadingTranscript": "Cargando transcripción...",
+    "noMessages": "No hay mensajes en esta sesión",
+    "user": "usuario",
+    "assistant": "asistente",
+    "toolCalls": "llamadas a tools"
+  },
+  "chat": {
+    "title": "Chat Directo",
+    "subtitle": "Chat vía gateway con historial canónico de OpenClaw",
+    "agent": "Agente",
+    "session": "Sesión",
+    "newSession": "Nueva Sesión",
+    "loading": "Cargando historial de chat...",
+    "empty": "Todavía no hay mensajes en el transcript",
+    "you": "Vos",
+    "assistant": "Asistente",
+    "streaming": "transmitiendo",
+    "assistantThinking": "El asistente está preparando la respuesta...",
+    "placeholder": "Escribí un mensaje...",
+    "technicalSummary": "Ver eventos técnicos ({count})",
+    "roles": {
+      "system": "Sistema",
+      "tool": "Herramienta"
+    },
+    "readOnlyTitle": "Modo solo lectura: gateway no disponible",
+    "readOnlyPlaceholder": "Gateway offline. Podés leer historial pero no enviar mensajes.",
+    "errors": {
+      "sendFailed": "No se pudo enviar el mensaje",
+      "streamFailed": "El streaming se interrumpió",
+      "unexpectedResponse": "El servidor devolvió una respuesta inesperada",
+      "missingWriteScope": "El gateway está autenticado sin permiso de escritura. Volvé a vincular esta máquina (openclaw doctor --pair) o configurá OPENCLAW_GATEWAY_TOKEN con scope operator.write."
+    },
+    "toasts": {
+      "loadFailedTitle": "Chat no disponible",
+      "loadAgentsFailed": "No se pudieron cargar los agentes",
+      "loadHistoryFailed": "No se pudo cargar el historial de chat",
+      "sendFailedTitle": "Falló el envío",
+      "readOnlyTitle": "Modo solo lectura",
+      "readOnlyDescription": "El gateway está offline. El envío queda deshabilitado hasta reconectar."
+    }
+  },
+  "activity": {
+    "title": "Registro de Actividad",
+    "subtitle": "Historial completo de acciones del agente",
+    "dateRange": "Rango de Fechas",
+    "today": "Hoy",
+    "last7days": "Últimos 7 días",
+    "last30days": "Últimos 30 días",
+    "allTime": "Todo el tiempo",
+    "filterByType": "Filtrar por Tipo",
+    "allStatuses": "Todos los Estados",
+    "success": "Éxito",
+    "error": "Error",
+    "pending": "Pendiente",
+    "newestFirst": "Más recientes primero",
+    "oldestFirst": "Más antiguos primero",
+    "showingActivities": "Mostrando {count} de {total} actividades",
+    "noActivities": "No se encontraron actividades",
+    "viewMetadata": "Ver metadatos",
+    "tokens": "tokens",
+    "loadMore": "Cargar más actividades",
+    "loadingMore": "Cargando...",
+    "endOfLog": "— Fin del registro de actividad —"
+  },
+  "analytics": {
+    "title": "📊 Analíticas",
+    "subtitle": "Insights, tendencias y costos de la actividad del agente",
+    "loading": "Cargando analíticas...",
+    "loadError": "Error al cargar datos de analíticas",
+    "overview": "Resumen",
+    "flows": "Flujos",
+    "costs": "Costos",
+    "totalThisWeek": "Total Esta Semana",
+    "mostActiveDay": "Día Más Activo",
+    "topActivityType": "Tipo de Actividad Principal",
+    "successRate": "Tasa de Éxito",
+    "activityOverTime": "Actividad a lo Largo del Tiempo",
+    "activityByType": "Actividad por Tipo",
+    "activityByHour": "Actividad por Hora",
+    "tokenFlow": "Flujo de Tokens",
+    "taskFlow": "Flujo de Tareas",
+    "timeFlow": "Flujo de Tiempo",
+    "loadingFlow": "Cargando datos de flujo...",
+    "today": "Hoy",
+    "thisWeek": "Esta Semana",
+    "thisMonth": "Este Mes",
+    "days7": "7 días",
+    "days30": "30 días",
+    "days90": "90 días",
+    "loadingCosts": "Cargando datos de costos...",
+    "loadCostsError": "Error al cargar datos de costos",
+    "collectingData": "Recopilando datos de uso...",
+    "costToday": "Hoy",
+    "vsYesterday": "vs {amount} ayer",
+    "costThisMonth": "Este Mes",
+    "vsLastMonth": "vs {amount} mes anterior",
+    "projectedEom": "Proyección (Fin de Mes)",
+    "basedOnPace": "Basado en el ritmo actual",
+    "budget": "Presupuesto",
+    "editBudget": "Editar presupuesto",
+    "dailyCostTrend": "Tendencia de Costo Diario",
+    "costByAgent": "Costo por Agente",
+    "costByModel": "Costo por Modelo",
+    "tokenUsageDaily": "Uso de Tokens (Diario)",
+    "inputTokens": "Tokens de Entrada",
+    "outputTokens": "Tokens de Salida",
+    "modelPricing": "Precios por Modelo (por 1M tokens)",
+    "input": "Entrada",
+    "output": "Salida",
+    "cacheRead": "Lectura Cache",
+    "cacheWrite": "Escritura Cache",
+    "context": "Contexto",
+    "detailedBreakdown": "Desglose Detallado por Agente",
+    "agent": "Agente",
+    "tokensCol": "Tokens",
+    "cost": "Costo",
+    "percentOfTotal": "% del Total",
+    "model": "Modelo",
+    "costLegend": "Costo ($)"
+  },
+  "mission": {
+    "title": "Centro de Misión",
+    "subtitle": "Definir el propósito, objetivos y valores centrales de tu agente",
+    "statement": "Declaración de Misión",
+    "statementPlaceholder": "Definir el propósito central de tu agente...",
+    "goals": "Objetivos Estratégicos",
+    "goalsPlaceholder": "Agregar un nuevo objetivo...",
+    "addGoal": "Agregar",
+    "values": "Valores Centrales",
+    "valuesPlaceholder": "Agregar un nuevo valor...",
+    "addValue": "Agregar",
+    "actions": "Acciones",
+    "saveMission": "Guardar Misión",
+    "saving": "Guardando...",
+    "resetDefault": "Restablecer por Defecto",
+    "backToDashboard": "Volver al Panel",
+    "savedSuccess": "¡Misión guardada exitosamente!",
+    "askMissionControl": "Preguntar al Centro de Misión",
+    "promptPlaceholder": "¿En qué debería trabajar?",
+    "getRecommendations": "Obtener Recomendaciones",
+    "analyzing": "Analizando...",
+    "topRecommendations": "Recomendaciones Principales",
+    "high": "alta",
+    "medium": "media",
+    "low": "baja",
+    "noTasksMatch": "Ninguna tarea coincide con tu misión todavía.",
+    "addGoalsValues": "Agregá objetivos y valores para obtener recomendaciones.",
+    "loading": "Cargando misión...",
+    "confirmReset": "¿Estás seguro de que querés restablecer la misión a los valores por defecto?",
+    "tips": {
+      "statement": "Mantené la declaración de misión clara e inspiradora",
+      "goals": "Los objetivos deben ser específicos y medibles",
+      "values": "Los valores guían la toma de decisiones ante trade-offs",
+      "review": "Revisá y actualizá tu misión periódicamente"
+    }
+  },
+  "efficiency": {
+    "calculating": "Calculando eficiencia...",
+    "title": "Puntaje de Eficiencia",
+    "noData": "Sin datos disponibles. Completá algunas actividades para ver tu puntaje de eficiencia.",
+    "description": "Mide la productividad y tasa de éxito del agente",
+    "vsPrevious": "+{percent}% vs período anterior",
+    "vsPreviousNeg": "-{percent}% vs período anterior",
+    "stable": "Estable",
+    "scoreComponents": "Componentes del Puntaje",
+    "successRate": "Tasa de Éxito",
+    "taskCompletion": "Completitud de Tareas",
+    "tokenEfficiency": "Eficiencia de Tokens",
+    "totalActivities": "Actividades Totales",
+    "successFailed": "Éxito / Fallidas",
+    "trendHistory": "Tendencia de Eficiencia (Últimos {days} días)",
+    "efficiencyScore": "Puntaje de Eficiencia",
+    "days": "{days}d",
+    "formula": "Fórmula:",
+    "formulaText": "Tasa de Éxito (40%) + Completitud de Tareas (40%) + Eficiencia de Tokens (20%)",
+    "successRateTooltip": "Porcentaje de actividades completadas exitosamente (40% peso)",
+    "taskCompletionTooltip": "Tareas exitosas vs fallidas (excluye pendientes) (40% peso)",
+    "tokenEfficiencyTooltip": "Tokens de salida vs tokens totales (20% peso)"
+  },
+  "topTasks": {
+    "loading": "Cargando top tasks...",
+    "title": "Top 5 Consumidores de Tokens",
+    "noData": "No hay datos de tokens disponibles",
+    "totalTokens": "{tokens} tokens totales",
+    "vsPrevious": "{percent}% vs período anterior",
+    "tasks": "{count} tareas",
+    "stable": "estable",
+    "averagePerType": "Promedio: {tokens} por tipo",
+    "viewAllActivities": "Ver todas las actividades",
+    "periodDay": "Hoy",
+    "periodWeek": "Semana",
+    "periodMonth": "Mes"
+  },
+  "heartbeat": {
+    "statusTitle": "Estado del Latido",
+    "status": "Estado",
+    "active": "✅ Activo",
+    "notConfigured": "⚪ No configurado",
+    "interval": "Intervalo",
+    "every": "Cada {interval}",
+    "target": "Objetivo",
+    "activeHours": "Horas activas",
+    "viewDocs": "Ver documentación de Latido",
+    "saving": "Guardando...",
+    "agentHeartbeatsTitle": "Heartbeats por Agente",
+    "editor": {
+      "title": "HEARTBEAT.md",
+      "preview": "Vista previa",
+      "edit": "Editar",
+      "noFile": "No se encontró archivo HEARTBEAT.md. Creá uno para habilitar los chequeos de latido.",
+      "useTemplate": "Usar Plantilla",
+      "saved": "¡Guardado!"
+    }
   },
   "kanban": {
     "title": "Tablero Kanban",
@@ -737,7 +978,7 @@
     "kanban": {
       "overdue": {
         "title": "Tareas vencidas",
-        "description": "Hay {count} tareas con fecha de vencimiento vencida. Revisa el tablero Kanban para tomar acción."
+        "description": "Hay {count} tareas con fecha de vencimiento vencida. Revisá el tablero Kanban para tomar acción."
       },
       "unassigned": {
         "title": "Muchas tareas sin asignar",
@@ -755,7 +996,7 @@
       },
       "none": {
         "title": "Sin agentes configurados",
-        "description": "No hay agentes configurados en openclaw.json. Añade agentes para automatizar tareas.",
+        "description": "No hay agentes configurados en openclaw.json. Agregá agentes para automatizar tareas.",
         "actionLabel": "Configurar agentes"
       },
       "noHeartbeat": {
@@ -763,61 +1004,5 @@
         "description": "{count} agentes no tienen configurado heartbeat. No podrán recibir tareas automáticamente desde el Kanban."
       }
     }
-  },
-  "analytics": {
-    "title": "📊 Analíticas",
-    "subtitle": "Insights, tendencias y costos de la actividad del agente",
-    "loading": "Cargando analíticas...",
-    "loadError": "Error al cargar datos de analíticas",
-    "overview": "Resumen",
-    "flows": "Flujos",
-    "costs": "Costos",
-    "totalThisWeek": "Total Esta Semana",
-    "mostActiveDay": "Día Más Activo",
-    "topActivityType": "Tipo de Actividad Principal",
-    "successRate": "Tasa de Éxito",
-    "activityOverTime": "Actividad a lo Largo del Tiempo",
-    "activityByType": "Actividad por Tipo",
-    "activityByHour": "Actividad por Hora",
-    "tokenFlow": "Flujo de Tokens",
-    "taskFlow": "Flujo de Tareas",
-    "timeFlow": "Flujo de Tiempo",
-    "loadingFlow": "Cargando datos de flujo...",
-    "today": "Hoy",
-    "thisWeek": "Esta Semana",
-    "thisMonth": "Este Mes",
-    "days7": "7 días",
-    "days30": "30 días",
-    "days90": "90 días",
-    "loadingCosts": "Cargando datos de costos...",
-    "loadCostsError": "Error al cargar datos de costos",
-    "collectingData": "Recopilando datos de uso...",
-    "costToday": "Hoy",
-    "vsYesterday": "vs {amount} ayer",
-    "costThisMonth": "Este Mes",
-    "vsLastMonth": "vs {amount} mes anterior",
-    "projectedEom": "Proyección (Fin de Mes)",
-    "basedOnPace": "Basado en el ritmo actual",
-    "budget": "Presupuesto",
-    "editBudget": "Editar presupuesto",
-    "dailyCostTrend": "Tendencia de Costo Diario",
-    "costByAgent": "Costo por Agente",
-    "costByModel": "Costo por Modelo",
-    "tokenUsageDaily": "Uso de Tokens (Diario)",
-    "inputTokens": "Tokens de Entrada",
-    "outputTokens": "Tokens de Salida",
-    "modelPricing": "Precios por Modelo (por 1M tokens)",
-    "input": "Entrada",
-    "output": "Salida",
-    "cacheRead": "Lectura Cache",
-    "cacheWrite": "Escritura Cache",
-    "context": "Contexto",
-    "detailedBreakdown": "Desglose Detallado por Agente",
-    "agent": "Agente",
-    "tokensCol": "Tokens",
-    "cost": "Costo",
-    "percentOfTotal": "% del Total",
-    "model": "Modelo",
-    "costLegend": "Costo ($)"
   }
 }

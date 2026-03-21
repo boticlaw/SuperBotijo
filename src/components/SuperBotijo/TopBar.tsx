@@ -23,7 +23,11 @@ export function TopBar() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
     router.push("/login");
   };
 

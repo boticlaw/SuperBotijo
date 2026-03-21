@@ -108,6 +108,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: msg, output: msg }, { status: 200 }); // Return 200 with error in output
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

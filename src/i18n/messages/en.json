@@ -240,6 +240,10 @@
     "failedToTrigger": "Failed to trigger",
     "jobUpdated": "Job updated",
     "jobCreated": "Job created",
+    "jobDeleted": "Job deleted",
+    "deleteError": "Failed to delete job",
+    "delete": "Delete",
+    "deleteJob": "Delete Job",
     "confirmDelete": "Delete \"{name}\"?",
     "timelineView": "Timeline",
     "cardsView": "Cards"
@@ -255,6 +259,7 @@
     "loading": "Loading tasks...",
     "empty": "No scheduled tasks",
     "delete": "Delete task",
+    "deleteTitle": "Delete Task",
     "deleteConfirm": "Are you sure you want to delete \"{name}\"?",
     "count": "{count} task(s)"
   },
@@ -340,7 +345,11 @@
     "lines": "lines",
     "filtered": "filtered from {count}",
     "waiting": "Waiting for logs...",
-    "clickToStream": "Click 'Stream' to start live log viewer"
+    "clickToStream": "Click 'Stream' to start live log viewer",
+    "discoveringServices": "Discovering services...",
+    "noServicesFound": "No services found",
+    "clear": "Clear",
+    "download": "Download logs"
   },
   "settings": {
     "title": "Settings",
@@ -354,6 +363,63 @@
       "pricing": "Pricing",
       "about": "About"
     }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "noIntegrations": "No integrations configured",
+    "testConnection": "Test connection",
+    "reauthenticate": "Reauthenticate",
+    "usage": "Usage",
+    "today": "today",
+    "thisWeek": "this week",
+    "thisMonth": "this month",
+    "close": "Close",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "connected": "Connected",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "testSuccess": "Test successful",
+    "testFailed": "Test failed",
+    "type": "Type",
+    "channel": "Channel",
+    "plugin": "Plugin",
+    "apiKey": "API Key"
+  },
+  "pricing": {
+    "title": "Pricing Configuration",
+    "description": "Customize prices per model. Changes affect cost calculations in the dashboard.",
+    "inputPrice": "Input Price (per 1M tokens)",
+    "outputPrice": "Output Price (per 1M tokens)",
+    "cacheReadPrice": "Cache Read Price (per 1M tokens)",
+    "cacheWritePrice": "Cache Write Price (per 1M tokens)",
+    "context": "context",
+    "saveChanges": "Save Changes",
+    "resetAll": "Reset to Defaults",
+    "saving": "Saving...",
+    "saved": "Saved!",
+    "resetSuccess": "Prices reset to default values",
+    "loadError": "Error loading prices",
+    "saveError": "Error saving prices",
+    "resetError": "Error resetting prices",
+    "discardSuccess": "Changes discarded"
+  },
+  "config": {
+    "warningTitle": "Be careful when editing configuration",
+    "warningDescription": "Changes can affect how OpenClaw works. A backup is created automatically before each save.",
+    "editable": "Editable",
+    "readOnly": "Read only",
+    "saveChanges": "Save Changes",
+    "restoreBackup": "Restore Backup",
+    "saving": "Saving...",
+    "restoring": "Restoring...",
+    "saved": "Saved!",
+    "restoreSuccess": "Backup restored",
+    "saveError": "Error saving",
+    "restoreError": "Error restoring",
+    "restoreConfirm": "Are you sure you want to restore the backup? Current changes will be lost."
   },
   "about": {
     "title": "About",
@@ -373,7 +439,31 @@
     "philosophy": "Working Philosophy",
     "builtWith": "Built with {heart} on {link}",
     "builtWithSimple": "Built with ♥ on",
-    "coPilot": "Your AI co-pilot"
+    "coPilot": "Your AI co-pilot",
+    "model": "Model",
+    "workspace": "Workspace",
+    "platform": "Platform",
+    "memory": "Memory",
+    "nodeVersion": "Node.js",
+    "system": "System",
+    "quickInfo": "Quick Info",
+    "footer": "Made with ❤️ by {name}",
+    "traits": {
+      "direct": "Direct",
+      "directDesc": "No fluff, straight to the point",
+      "efficient": "Efficient",
+      "efficientDesc": "Results over process",
+      "curious": "Curious",
+      "curiousDesc": "Always learning",
+      "loyal": "Loyal",
+      "loyalDesc": "Your success is my success"
+    },
+    "philosophy": {
+      "1": "Actions over words. Less talking, more doing.",
+      "2": "Having opinions is fine. An assistant without personality is just a search engine.",
+      "3": "Try before asking. Read the file, search, explore — then ask if needed.",
+      "4": "Privacy is sacred. Access ≠ permission to share."
+    }
   },
   "systemInfo": {
     "title": "System Information",
@@ -423,7 +513,10 @@
     "inactiveStatus": "Inactive",
     "thisServer": "This server",
     "devicesConnected": "Devices connected",
-    "firewall": "Firewall (UFW)"
+    "firewall": "Firewall (UFW)",
+    "up": "up",
+    "restarts": "restarts",
+    "cpuLabel": "CPU"
   },
   "sessions": {
     "title": "💬 Session History",
