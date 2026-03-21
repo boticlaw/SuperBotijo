@@ -3,6 +3,22 @@ import { execSync } from "child_process";
 
 export const dynamic = "force-dynamic";
 
+const SAFE_SESSION_KEY_PATTERN = /^[a-zA-Z0-9_\-./]+$/;
+
+function isValidSessionKey(key: string): boolean {
+  if (!key || key.length === 0 || key.length > 255) {
+    return false;
+  }
+  if (key.includes("..") || key.includes("\0")) {
+    return false;
+  }
+  return SAFE_SESSION_KEY_PATTERN.test(key);
+}
+
+function escapeShellArg(arg: string): string {
+  return arg.replace(/[^a-zA-Z0-9_\-./]/g, "");
+}
+
 interface ModelUpdateResponse {
   success: boolean;
   model?: string;
@@ -27,8 +43,18 @@ export async function PATCH(
 
     const decodedKey = decodeURIComponent(key);
 
+    if (!isValidSessionKey(decodedKey)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid session key" },
+        { status: 400 }
+      );
+    }
+
+    const safeKey = escapeShellArg(decodedKey);
+    const safeModel = escapeShellArg(model);
+
     try {
-      execSync(`openclaw session set-model "${decodedKey}" "${model}"`, {
+      execSync(`openclaw session set-model "${safeKey}" "${safeModel}"`, {
         encoding: "utf-8",
         timeout: 10000,
       });

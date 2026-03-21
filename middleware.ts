@@ -26,7 +26,7 @@ function extractToken(request: NextRequest): string | null {
   return request.cookies.get("auth_token")?.value ?? null;
 }
 
-function isAuthenticated(request: NextRequest): boolean {
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
   const token = extractToken(request);
   if (!token) {
     return false;
@@ -34,7 +34,7 @@ function isAuthenticated(request: NextRequest): boolean {
   return sessionStore.validate(token);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow public pages (login)
@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Check authentication
-  if (!isAuthenticated(request)) {
+  if (!(await isAuthenticated(request))) {
     // For API routes: return 401 JSON
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(

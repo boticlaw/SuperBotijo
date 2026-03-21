@@ -1,7 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { join, resolve } from "path";
 import { existsSync } from "fs";
+
+const SAFE_SESSION_KEY_PATTERN = /^[a-zA-Z0-9_\-./]+$/;
+
+function isValidSessionKey(key: string): boolean {
+  if (!key || key.length === 0 || key.length > 255) {
+    return false;
+  }
+  if (key.includes("..") || key.includes("\0")) {
+    return false;
+  }
+  return SAFE_SESSION_KEY_PATTERN.test(key);
+}
+
+function isPathWithinBase(basePath: string, targetPath: string): boolean {
+  const resolvedBase = resolve(basePath);
+  const resolvedTarget = resolve(targetPath);
+  return resolvedTarget.startsWith(resolvedBase + "/") || resolvedTarget === resolvedBase;
+}
+
+export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
@@ -11,9 +31,23 @@ export async function GET(
     const { key } = await params;
     const sessionKey = decodeURIComponent(key);
     
-    // Construct path to session JSONL file
+    if (!isValidSessionKey(sessionKey)) {
+      return NextResponse.json(
+        { error: "Invalid session key" },
+        { status: 400 }
+      );
+    }
+    
     const workspaceRoot = process.env.WORKSPACE_ROOT || "/home/daniel/.openclaw/workspace";
-    const sessionPath = join(workspaceRoot, "sessions", sessionKey, "session.jsonl");
+    const sessionsBaseDir = join(workspaceRoot, "sessions");
+    const sessionPath = join(sessionsBaseDir, sessionKey, "session.jsonl");
+    
+    if (!isPathWithinBase(sessionsBaseDir, sessionPath)) {
+      return NextResponse.json(
+        { error: "Invalid session key" },
+        { status: 400 }
+      );
+    }
     
     if (!existsSync(sessionPath)) {
       return NextResponse.json(

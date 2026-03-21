@@ -234,7 +234,7 @@ export async function POST(request: Request) {
       }
       
       // Verify current password
-      const currentPassMatch = envContent.match(/AUTH_PASSWORD=(.+)/);
+      const currentPassMatch = envContent.match(/ADMIN_PASSWORD=(.+)/);
       const storedPassword = currentPassMatch?.[1]?.trim();
       
       if (storedPassword !== currentPassword) {
@@ -243,8 +243,8 @@ export async function POST(request: Request) {
       
       // Update password
       const newEnvContent = envContent.replace(
-        /AUTH_PASSWORD=.*/,
-        `AUTH_PASSWORD=${newPassword}`
+        /ADMIN_PASSWORD=.*/,
+        `ADMIN_PASSWORD=${newPassword}`
       );
       
       fs.writeFileSync(ENV_LOCAL_PATH, newEnvContent);

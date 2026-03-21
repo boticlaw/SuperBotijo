@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     clearAttempts(ip); // Reset on success
 
     const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
-    const token = sessionStore.generateToken(ttlMs);
+    const token = await sessionStore.generateToken(ttlMs);
 
     const response = NextResponse.json({
       success: true,
