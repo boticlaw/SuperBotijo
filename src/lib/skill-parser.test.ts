@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
-import { parseSkill, scanAllSkills, type SkillInfo } from "./skill-parser";
+import { parseSkill, type SkillInfo } from "./skill-parser";
 
 const TEST_SKILLS_DIR = path.join(process.cwd(), "data-test-skills");
 const TEST_SKILL_PATH = path.join(TEST_SKILLS_DIR, "test-skill");

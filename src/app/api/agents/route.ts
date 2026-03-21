@@ -2,10 +2,10 @@
  * Agents API - CRUD operations for agent management
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { registerAgent, getAgents, getAgentById, pauseAgent, resumeAgent } from '@/operations/agent-ops';
+import { registerAgent, getAgents } from '@/operations/agent-ops';
 
 // GET /api/agents - List all agents
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const result = await getAgents();
 

@@ -69,7 +69,7 @@ export default function SkillsPage() {
       .catch(() => {});
   }, []);
 
-  const handleInstallFromClawHub = (slug: string) => {
+  const handleInstallFromClawHub = () => {
     // Refresh skills list after installation
     fetch("/api/skills")
       .then((res) => res.json())

@@ -10,7 +10,7 @@ import { EfficiencyGauge } from "@/components/EfficiencyGauge";
 import { ScheduledTasksManager } from "@/components/ScheduledTasksManager";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useI18n } from "@/i18n/provider";
-import { BarChart3, TrendingUp, Clock, Target, DollarSign, RefreshCw, Loader2, AlertCircle, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Target, DollarSign, RefreshCw, Loader2, TrendingDown, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { MODEL_PRICING } from "@/lib/pricing-types";
 

@@ -9,7 +9,6 @@ import {
   installSkill, 
   uninstallSkill,
   updateSkill,
-  type Skill,
   type InstallProgress,
 } from '@/lib/skills-installer';
 

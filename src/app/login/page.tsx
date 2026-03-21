@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, AlertCircle } from "lucide-react";
 import { useI18n, I18nProvider } from "@/i18n/provider";
+import logo from "@/../public/logo.png";
 
 function LoginForm() {
   const [password, setPassword] = useState("");
@@ -52,10 +54,12 @@ function LoginForm() {
       {/* Header */}
       <div className="text-center mb-6 flex flex-col items-center gap-2">
         <div className="flex items-center gap-2.5">
-          <img
-            src="/logo.png"
+          <Image
+            src={logo}
             alt="SuperBotijo"
-            style={{ width: "40px", height: "40px", objectFit: "contain" }}
+            width={40}
+            height={40}
+            style={{ objectFit: "contain" }}
           />
           <h1
             className="text-xl font-bold"

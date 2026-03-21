@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 import { Settings, RefreshCw, Server, FileJson, DollarSign, User, Clock, Activity, CheckCircle, Puzzle, Heart, Sparkles, Brain, Zap, Terminal, Calendar, MapPin, Coffee, HardDrive, Cpu, Folder } from "lucide-react";
 import { SystemInfo } from "@/components/SystemInfo";
 import { IntegrationStatus } from "@/components/IntegrationStatus";
@@ -266,16 +267,19 @@ export default function SettingsPage() {
                 }}
               >
                 {BRANDING.agentAvatar ? (
-                  <img
+                  <Image
                     src={BRANDING.agentAvatar}
                     alt={agentName}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
-                  <img
+                  <Image
                     src="/logo.png"
                     alt={agentName}
-                    className="w-full h-full object-contain p-1"
+                    fill
+                    className="object-contain p-1"
                   />
                 )}
               </div>

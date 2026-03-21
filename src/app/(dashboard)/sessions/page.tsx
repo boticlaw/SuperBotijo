@@ -91,7 +91,6 @@ function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.type === "user";
   const isTool = msg.type === "tool_use";
   const isResult = msg.type === "tool_result";
-  const isAssistant = msg.type === "assistant";
 
   if (isTool) {
     return (

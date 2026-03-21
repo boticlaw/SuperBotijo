@@ -8,16 +8,6 @@ import { getActivities } from "@/lib/activities-db";
 
 export const dynamic = "force-dynamic";
 
-interface Activity {
-  id: string;
-  timestamp: string;
-  type: string;
-  description: string;
-  status: string;
-  agent?: string;
-  tokens_used?: number;
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }

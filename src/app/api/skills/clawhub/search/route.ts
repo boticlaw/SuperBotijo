@@ -68,7 +68,7 @@ export async function GET(request: Request) {
       const match = line.match(/^(\S+)\s+(.+?)\s+\(([0-9.]+)\)$/);
       if (!match) continue;
 
-      const [, slug, displayName, scoreStr] = match;
+      const [, slug, , scoreStr] = match;
 
       // Get detailed info using inspect
       try {

@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       subscriptions: Array.from(subs) 
     });
-  } catch (error) {
+  } catch {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

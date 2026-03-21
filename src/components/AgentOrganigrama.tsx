@@ -54,7 +54,8 @@ export function AgentOrganigrama({ agents }: AgentOrganigramaProps) {
   const rootAgentId = rootAgent?.id || null;
 
   // Get subagent IDs of the root agent
-  const subagentIds = new Set(rootAgent?.allowAgents || []);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _subagentIds = new Set(rootAgent?.allowAgents || []);
 
   // Separate root agent from other agents
   const otherAgents = rootAgentId

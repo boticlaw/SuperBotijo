@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSuggestions, generateSuggestions } from "@/lib/suggestions-engine";
+import { generateSuggestions } from "@/lib/suggestions-engine";
 import { collectSuggestionsData } from "@/lib/suggestions-data";
 import { getDatabase, getCostByModel } from "@/lib/usage-queries";
 import fs from "fs";

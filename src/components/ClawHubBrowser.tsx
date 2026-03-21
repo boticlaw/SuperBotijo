@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Star, User, Loader2, Package, X } from "lucide-react";
+import Image from "next/image";
+import { Search, Download, Star, Loader2, Package, X } from "lucide-react";
 
 interface ClawHubSkill {
   slug: string;
@@ -235,9 +236,12 @@ export function ClawHubBrowser({ onInstall, onClose }: ClawHubBrowserProps) {
                 <div className="flex items-center gap-4 text-xs">
                   {/* Owner */}
                   <div className="flex items-center gap-1">
-                    <img
+                    <Image
                       src={skill.owner.image}
                       alt={skill.owner.displayName}
+                      width={16}
+                      height={16}
+                      unoptimized
                       className="w-4 h-4 rounded-full"
                     />
                     <span style={{ color: "var(--text-muted)" }}>

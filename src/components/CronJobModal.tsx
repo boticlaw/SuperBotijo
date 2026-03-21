@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, Calendar, ChevronDown, Zap } from "lucide-react";
+import { X, Calendar, ChevronDown, Zap } from "lucide-react";
 import { cronToHuman, getNextRuns, isValidCron, CRON_PRESETS } from "@/lib/cron-parser";
 import type { CronJob } from "./CronJobCard";
 

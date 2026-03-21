@@ -5,7 +5,6 @@
  */
 import { NextResponse } from 'next/server';
 import { execSync } from 'child_process';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +19,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    // Determine skills directory
-    const skillsDir = path.join(process.cwd(), 'skills');
 
     // Install using ClawHub CLI
     const versionArg = version ? ` --version ${version}` : '';

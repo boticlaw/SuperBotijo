@@ -13,11 +13,6 @@ import {
   getAgentIdentity,
   updateAgentIdentity,
 } from "@/lib/kanban-db";
-import type {
-  CreateProjectInput,
-  CreateAgentIdentityInput,
-  UpdateAgentIdentityInput,
-} from "@/lib/mission-types";
 
 export interface OpenClawAgentConfig {
   id: string;

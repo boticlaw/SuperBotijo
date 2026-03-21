@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink } from "lucide-react";
 
@@ -18,7 +18,6 @@ interface HourlyHeatmapProps {
   data: HourData[];
   title?: string;
   showExport?: boolean;
-  dateRange?: { start: string; end: string };
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -48,7 +47,6 @@ export function HourlyHeatmap({
   data, 
   title = "Activity Heatmap",
   showExport = true,
-  dateRange 
 }: HourlyHeatmapProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,10 +61,13 @@ export function HourlyHeatmap({
   const [selectedCell, setSelectedCell] = useState<{ day: number; hour: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const dataMap = new Map<string, HourData>();
-  data.forEach((item) => {
-    dataMap.set(`${item.day}-${item.hour}`, item);
-  });
+  const dataMap = useMemo(() => {
+    const map = new Map<string, HourData>();
+    data.forEach((item) => {
+      map.set(`${item.day}-${item.hour}`, item);
+    });
+    return map;
+  }, [data]);
 
   const maxCount = Math.max(...data.map((d) => d.count), 1);
 

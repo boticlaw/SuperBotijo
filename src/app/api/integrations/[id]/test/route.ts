@@ -45,7 +45,7 @@ async function testTelegram(): Promise<TestResult> {
 
     // Try to get bot info
     try {
-      const result = execSync('openclaw message send --help 2>&1', {
+      execSync('openclaw message send --help 2>&1', {
         timeout: 5000,
         encoding: 'utf-8',
       });
@@ -93,7 +93,7 @@ async function testTwitter(): Promise<TestResult> {
 
       // Try to get user info
       try {
-        const userResult = execSync('bird user show --json 2>&1', {
+        execSync('bird user show --json 2>&1', {
           timeout: 10000,
           encoding: 'utf-8',
         });
@@ -104,7 +104,7 @@ async function testTwitter(): Promise<TestResult> {
           details: 'bird CLI is configured',
           timestamp: new Date().toISOString(),
         };
-      } catch (error) {
+      } catch {
         return {
           success: false,
           message: 'Twitter authentication failed',
@@ -112,7 +112,7 @@ async function testTwitter(): Promise<TestResult> {
           timestamp: new Date().toISOString(),
         };
       }
-    } catch (error) {
+    } catch {
       return {
         success: false,
         message: 'bird CLI not installed',
@@ -148,7 +148,7 @@ async function testGoogle(): Promise<TestResult> {
 
       // Try to get user info
       try {
-        const userResult = execSync('gog user show 2>&1', {
+        execSync('gog user show 2>&1', {
           timeout: 10000,
           encoding: 'utf-8',
         });
@@ -159,7 +159,7 @@ async function testGoogle(): Promise<TestResult> {
           details: 'gog CLI is authenticated',
           timestamp: new Date().toISOString(),
         };
-      } catch (error) {
+      } catch {
         return {
           success: false,
           message: 'Google authentication failed',
@@ -167,7 +167,7 @@ async function testGoogle(): Promise<TestResult> {
           timestamp: new Date().toISOString(),
         };
       }
-    } catch (error) {
+    } catch {
       return {
         success: false,
         message: 'gog CLI not installed',

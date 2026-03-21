@@ -5,7 +5,6 @@ import {
   logActivity,
   getActivities,
   updateActivityStatus,
-  type Activity,
   type ActivityType,
   type ActivityStatus,
 } from "./activity-logger";
@@ -80,7 +79,7 @@ describe("activity-logger", () => {
       logActivity("file", "First activity", "success");
       
       // Create second activity
-      const secondActivity = logActivity("search", "Second activity", "success");
+      logActivity("search", "Second activity", "success");
 
       const activities = getActivities();
       

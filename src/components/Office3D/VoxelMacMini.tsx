@@ -43,7 +43,7 @@ export default function VoxelMacMini({ position }: VoxelMacMiniProps) {
 
       {/* Base/patas de goma (4 esquinas) */}
       {[-0.08, 0.08].map(x => 
-        [-0.08, 0.08].map((z, i) => (
+        [-0.08, 0.08].map((z) => (
           <Box
             key={`foot-${x}-${z}`}
             args={[0.03, 0.005, 0.03]}

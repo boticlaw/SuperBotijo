@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Terminal, Send, Trash2, Copy, ChevronRight } from "lucide-react";
+import { Terminal, Send, Trash2, Copy } from "lucide-react";
 
 interface HistoryEntry {
   command: string;

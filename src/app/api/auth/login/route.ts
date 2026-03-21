@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { sessionStore } from "@/lib/session-store";
 
 // Simple in-memory rate limiter (per-IP, resets on server restart)
 // Sufficient for a personal dashboard — no external dependency needed
@@ -90,15 +91,22 @@ export async function POST(request: NextRequest) {
   if (password === process.env.ADMIN_PASSWORD) {
     clearAttempts(ip); // Reset on success
 
-    const response = NextResponse.json({ success: true });
+    const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
+    const token = sessionStore.generateToken(ttlMs);
 
-    // Set auth cookie (7 days expiry)
-    // Always use secure=false for Tailscale/HTTP access
-    response.cookies.set("mc_auth", "mc_authenticated_session_token_2026", {
+    const response = NextResponse.json({
+      success: true,
+      expiresIn: Math.floor(ttlMs / 1000),
+    });
+
+    // Set httpOnly cookie for browser auth
+    // Only use Secure flag if request is HTTPS (check x-forwarded-proto header)
+    const isHttps = request.headers.get("x-forwarded-proto") === "https";
+    response.cookies.set("auth_token", token, {
       httpOnly: true,
-      secure: false, // Allow HTTP (Tailscale)
+      secure: isHttps,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: ttlMs / 1000,
       path: "/",
     });
 

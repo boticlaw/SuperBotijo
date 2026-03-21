@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { eventBridge, emitActivityUpdate, emitSessionChange, emitNotification, emitGatewayStatus, emitModelChange } from "./runtime-events";
-import type { RuntimeEvent, EventHandler, EventFilter } from "@/types/events";
+import type { RuntimeEvent } from "@/types/events";
 
 describe("runtime-events", () => {
   // Reset event bridge before each test

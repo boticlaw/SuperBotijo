@@ -25,13 +25,11 @@ import {
   GitFork,
   SquareTerminal,
   Bot,
-  GitBranch,
   Calendar,
   Bell,
   LayoutGrid,
   Target,
   BookOpen,
-  Rocket,
   Briefcase,
 } from "lucide-react";
 import { getAgentDisplayName } from "@/config/branding";

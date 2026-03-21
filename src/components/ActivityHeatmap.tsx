@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
+import { format, subDays, eachDayOfInterval, startOfWeek } from "date-fns";
 
 interface HeatmapDay {
   day: string;
@@ -53,7 +53,6 @@ export function ActivityHeatmap() {
   // Build 52-week grid
   const today = new Date();
   const startDay = subDays(today, 364);
-  const days = eachDayOfInterval({ start: startDay, end: today });
   
   // Pad to start from Sunday
   const firstDayOfWeek = startOfWeek(startDay, { weekStartsOn: 0 });

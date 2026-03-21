@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, MessageSquare, Send, Archive, ArchiveRestore, Inbox } from "lucide-react";
+import { X, Plus, MessageSquare, Send, Archive, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/i18n/provider";
 import type {

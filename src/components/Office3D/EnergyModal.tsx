@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Zap, Activity, Cpu, HardDrive, Clock, Users } from 'lucide-react';
+import { Zap, Activity, Cpu, HardDrive, Clock, Users } from 'lucide-react';
 
 interface EnergyModalProps {
   onClose: () => void;
@@ -49,11 +49,7 @@ export function EnergyModal({ onClose }: EnergyModalProps) {
     fetchStats();
   }, []);
 
-  const formatUptime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
+
 
   const getLoadColor = (load: number): string => {
     if (load < 50) return 'text-success';

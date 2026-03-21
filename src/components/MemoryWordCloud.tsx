@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import cloud from "d3-cloud";
 import { Search } from "lucide-react";
 import type { WordFrequency } from "@/app/api/memories/word-cloud/route";

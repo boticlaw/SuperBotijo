@@ -5,7 +5,6 @@ import {
   GitBranch, GitCommit, ArrowUp, ArrowDown, RefreshCw,
   AlertCircle, CheckCircle, Terminal, X, Loader2, FolderGit2,
 } from "lucide-react";
-import { format } from "date-fns";
 
 interface CommitInfo {
   hash: string;

@@ -11,7 +11,6 @@ import {
   type ActionApprovePayload,
   type ActionRejectPayload,
   type AgentControlPayload,
-  type SubscribePayload,
 } from '@/lib/realtime-events';
 import { getActivities, updateActivityStatus } from '@/lib/activities-db';
 

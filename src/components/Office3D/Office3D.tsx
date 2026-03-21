@@ -268,7 +268,7 @@ export default function Office3D({ initialAgents }: Office3DProps = {}) {
     let isMounted = true;
     let configInterval: NodeJS.Timeout | null = null;
     let statusInterval: NodeJS.Timeout | null = null;
-    let hasInitialAgents = initialAgents && initialAgents.length > 0;
+    const hasInitialAgents = initialAgents && initialAgents.length > 0;
 
     // Convert initialAgents to the format used by the component
     if (hasInitialAgents && agents.length === 0) {
@@ -280,7 +280,7 @@ export default function Office3D({ initialAgents }: Office3DProps = {}) {
     // Fetch full configuration (agents + statuses + subagents) - runs once and every 5 minutes
     const fetchFullConfig = async () => {
       try {
-        let agentsWithDesks = await fetchOfficeAgents();
+        const agentsWithDesks = await fetchOfficeAgents();
         
         if (agentsWithDesks.length === 0) {
           // Only set fallback if we don't have initial agents
@@ -537,6 +537,7 @@ export default function Office3D({ initialAgents }: Office3DProps = {}) {
       if (statusInterval) clearInterval(statusInterval);
       if (configInterval) clearInterval(configInterval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDeskClick = (agentId: string) => {

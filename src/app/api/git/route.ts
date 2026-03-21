@@ -6,8 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 const execAsync = promisify(exec);
 const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/home/daniel/.openclaw/workspace';
@@ -58,8 +56,8 @@ async function getRepoStatus(repoPath: string): Promise<RepoStatus> {
     for (const line of lines) {
       const xy = line.slice(0, 2);
       const file = line.slice(3);
-      const x = xy[0]; // staged
-      const y = xy[1]; // unstaged
+      const x = xy[0];
+      const y = xy[1];
 
       if (x !== ' ' && x !== '?') staged.push(file);
       if (y !== ' ' && y !== '?') unstaged.push(file);
@@ -96,7 +94,7 @@ async function getRepoStatus(repoPath: string): Promise<RepoStatus> {
       remoteUrl,
       isDirty: staged.length > 0 || unstaged.length > 0 || untracked.length > 0,
     };
-  } catch (error) {
+  } catch {
     return {
       name,
       path: repoPath,
@@ -123,8 +121,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to get repos' }, { status: 500 });
   }
 }
-
-const ALLOWED_REPOS = [WORKSPACE + '/superbotijo', WORKSPACE];
 
 export async function POST(request: NextRequest) {
   try {

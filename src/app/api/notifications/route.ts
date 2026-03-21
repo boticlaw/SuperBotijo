@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { rateLimiter } from '@/lib/rate-limiter';
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'notifications.json');
 
@@ -74,6 +75,25 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+
+  const { allowed, remaining, resetIn } = rateLimiter.isAllowed(clientIp);
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded', retryAfter: resetIn },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(resetIn / 1000)),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Limit': '10',
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
 
@@ -118,7 +138,13 @@ export async function POST(request: NextRequest) {
 
     await saveNotifications(notifications);
 
-    return NextResponse.json(newNotification, { status: 201 });
+    return NextResponse.json(newNotification, {
+      status: 201,
+      headers: {
+        'X-RateLimit-Remaining': String(remaining),
+        'X-RateLimit-Limit': '10',
+      },
+    });
   } catch (error) {
     console.error('Failed to create notification:', error);
     return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 });

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     // Get activities for this agent
     const activitiesResult = getActivities({ limit: 1000, sort: 'newest' });
-    const activities = activitiesResult.activities.filter(a => 
+    const activities = activitiesResult.activities.filter(() => 
       // In production, would filter by agent ID
       true
     );

@@ -6,14 +6,11 @@
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import crypto from "crypto";
 
 const DATA_DIR = join(process.cwd(), "data");
 const CACHE_FILE = join(DATA_DIR, "agent-defaults.json");
 
 import {
-  DEPARTMENTS,
-  type DepartmentId,
   type AgentDefaults,
   HARDCODED_DEFAULTS,
   suggestEmoji,

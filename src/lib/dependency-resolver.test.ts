@@ -3,7 +3,6 @@ import {
   resolveDependencies,
   getBlockedTasks,
   getExecutableTasks,
-  type ResolvedTask,
 } from "./dependency-resolver";
 import type { KanbanTask } from "./kanban-db";
 
@@ -216,7 +215,6 @@ describe("dependency-resolver", () => {
       const result = resolveDependencies([task1, task2]);
 
       const resolved1 = result.find((t) => t.id === "task-1");
-      const resolved2 = result.find((t) => t.id === "task-2");
 
       expect(resolved1?.isExecutable).toBe(false);
       expect(resolved1?.blockedReason).toBe("circular");

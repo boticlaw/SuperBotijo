@@ -181,7 +181,7 @@ function getAgentStatusFromFiles(
     } else {
       return { isActive: false, currentTask: "SLEEPING: zzZ...", lastSeen };
     }
-  } catch (error) {
+  } catch {
     // No memory file or error reading
     return { isActive: false, currentTask: "SLEEPING: zzZ...", lastSeen: 0 };
   }

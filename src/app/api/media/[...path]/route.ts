@@ -3,8 +3,8 @@ import { readFile, stat } from "fs/promises";
 import path from "path";
 
 const ALLOWED_PREFIXES = [
-  (process.env.OPENCLAW_WORKSPACE || "/home/daniel/.openclaw/workspace") + "/",
-  (process.env.OPENCLAW_DIR || "/home/daniel/.openclaw") + "/media/",
+  path.join(process.env.OPENCLAW_DIR || "/root/.openclaw", "media"),
+  path.join(process.env.OPENCLAW_DIR || "/root/.openclaw", "public", "models"),
 ];
 
 const ALLOWED_EXTENSIONS: Record<string, string> = {
@@ -21,14 +21,20 @@ export async function GET(
 ) {
   const { path: segments } = await params;
   const filePath = "/" + segments.join("/");
-  const resolved = path.resolve(filePath);
 
-  // Security: only allowed prefixes
-  if (!ALLOWED_PREFIXES.some((p) => resolved.startsWith(p))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  let sanitized = filePath.replace(/\x00/g, "");
+  sanitized = decodeURIComponent(sanitized);
+
+  const resolved = path.resolve(sanitized);
+
+  if (!ALLOWED_PREFIXES.some((prefix) => resolved.startsWith(prefix + path.sep))) {
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
-  // Security: only image extensions
+  if (resolved.includes("..")) {
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
+  }
+
   const ext = path.extname(resolved).toLowerCase();
   const contentType = ALLOWED_EXTENSIONS[ext];
   if (!contentType) {

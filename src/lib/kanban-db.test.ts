@@ -221,9 +221,9 @@ describe("kanban-db", () => {
       });
 
       it("returns all tasks ordered by order field", () => {
-        const task1 = createTask({ title: "First", status: "backlog" });
-        const task2 = createTask({ title: "Second", status: "backlog" });
-        const task3 = createTask({ title: "Third", status: "backlog" });
+        createTask({ title: "First", status: "backlog" });
+        createTask({ title: "Second", status: "backlog" });
+        createTask({ title: "Third", status: "backlog" });
 
         const tasks = listTasks();
 
@@ -517,7 +517,7 @@ describe("kanban-db", () => {
       });
 
       it("updates column name", () => {
-        const created = createColumn({ id: "test", name: "Original" });
+        createColumn({ id: "test", name: "Original" });
         const updated = updateColumn("test", { name: "Updated" });
         expect(updated?.name).toBe("Updated");
       });
@@ -599,17 +599,17 @@ describe("kanban-db", () => {
 
       it("moves task to same column at different position", () => {
         const task1 = createTask({ title: "Task 1", status: "backlog" });
-        const task2 = createTask({ title: "Task 2", status: "backlog" });
-        const task3 = createTask({ title: "Task 3", status: "backlog" });
+        createTask({ title: "Task 2", status: "backlog" });
+        createTask({ title: "Task 3", status: "backlog" });
         // Move task1 to position after task2
-        const result = moveTask(task1.id, "backlog", task2.order + 500);
+        const result = moveTask(task1.id, "backlog", 1500);
         expect(result).not.toBeNull();
         expect(result?.status).toBe("backlog");
       });
 
       it("calculates midpoint order when moving between tasks", () => {
         const task1 = createTask({ title: "Task 1", status: "backlog" });
-        const task2 = createTask({ title: "Task 2", status: "backlog" });
+        createTask({ title: "Task 2", status: "backlog" });
         // Move task1 to position between task1 and task2
         const result = moveTask(task1.id, "backlog", task1.order + 250);
         expect(result).not.toBeNull();

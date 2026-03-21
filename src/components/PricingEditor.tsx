@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { DollarSign, RotateCcw, Save, Check, X, RefreshCw, Loader2 } from "lucide-react";
+import { DollarSign, RotateCcw, Save, X, RefreshCw, Loader2 } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
 import { useToast } from "@/components/Toast";
 
@@ -34,11 +34,6 @@ interface LocalChanges {
     cacheReadPricePerMillion?: number;
     cacheWritePricePerMillion?: number;
   };
-}
-
-interface ToastState {
-  type: "success" | "error";
-  message: string;
 }
 
 function PricingSkeleton() {
@@ -269,7 +264,7 @@ export function PricingEditor() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError, t]);
 
   useEffect(() => {
     fetchPricing();

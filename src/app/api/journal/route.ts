@@ -3,7 +3,7 @@ import {
   createJournalEntry,
   listJournalEntries,
 } from "@/lib/kanban-db";
-import type { CreateJournalEntryInput, OperationsJournalEntry } from "@/lib/mission-types";
+import type { CreateJournalEntryInput } from "@/lib/mission-types";
 
 export const dynamic = "force-dynamic";
 

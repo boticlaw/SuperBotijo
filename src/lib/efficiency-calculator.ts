@@ -53,7 +53,6 @@ export function calculateEfficiencyScore(days: number = 7): EfficiencyScore {
     let totalActivities = 0;
     let successfulActivities = 0;
     let failedActivities = 0;
-    let pendingActivities = 0;
 
     if (fs.existsSync(ACTIVITIES_DB)) {
       activitiesDb = new Database(ACTIVITIES_DB, { readonly: true });
@@ -76,7 +75,6 @@ export function calculateEfficiencyScore(days: number = 7): EfficiencyScore {
       totalActivities = stats.total || 0;
       successfulActivities = stats.success || 0;
       failedActivities = stats.errors || 0;
-      pendingActivities = stats.pending || 0;
     }
 
     // Get usage data for token efficiency

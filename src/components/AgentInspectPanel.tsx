@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Types
@@ -273,7 +274,7 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
           {identity?.avatar ? (
             <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg overflow-hidden">
               {identity.avatar.startsWith('http') || identity.avatar.startsWith('/') ? (
-                <img src={identity.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <Image src={identity.avatar} alt="Avatar" width={32} height={32} unoptimized className="w-full h-full object-cover" />
               ) : (
                 <span>{identity.avatar}</span>
               )}
@@ -564,7 +565,7 @@ export function AgentInspectPanel({ agentId, isOpen, onClose, onAction }: AgentI
                   <div className="w-12 h-12 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-2xl overflow-hidden">
                     {identityForm.avatar ? (
                       identityForm.avatar.startsWith('http') || identityForm.avatar.startsWith('/') ? (
-                        <img src={identityForm.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        <Image src={identityForm.avatar} alt="Avatar" width={48} height={48} unoptimized className="w-full h-full object-cover" />
                       ) : (
                         <span>{identityForm.avatar}</span>
                       )

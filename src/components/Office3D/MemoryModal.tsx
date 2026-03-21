@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, FileText, FolderOpen, Brain } from 'lucide-react';
+import { FileText, FolderOpen, Brain } from 'lucide-react';
 
 interface MemoryModalProps {
   onClose: () => void;
@@ -16,7 +16,6 @@ interface MemoryFile {
 
 export function MemoryModal({ onClose }: MemoryModalProps) {
   const [memoryFiles, setMemoryFiles] = useState<MemoryFile[]>([]);
-  const [workspaceFiles, setWorkspaceFiles] = useState<MemoryFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,9 +28,6 @@ export function MemoryModal({ onClose }: MemoryModalProps) {
         if (data.files) {
           setMemoryFiles(data.files.slice(0, 5));
         }
-        
-        // For workspace, we could fetch /api/files but for now show placeholder
-        setWorkspaceFiles([]);
       } catch (error) {
         console.error('Failed to fetch memory files:', error);
       } finally {

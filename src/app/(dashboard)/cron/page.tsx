@@ -15,11 +15,10 @@ import {
   Calendar,
   Trash2,
 } from "lucide-react";
-import { CronJobCard, type CronJob } from "@/components/CronJobCard";
+import { type CronJob } from "@/components/CronJobCard";
 import { CronWeeklyTimeline } from "@/components/CronWeeklyTimeline";
 import { CronJobModal } from "@/components/CronJobModal";
 import {
-  SystemCronCard,
   SystemCronLogsModal,
 } from "@/components/SystemCronCard";
 import { HeartbeatStatus } from "@/components/HeartbeatStatus";
@@ -178,16 +177,6 @@ export default function CronJobsPage() {
     }
 
     showSuccess(`"${job?.name || id}" ${t("cron.triggered")}!`);
-  };
-
-  const handleViewLogs = (id: string, logPath?: string) => {
-    const job = systemJobs.find((j) => j.id === id);
-    setLogsModal({
-      isOpen: true,
-      jobId: id,
-      jobName: job?.name || id,
-      logPath,
-    });
   };
 
   const handleEdit = (job: CronJob) => {
@@ -1059,22 +1048,6 @@ function ListSystemCronRow({
   job: SystemCronJob;
   onRun: (id: string) => Promise<void>;
 }) {
-  const formatNextRun = (dateStr: string | null) => {
-    if (!dateStr) return "—";
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (diff < 0) return "now";
-    if (days > 0) return `in ${days}d ${hours % 24}h`;
-    if (hours > 0) return `in ${hours}h ${minutes % 60}m`;
-    if (minutes > 0) return `in ${minutes}m`;
-    return "soon";
-  };
-
   return (
     <div
       className="flex items-center gap-4 py-3 px-4 hover:bg-[color-mix(in_srgb,var(--card-elevated)_50%,transparent)] border-b border-[var(--border)] last:border-0 transition-colors group"

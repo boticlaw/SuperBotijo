@@ -116,7 +116,6 @@ function IntegrationDetailModal({
   onClose: () => void;
   onRefresh?: () => void;
 }) {
-  const { t } = useI18n();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [toggling, setToggling] = useState(false);

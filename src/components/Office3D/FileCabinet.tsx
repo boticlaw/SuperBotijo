@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Box, Text } from '@react-three/drei';
-import type { Mesh } from 'three';
 
 interface FileCabinetProps {
   position: [number, number, number];

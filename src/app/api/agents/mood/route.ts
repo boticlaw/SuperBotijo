@@ -52,7 +52,6 @@ function calculateMoodForDay(
 
   const activityCount = dayActivities.length;
   const successCount = dayActivities.filter((a) => a.status === "success").length;
-  const errorCount = dayActivities.filter((a) => a.status === "error").length;
   const criticalErrorCount = dayActivities.filter(
     (a) => a.status === "error" && (a.type === "system" || a.type === "security" || a.type === "build")
   ).length;

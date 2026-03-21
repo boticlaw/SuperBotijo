@@ -30,16 +30,6 @@ async function checkUrl(url: string, timeoutMs = 5000): Promise<{ status: 'up' |
   }
 }
 
-async function checkSystemdService(name: string): Promise<ServiceCheck> {
-  try {
-    const { stdout } = await execAsync(`systemctl is-active ${name} 2>/dev/null`);
-    const active = stdout.trim() === 'active';
-    return { name, status: active ? 'up' : 'down', details: stdout.trim() };
-  } catch {
-    return { name, status: 'down', details: 'service not found' };
-  }
-}
-
 async function checkProcessByPort(port: number, name: string): Promise<ServiceCheck> {
   try {
     const { stdout } = await execAsync(`ss -tlnp 2>/dev/null | grep :${port} || echo ""`);
@@ -51,20 +41,6 @@ async function checkProcessByPort(port: number, name: string): Promise<ServiceCh
     };
   } catch {
     return { name, status: 'down', details: 'check failed' };
-  }
-}
-
-async function checkProcessByName(name: string, displayName: string): Promise<ServiceCheck> {
-  try {
-    const { stdout } = await execAsync(`pgrep -f "${name}" | head -1`);
-    const running = stdout.trim().length > 0;
-    return { 
-      name: displayName, 
-      status: running ? 'up' : 'down', 
-      details: running ? `PID: ${stdout.trim()}` : 'not running' 
-    };
-  } catch {
-    return { name: displayName, status: 'down', details: 'not running' };
   }
 }
 

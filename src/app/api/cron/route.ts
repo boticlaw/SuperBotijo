@@ -9,24 +9,6 @@ export const dynamic = "force-dynamic";
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const CRON_JOBS_FILE = join(OPENCLAW_DIR, "cron", "jobs.json");
 
-interface GatewayConfig {
-  token: string;
-  port: number;
-}
-
-function getGatewayConfig(): GatewayConfig {
-  try {
-    const configRaw = readFileSync(join(OPENCLAW_DIR, "openclaw.json"), "utf-8");
-    const config = JSON.parse(configRaw);
-    return {
-      token: config.gateway?.auth?.token || "",
-      port: config.gateway?.port || 18789,
-    };
-  } catch {
-    return { token: "", port: 18789 };
-  }
-}
-
 function escapeShellArg(arg: string): string {
   return `'${arg.replace(/'/g, "'\\''")}'`;
 }

@@ -198,7 +198,8 @@ export function getNextRuns(
   expr: string,
   count: number = 3,
   fromDate: Date = new Date(),
-  _timezone: string = "UTC" // Note: timezone param is accepted but currently uses system local time
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _timezone: string = "UTC"
 ): Date[] {
   const parts = parseCron(expr);
   if (!parts) return [];

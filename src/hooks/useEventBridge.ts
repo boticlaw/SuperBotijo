@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { eventBridge } from "@/lib/runtime-events";
-import type { RuntimeEvent, EventHandler, EventFilter, EventType } from "@/types/events";
+import type { RuntimeEvent, EventHandler, EventFilter } from "@/types/events";
 
 /**
  * Hook to subscribe to events with automatic cleanup

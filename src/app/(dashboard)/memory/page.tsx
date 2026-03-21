@@ -32,7 +32,7 @@ export default function MemoryPage() {
   const [originalContent, setOriginalContent] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [wordCloudData, setWordCloudData] = useState<WordFrequency[]>([]);
   const [wordCloudLoading, setWordCloudLoading] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -88,9 +88,8 @@ export default function MemoryPage() {
       const data = await res.json();
       setContent(data.content);
       setOriginalContent(data.content);
-    } catch (err) {
+    } catch {
       setError("Failed to load file");
-      console.error(err);
     }
   }, []);
 

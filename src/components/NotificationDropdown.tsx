@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Bell, Check, CheckCheck, Trash2, X, Info, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 export interface Notification {
   id: string;

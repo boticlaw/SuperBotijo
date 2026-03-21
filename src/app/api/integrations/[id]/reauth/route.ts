@@ -37,7 +37,7 @@ export async function POST(
     case 'twitter':
       try {
         // Try to initiate bird auth
-        const output = execSync('bird auth login --help 2>&1', {
+        execSync('bird auth login --help 2>&1', {
           timeout: 5000,
           encoding: 'utf-8',
         });
@@ -48,7 +48,7 @@ export async function POST(
           instructions: 'To reauthenticate Twitter, run: bird auth login',
           timestamp: new Date().toISOString(),
         };
-      } catch (error) {
+      } catch {
         result = {
           success: false,
           message: 'bird CLI not available',
@@ -61,7 +61,7 @@ export async function POST(
     case 'google':
       try {
         // Try to initiate gog auth
-        const output = execSync('gog auth login --help 2>&1', {
+        execSync('gog auth login --help 2>&1', {
           timeout: 5000,
           encoding: 'utf-8',
         });
@@ -72,7 +72,7 @@ export async function POST(
           instructions: 'To reauthenticate Google, run: gog auth login',
           timestamp: new Date().toISOString(),
         };
-      } catch (error) {
+      } catch {
         result = {
           success: false,
           message: 'gog CLI not available',

@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
-  Check,
   X,
   RefreshCw,
   Loader2,
@@ -315,7 +314,7 @@ export function ConfigEditor() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   const fetchBackupInfo = useCallback(async () => {
     try {

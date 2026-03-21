@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -10,6 +11,7 @@ import { GatewayStatusBadge } from "@/components/GatewayStatusBadge";
 import { BRANDING } from "@/config/branding";
 import { useI18n } from "@/i18n/provider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import logoSmall from "@/../public/logo-small.png";
 
 export function TopBar() {
   const [showSearch, setShowSearch] = useState(false);
@@ -76,10 +78,12 @@ export function TopBar() {
         }}
       >
         <div className="flex items-center gap-3">
-          <img 
-            src="/logo-small.png" 
-            alt="SuperBotijo" 
-            style={{ width: "28px", height: "28px", objectFit: "contain" }}
+          <Image 
+            src={logoSmall}
+            alt="SuperBotijo"
+            width={28}
+            height={28}
+            style={{ objectFit: "contain" }}
           />
           <h1
             style={{

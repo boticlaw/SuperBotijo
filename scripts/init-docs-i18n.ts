@@ -9,7 +9,6 @@
  */
 
 import fs from "fs";
-import path from "path";
 
 const DEFAULT_CONFIG = {
   "$schema": "./docs-i18n.schema.json",

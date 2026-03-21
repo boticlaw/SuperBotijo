@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, LayoutGrid, CheckCircle, Circle, Clock } from 'lucide-react';
+import { LayoutGrid, CheckCircle, Circle, Clock } from 'lucide-react';
 
 interface RoadmapModalProps {
   onClose: () => void;

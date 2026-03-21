@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle, AlertCircle, Play, Clock } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 interface TimelineEvent {
   id: string;
@@ -76,7 +76,7 @@ export function SubAgentTimeline({ events }: SubAgentTimelineProps) {
       </h3>
 
       <div className="space-y-3">
-        {events.map((event, index) => {
+        {events.map((event) => {
           const { icon: Icon, color } = getEventIcon(event.type);
 
           return (

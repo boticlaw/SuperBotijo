@@ -350,6 +350,24 @@
       "saved": "¡Guardado!"
     }
   },
+  "logs": {
+    "title": "Visor de Logs",
+    "subtitle": "Streaming de logs en tiempo real de los servicios",
+    "filterLogs": "Filtrar logs...",
+    "auto": "↓ Auto",
+    "stream": "Transmitir",
+    "stop": "Detener",
+    "live": "EN VIVO",
+    "stopped": "DETENIDO",
+    "lines": "líneas",
+    "filtered": "filtrado de {count}",
+    "waiting": "Esperando logs...",
+    "clickToStream": "Hacé clic en 'Transmitir' para iniciar el visor de logs",
+    "discoveringServices": "Descubriendo servicios...",
+    "noServicesFound": "No se encontraron servicios",
+    "clear": "Limpiar",
+    "download": "Descargar logs"
+  },
   "settings": {
     "title": "Configuración",
     "subtitle": "Ajustes del sistema y de OpenClaw",

@@ -79,8 +79,6 @@ export function TranscriptViewer({ sessionKey, onClose }: TranscriptViewerProps)
     });
   }, [messages, filterType, searchQuery]);
 
-  const currentMessage = filteredMessages[currentIndex];
-
   const handleNext = () => {
     if (currentIndex < filteredMessages.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -96,16 +94,6 @@ export function TranscriptViewer({ sessionKey, onClose }: TranscriptViewerProps)
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentIndex(0); // Reset to first result
-  };
-
-  const scrollToMessage = (index: number) => {
-    if (messagesContainerRef.current) {
-      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-index]');
-      const targetElement = messageElements[index] as HTMLElement;
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
   };
 
   const handleExport = () => {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { sessionStore } from "@/lib/session-store";
 
 // Routes that never require authentication
 const PUBLIC_ROUTES = new Set(["/login"]);
@@ -12,14 +13,25 @@ const PUBLIC_API_PREFIXES = [
   "/api/kanban/agent",
   "/api/kanban/tasks/",
   "/api/agents/config",
+  "/api/debug/public",
 ];
 
-// Auth token stored in cookie (set during login)
-const AUTH_TOKEN = "mc_authenticated_session_token_2026";
+function extractToken(request: NextRequest): string | null {
+  // Check Authorization header first
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+  // Fall back to cookie (set by login API)
+  return request.cookies.get("auth_token")?.value ?? null;
+}
 
 function isAuthenticated(request: NextRequest): boolean {
-  const authCookie = request.cookies.get("mc_auth");
-  return !!(authCookie && authCookie.value === AUTH_TOKEN);
+  const token = extractToken(request);
+  if (!token) {
+    return false;
+  }
+  return sessionStore.validate(token);
 }
 
 export function middleware(request: NextRequest) {

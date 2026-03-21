@@ -8,7 +8,6 @@ import {
   updateActivityStatus,
   getActivities,
   getActivityStats,
-  type GetActivitiesOptions,
 } from "./activities-db";
 
 const DB_PATH = path.join(process.cwd(), "data", "activities.db");

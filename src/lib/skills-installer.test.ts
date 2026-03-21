@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { Skill, InstallResult, EligibilityCheck, InstallProgress } from "./skills-installer";
 
 describe("skills-installer types", () => {
