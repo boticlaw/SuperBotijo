@@ -26,7 +26,8 @@ const revokedTokens = new Set<string>();
 
 function base64UrlEncode(str: string): string {
   if (typeof globalThis !== "undefined" && globalThis.Buffer) {
-    return globalThis.Buffer.from(str).toString("base64")
+    // Use 'binary' encoding for strings that contain raw bytes (like HMAC signatures)
+    return globalThis.Buffer.from(str, "binary").toString("base64")
       .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
   }
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
@@ -43,15 +44,29 @@ function base64UrlDecode(str: string): string {
 
 function bufferToBase64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
+  
+  // Use Buffer directly if available (Node.js runtime)
+  if (typeof globalThis !== "undefined" && globalThis.Buffer) {
+    return globalThis.Buffer.from(bytes).toString("base64")
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  }
+  
+  // Fallback for Edge Runtime: use btoa with binary string
   let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return base64UrlEncode(binary);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 function base64UrlToBuffer(base64: string): ArrayBuffer {
-  const binary = base64UrlDecode(base64);
+  let standardBase64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+  while (standardBase64.length % 4) standardBase64 += "=";
+
+  const binary = typeof atob === "function"
+    ? atob(standardBase64)
+    : Buffer.from(standardBase64, "base64").toString("binary");
+
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
@@ -146,7 +161,6 @@ class SessionStore {
       }
 
       const payload: SessionPayload = JSON.parse(base64UrlDecode(payloadB64));
-
       if (Date.now() > payload.exp) {
         return false;
       }
