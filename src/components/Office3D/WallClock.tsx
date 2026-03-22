@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Cylinder, Box, Text } from '@react-three/drei';
 import type { Group } from 'three';
+import { MATERIALS } from './materials';
 
 interface WallClockProps {
   position: [number, number, number];
@@ -46,7 +47,7 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
         rotation={[Math.PI / 2, 0, 0]}
         castShadow
       >
-        <meshStandardMaterial color="#f5f5f5" />
+        <primitive object={MATERIALS.clock.face} attach="material" />
       </Cylinder>
 
       {/* Clock rim */}
@@ -55,7 +56,7 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
         rotation={[Math.PI / 2, 0, 0]}
         position={[0, 0, -0.005]}
       >
-        <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.3} />
+        <primitive object={MATERIALS.clock.rim} attach="material" />
       </Cylinder>
 
       {/* Center dot */}
@@ -64,7 +65,7 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
         rotation={[Math.PI / 2, 0, 0]}
         position={[0, 0, 0.04]}
       >
-        <meshStandardMaterial color="#1f2937" />
+        <primitive object={MATERIALS.clock.center} attach="material" />
       </Cylinder>
 
       {/* ISSUE #68: Hour markers (12 markers) */}
@@ -85,7 +86,7 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
             position={[x, y, 0.035]}
             castShadow
           >
-            <meshStandardMaterial color="#1f2937" />
+            <primitive object={MATERIALS.clock.marker} attach="material" />
           </Box>
         );
       })}
@@ -93,21 +94,21 @@ export default function WallClock({ position, rotation = [0, 0, 0] }: WallClockP
       {/* Hour hand */}
       <group ref={hourHandRef}>
         <Box args={[0.03, 0.15, 0.02]} position={[0, 0.075, 0.04]} castShadow>
-          <meshStandardMaterial color="#1f2937" />
+          <primitive object={MATERIALS.clock.hourHand} attach="material" />
         </Box>
       </group>
 
       {/* Minute hand */}
       <group ref={minuteHandRef}>
         <Box args={[0.02, 0.22, 0.02]} position={[0, 0.11, 0.045]} castShadow>
-          <meshStandardMaterial color="#374151" />
+          <primitive object={MATERIALS.clock.minuteHand} attach="material" />
         </Box>
       </group>
 
       {/* Second hand */}
       <group ref={secondHandRef}>
         <Box args={[0.01, 0.25, 0.01]} position={[0, 0.125, 0.05]} castShadow>
-          <meshStandardMaterial color="#ef4444" />
+          <primitive object={MATERIALS.clock.secondHand} attach="material" />
         </Box>
       </group>
 

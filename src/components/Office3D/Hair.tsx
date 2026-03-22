@@ -17,7 +17,7 @@ export function Hair({ style, color = "#4a3728" }: HairProps) {
   if (style === AVATAR_HAIR_TYPES.short) {
     return (
       <Box args={[0.18, 0.04, 0.18]} position={[0, 0.12, 0]}>
-        <meshStandardMaterial color={color} roughness={0.95} />
+        <meshStandardMaterial color={color} roughness={0.95} dispose={null} />
       </Box>
     );
   }
@@ -26,10 +26,10 @@ export function Hair({ style, color = "#4a3728" }: HairProps) {
     return (
       <group>
         <Box args={[0.2, 0.05, 0.2]} position={[0, 0.12, 0]}>
-          <meshStandardMaterial color={color} roughness={0.95} />
+          <meshStandardMaterial color={color} roughness={0.95} dispose={null} />
         </Box>
         <Box args={[0.18, 0.1, 0.05]} position={[0, 0.05, -0.08]}>
-          <meshStandardMaterial color={color} roughness={0.95} />
+          <meshStandardMaterial color={color} roughness={0.95} dispose={null} />
         </Box>
       </group>
     );
@@ -44,7 +44,7 @@ export function Hair({ style, color = "#4a3728" }: HairProps) {
           position={[x, 0.15, index % 2 === 0 ? 0.02 : -0.02]}
           rotation={[0.2, 0, x * 2]}
         >
-          <meshStandardMaterial color={color} roughness={0.9} />
+          <meshStandardMaterial color={color} roughness={0.9} dispose={null} />
         </Cone>
       ))}
     </group>

@@ -18,10 +18,10 @@ export function Hat({ style, color = "#3b82f6" }: HatProps) {
     return (
       <group position={[0, 0.14, 0]}>
         <Sphere args={[0.11, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]}>
-          <meshStandardMaterial color={color} roughness={0.8} />
+          <meshStandardMaterial color={color} roughness={0.8} dispose={null} />
         </Sphere>
         <Box args={[0.2, 0.02, 0.2]} position={[0, -0.015, 0]}>
-          <meshStandardMaterial color={color} roughness={0.85} />
+          <meshStandardMaterial color={color} roughness={0.85} dispose={null} />
         </Box>
       </group>
     );
@@ -30,10 +30,10 @@ export function Hat({ style, color = "#3b82f6" }: HatProps) {
   return (
     <group position={[0, 0.14, 0.02]}>
       <Sphere args={[0.1, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]}>
-        <meshStandardMaterial color={color} roughness={0.75} />
+        <meshStandardMaterial color={color} roughness={0.75} dispose={null} />
       </Sphere>
       <Box args={[0.13, 0.012, 0.08]} position={[0, -0.02, 0.085]} rotation={[0.25, 0, 0]}>
-        <meshStandardMaterial color={color} roughness={0.75} />
+        <meshStandardMaterial color={color} roughness={0.75} dispose={null} />
       </Box>
     </group>
   );

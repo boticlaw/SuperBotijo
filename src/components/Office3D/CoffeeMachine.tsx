@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Box, Cylinder, Text, RoundedBox, Torus } from '@react-three/drei';
 import type { Mesh, Group, MeshBasicMaterial } from 'three';
+import { MATERIALS } from './materials';
 
 interface CoffeeMachineProps {
   position: [number, number, number];
@@ -54,7 +55,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         castShadow
         receiveShadow
       >
-        <meshStandardMaterial color="#2d2d2d" metalness={0.3} roughness={0.7} />
+        <primitive object={MATERIALS.coffee.counter} attach="material" />
       </Box>
       
       {/* Counter top - marble look */}
@@ -64,11 +65,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         castShadow
         receiveShadow
       >
-        <meshStandardMaterial
-          color="#e8e8e8"
-          metalness={0.1}
-          roughness={0.2}
-        />
+        <primitive object={MATERIALS.coffee.counterTop} attach="material" />
       </Box>
 
       {/* === ESPRESSO MACHINE BODY === */}
@@ -89,6 +86,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
             color={hovered ? "#4a4a4a" : "#3a3a3a"}
             metalness={0.8}
             roughness={0.2}
+            dispose={null}
           />
         </RoundedBox>
 
@@ -97,7 +95,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.25, 0.3, 0.15, 32]}
           position={[0, 0.6, 0]}
         >
-          <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.1} />
+          <primitive object={MATERIALS.coffee.dome} attach="material" />
         </Cylinder>
 
         {/* === LED DISPLAY SCREEN === */}
@@ -105,11 +103,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.35, 0.12, 0.02]}
           position={[0, 0.42, 0.24]}
         >
-          <meshStandardMaterial 
-            color="#0a1628" 
-            emissive="#1e40af"
-            emissiveIntensity={0.3}
-          />
+          <primitive object={MATERIALS.coffee.display} attach="material" />
         </Box>
         
         {/* Display text */}
@@ -132,12 +126,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
             position={[xOffset - 0.1, 0.28, 0.24]}
             rotation={[Math.PI / 2, 0, 0]}
           >
-            <meshStandardMaterial 
-              color={i === 1 ? "#22c55e" : "#6b7280"}
-              emissive={i === 1 ? "#15803d" : "#374151"}
-              emissiveIntensity={0.5}
-              metalness={0.5}
-            />
+            <primitive object={i === 1 ? MATERIALS.coffee.btnGreen : MATERIALS.coffee.btnGray} attach="material" />
           </Cylinder>
         ))}
 
@@ -148,7 +137,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0, 0.18, 0.2]}
           rotation={[Math.PI / 2, 0, 0]}
         >
-          <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.1} />
+          <primitive object={MATERIALS.coffee.dome} attach="material" />
         </Cylinder>
 
         {/* Portafilter handle */}
@@ -157,17 +146,13 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0, 0.12, 0.28]}
           rotation={[0.3, 0, 0]}
         >
-          <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.8} />
+          <primitive object={MATERIALS.coffee.portafilter} attach="material" />
         </Box>
 
         {/* === COFFEE DRIP (animated) === */}
         <mesh ref={dripRef} position={[0, 0.08, 0.2]}>
           <cylinderGeometry args={[0.008, 0.005, 0.04, 8]} />
-          <meshStandardMaterial 
-            color="#3d2314" 
-            transparent 
-            opacity={0.8} 
-          />
+          <primitive object={MATERIALS.coffee.drip} attach="material" />
         </mesh>
 
         {/* === DRIP TRAY === */}
@@ -178,7 +163,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0, 0.015, 0.1]}
           receiveShadow
         >
-          <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.4} />
+          <primitive object={MATERIALS.coffee.dripTray} attach="material" />
         </RoundedBox>
 
         {/* Drain grate lines */}
@@ -188,7 +173,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
             args={[0.35, 0.01, 0.015]}
             position={[-0.07 + i * 0.035, 0.035, 0.1]}
           >
-            <meshStandardMaterial color="#374151" metalness={0.7} roughness={0.3} />
+            <primitive object={MATERIALS.coffee.grate} attach="material" />
           </Box>
         ))}
       </group>
@@ -200,7 +185,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.045, 0.035, 0.1, 16]}
           position={[0, 0.05, 0.12]}
         >
-          <meshStandardMaterial color="#fafafa" metalness={0.1} roughness={0.3} />
+          <primitive object={MATERIALS.coffee.cup} attach="material" />
         </Cylinder>
 
         {/* Cup rim */}
@@ -209,7 +194,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0, 0.1, 0.12]}
           rotation={[Math.PI / 2, 0, 0]}
         >
-          <meshStandardMaterial color="#ffffff" metalness={0.1} roughness={0.2} />
+          <primitive object={MATERIALS.coffee.cupRim} attach="material" />
         </Torus>
 
         {/* Coffee inside */}
@@ -217,11 +202,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           args={[0.04, 0.033, 0.07, 16]}
           position={[0, 0.06, 0.12]}
         >
-          <meshStandardMaterial 
-            color="#2d1810" 
-            metalness={0.3} 
-            roughness={0.4} 
-          />
+          <primitive object={MATERIALS.coffee.coffeeInside} attach="material" />
         </Cylinder>
 
         {/* Cup handle */}
@@ -230,7 +211,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0.055, 0.05, 0.12]}
           rotation={[0, 0, Math.PI / 2]}
         >
-          <meshStandardMaterial color="#fafafa" metalness={0.1} roughness={0.3} />
+          <primitive object={MATERIALS.coffee.cup} attach="material" />
         </Torus>
       </group>
 
@@ -242,11 +223,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
           position={[0, 1.45, 0.12]}
         >
           <sphereGeometry args={[0.02, 8, 8]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            transparent
-            opacity={0.3}
-          />
+          <primitive object={MATERIALS.coffee.steam} attach="material" />
         </mesh>
       ))}
 
@@ -255,13 +232,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         args={[0.25, 0.35, 0.12]}
         position={[0, 1.15, -0.2]}
       >
-        <meshStandardMaterial
-          color="#1e3a5f"
-          transparent
-          opacity={0.6}
-          metalness={0.1}
-          roughness={0.1}
-        />
+        <primitive object={MATERIALS.coffee.waterTank} attach="material" />
       </Box>
 
       {/* Water level indicator */}
@@ -269,13 +240,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
         args={[0.02, 0.25, 0.01]}
         position={[-0.14, 1.1, -0.13]}
       >
-        <meshStandardMaterial 
-          color="#60a5fa" 
-          transparent 
-          opacity={0.8}
-          emissive="#3b82f6"
-          emissiveIntensity={0.2}
-        />
+        <primitive object={MATERIALS.coffee.waterLevel} attach="material" />
       </Box>
 
       {/* === HOVER LABEL === */}
@@ -287,11 +252,7 @@ export default function CoffeeMachine({ position, onClick }: CoffeeMachineProps)
             radius={0.05}
             smoothness={4}
           >
-            <meshStandardMaterial 
-              color="#1a1a1a" 
-              transparent 
-              opacity={0.9}
-            />
+            <primitive object={MATERIALS.coffee.labelBg} attach="material" />
           </RoundedBox>
           
           <Text

@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Box, Text } from '@react-three/drei';
+import { useState } from "react";
+import { Box, Text } from "@react-three/drei";
+import { MATERIALS } from "./materials";
 
 interface WhiteboardProps {
   position: [number, number, number];
@@ -11,34 +12,36 @@ interface WhiteboardProps {
 
 const KANBAN_COLUMNS = [
   {
-    title: 'TODO',
-    color: '#3b82f6',
+    title: "TODO",
+    color: "#3b82f6",
     x: -0.75,
     items: [
-      { text: 'Windows + natural light', color: '#6b7280' },
-      { text: 'Bloom pass', color: '#6b7280' },
+      { text: "Windows + natural light", color: "#6b7280" },
+      { text: "Bloom pass", color: "#22c55e" },
     ],
   },
   {
-    title: 'DOING',
-    color: '#f59e0b',
+    title: "DOING",
+    color: "#f59e1b",
     x: 0,
     items: [
-      { text: 'Office 3D polish', color: '#22c55e' },
-      { text: 'Avatar idle routes', color: '#22c55e' },
+      { text: "Office 3D polish", color: "#22c55e" },
+      { text: "Avatar idle routes", color: "#22c55e" },
     ],
   },
   {
-    title: 'DONE',
-    color: '#22c55e',
+    title: "DONE",
+    color: "#22c55e",
     x: 0.75,
     items: [
-      { text: 'Ceiling', color: '#16a34a' },
-      { text: 'Desk decor', color: '#16a34a' },
-      { text: 'Monitor content', color: '#16a34a' },
+      { text: "Ceiling", color: "#16a34a" },
+      { text: "Desk decor", color: "#16a34a" },
+      { text: "Monitor content", color: "#16a34a" },
     ],
   },
 ] as const;
+
+const MARKER_COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308"] as const;
 
 export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: WhiteboardProps) {
   const [hovered, setHovered] = useState(false);
@@ -56,33 +59,32 @@ export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: 
         onPointerOut={() => setHovered(false)}
       >
         <meshStandardMaterial
-          color={hovered ? '#f0f0f0' : '#ffffff'}
-          emissive={hovered ? '#fbbf24' : '#000000'}
+          color={hovered ? "#f0f0f0" : "#ffffff"}
+          emissive={hovered ? "#fbbf24" : "#000000"}
           emissiveIntensity={hovered ? 0.1 : 0}
+          dispose={null}
         />
       </Box>
 
       {/* Frame */}
       <Box args={[2.6, 1.6, 0.08]} position={[0, 1.5, -0.05]}>
-        <meshStandardMaterial color="#1f2937" metalness={0.3} roughness={0.6} />
+        <primitive object={MATERIALS.whiteboard.frame} attach="material" />
       </Box>
 
       {/* Marker tray */}
       <Box args={[2.3, 0.1, 0.15]} position={[0, 0.7, 0.05]} castShadow>
-        <meshStandardMaterial color="#6b7280" />
+        <primitive object={MATERIALS.whiteboard.tray} attach="material" />
       </Box>
 
       {/* Markers */}
-      {[-0.6, -0.2, 0.2, 0.6].map((x, i) => (
-        <group key={i} position={[x, 0.75, 0.1]}>
+      {MARKER_COLORS.map((color, i) => (
+        <group key={i} position={[-0.6 + i * 0.2, 0.75, 0.1]}>
           <Box args={[0.08, 0.3, 0.08]} castShadow>
-            <meshStandardMaterial
-              color={['#ef4444', '#3b82f6', '#22c55e', '#eab308'][i]}
-            />
+            <meshStandardMaterial color={color as string} dispose={null} />
           </Box>
           {/* Cap */}
           <Box args={[0.09, 0.08, 0.09]} position={[0, 0.17, 0]} castShadow>
-            <meshStandardMaterial color="#1f2937" />
+            <primitive object={MATERIALS.whiteboard.markerCap} attach="material" />
           </Box>
         </group>
       ))}
@@ -112,7 +114,7 @@ export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: 
           </Text>
 
           <Box args={[0.55, 0.01, 0.01]} position={[0, 0.37, 0]}>
-            <meshStandardMaterial color={column.color} />
+            <primitive object={MATERIALS.whiteboard.arrow} attach="material" />
           </Box>
 
           {column.items.map((item, index) => (
@@ -132,10 +134,10 @@ export default function Whiteboard({ position, rotation = [0, 0, 0], onClick }: 
 
       {/* Progress arrows */}
       <Box args={[0.18, 0.008, 0.01]} position={[-0.38, 1.35, 0.06]}>
-        <meshStandardMaterial color="#9ca3af" />
+        <primitive object={MATERIALS.whiteboard.arrow} attach="material" />
       </Box>
       <Box args={[0.18, 0.008, 0.01]} position={[0.38, 1.35, 0.06]}>
-        <meshStandardMaterial color="#9ca3af" />
+        <primitive object={MATERIALS.whiteboard.arrow} attach="material" />
       </Box>
 
       {/* Hover label */}

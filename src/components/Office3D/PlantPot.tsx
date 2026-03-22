@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Box, Cylinder, Sphere } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
+import { MATERIALS } from "./materials";
 
 const PLANT_SIZES = {
   small: "small",
@@ -64,10 +65,10 @@ export default function PlantPot({
     <group position={position} scale={scale * typeScale}>
       <group position={[0, 0.1, 0]}>
         <Cylinder args={[0.12, 0.1, 0.2, 16]} castShadow receiveShadow>
-          <meshStandardMaterial color="#8b4513" roughness={0.9} />
+          <primitive object={MATERIALS.plants.pot} attach="material" />
         </Cylinder>
         <Cylinder args={[0.1, 0.1, 0.05, 16]} position={[0, 0.08, 0]}>
-          <meshStandardMaterial color="#3d2817" roughness={1} />
+          <primitive object={MATERIALS.plants.soil} attach="material" />
         </Cylinder>
       </group>
 
@@ -75,16 +76,16 @@ export default function PlantPot({
         {type === PLANT_TYPES.bush && (
           <>
             <Box args={[0.035, 0.08, 0.035]} position={[0, 0.03, 0]} castShadow>
-              <meshStandardMaterial color="#2d5016" roughness={0.95} />
+              <primitive object={MATERIALS.plants.trunk} attach="material" />
             </Box>
             <Sphere args={[0.17, 14, 14]} position={[0, 0.14, 0]} castShadow>
-              <meshStandardMaterial color="#22c55e" roughness={0.8} />
+              <primitive object={MATERIALS.plants.sphere} attach="material" />
             </Sphere>
             <Sphere args={[0.12, 12, 12]} position={[0.11, 0.2, 0.06]} castShadow>
-              <meshStandardMaterial color="#1ea54e" roughness={0.8} />
+              <primitive object={MATERIALS.plants.sphereAlt1} attach="material" />
             </Sphere>
             <Sphere args={[0.11, 12, 12]} position={[-0.1, 0.21, -0.06]} castShadow>
-              <meshStandardMaterial color="#2dd46a" roughness={0.8} />
+              <primitive object={MATERIALS.plants.sphereAlt2} attach="material" />
             </Sphere>
           </>
         )}
@@ -92,13 +93,13 @@ export default function PlantPot({
         {type === PLANT_TYPES.tree && (
           <>
             <Box args={[0.05, 0.26, 0.05]} position={[0, 0.14, 0]} castShadow>
-              <meshStandardMaterial color="#5b3a1f" roughness={0.95} />
+              <primitive object={MATERIALS.plants.trunk} attach="material" />
             </Box>
             <Sphere args={[0.18, 14, 14]} position={[0, 0.35, 0]} castShadow>
-              <meshStandardMaterial color="#22c55e" roughness={0.85} />
+              <primitive object={MATERIALS.plants.sphere} attach="material" />
             </Sphere>
             <Sphere args={[0.11, 12, 12]} position={[0.11, 0.33, 0.04]} castShadow>
-              <meshStandardMaterial color="#16a34a" roughness={0.85} />
+              <primitive object={MATERIALS.plants.leaf2} attach="material" />
             </Sphere>
           </>
         )}
@@ -106,19 +107,19 @@ export default function PlantPot({
         {type === PLANT_TYPES.succulent && (
           <>
             <Box args={[0.03, 0.05, 0.03]} position={[0, 0.03, 0]} castShadow>
-              <meshStandardMaterial color="#2d5016" roughness={0.95} />
+              <primitive object={MATERIALS.plants.trunk} attach="material" />
             </Box>
             <Sphere args={[0.1, 12, 12]} position={[0, 0.12, 0]} castShadow>
-              <meshStandardMaterial color="#34d399" roughness={0.75} />
+              <primitive object={MATERIALS.plants.succulent1} attach="material" />
             </Sphere>
             <Sphere args={[0.065, 10, 10]} position={[0.08, 0.13, 0.02]} castShadow>
-              <meshStandardMaterial color="#10b981" roughness={0.75} />
+              <primitive object={MATERIALS.plants.succulent2} attach="material" />
             </Sphere>
             <Sphere args={[0.065, 10, 10]} position={[-0.08, 0.13, -0.02]} castShadow>
-              <meshStandardMaterial color="#059669" roughness={0.75} />
+              <primitive object={MATERIALS.plants.succulent3} attach="material" />
             </Sphere>
             <Sphere args={[0.055, 10, 10]} position={[0, 0.19, -0.06]} castShadow>
-              <meshStandardMaterial color="#2dd4bf" roughness={0.75} />
+              <primitive object={MATERIALS.plants.succulent4} attach="material" />
             </Sphere>
           </>
         )}
