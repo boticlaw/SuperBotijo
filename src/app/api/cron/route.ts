@@ -3,36 +3,12 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { isValidCron } from "@/lib/cron-parser";
 import { safeExecFile, isValidId, isValidCronAction } from "@/lib/safe-exec";
+import { validateBody, CreateCronJobSchema, UpdateCronJobSchema } from "@/lib/api-validation";
 
 export const dynamic = "force-dynamic";
 
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/home/daniel/.openclaw";
 const CRON_JOBS_FILE = join(OPENCLAW_DIR, "cron", "jobs.json");
-
-interface CreateJobBody {
-  name: string;
-  schedule?: string;
-  every?: string;
-  at?: string;
-  timezone?: string;
-  agentId?: string;
-  message?: string;
-  description?: string;
-  disabled?: boolean;
-}
-
-interface UpdateJobBody {
-  id: string;
-  name?: string;
-  schedule?: string;
-  every?: string;
-  at?: string;
-  timezone?: string;
-  agentId?: string;
-  message?: string;
-  description?: string;
-  enabled?: boolean;
-}
 
 export async function GET() {
   try {
@@ -119,16 +95,10 @@ function fetchCronJobsFromCLI(): Record<string, unknown>[] {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateJobBody = await request.json();
-    const { name, schedule, every, at, timezone, agentId, message, description, disabled } = body;
-
-    if (!name) {
-      return NextResponse.json({ error: "Job name is required" }, { status: 400 });
-    }
-
-    if (!schedule && !every && !at) {
-      return NextResponse.json({ error: "Schedule (cron), every, or at is required" }, { status: 400 });
-    }
+    const rawBody = await request.json();
+    const validation = validateBody(CreateCronJobSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const { name, schedule, every, at, timezone, agentId, message, description, disabled } = validation.data;
 
     if (schedule && !isValidCron(schedule)) {
       return NextResponse.json({ error: "Invalid cron expression" }, { status: 400 });
@@ -203,12 +173,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body: UpdateJobBody = await request.json();
-    const { id, name, schedule, every, at, timezone, agentId, message, description, enabled } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
-    }
+    const rawBody = await request.json();
+    const validation = validateBody(UpdateCronJobSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const { id, name, schedule, every, at, timezone, agentId, message, description, enabled } = validation.data;
 
     if (!isValidId(id)) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });

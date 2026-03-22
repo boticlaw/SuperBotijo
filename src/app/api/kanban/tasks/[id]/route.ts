@@ -5,8 +5,6 @@ import {
   getTask,
   updateTask,
   deleteTask,
-  type TaskPriority,
-  type UpdateTaskInput,
 } from "@/lib/kanban-db";
 import {
   isRequireCommentOnStatusFeatureEnabled,
@@ -15,6 +13,7 @@ import {
 } from "@/lib/kanban-comments";
 import { emitKanbanTaskUpdated, emitKanbanTaskDeleted } from "@/lib/runtime-events";
 import { requireAuth } from "@/lib/auth-helpers";
+import { validateBody, UpdateTaskSchema } from "@/lib/api-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -85,54 +84,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const body = await request.json() as UpdateTaskInput & {
-      comment?: unknown;
-      body?: unknown;
-      content?: unknown;
-    };
+    const rawBody = await request.json();
+    const validation = validateBody(UpdateTaskSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const body = validation.data;
+
     const transitionComment = normalizeCommentBody(body.comment ?? body.body ?? body.content);
     const nextStatus = typeof body.status === "string" ? body.status : existingTask.status;
     const hasStatusTransition = nextStatus !== existingTask.status;
-
-    if (body.title !== undefined) {
-      if (typeof body.title !== "string" || body.title.length === 0) {
-        return NextResponse.json(
-          { error: "Title must be a non-empty string" },
-          { status: 400 }
-        );
-      }
-
-      if (body.title.length > 200) {
-        return NextResponse.json(
-          { error: "Title must be 200 characters or less" },
-          { status: 400 }
-        );
-      }
-    }
-
-    const validPriorities: TaskPriority[] = ["low", "medium", "high", "critical"];
-    if (body.priority && !validPriorities.includes(body.priority)) {
-      return NextResponse.json(
-        { error: `Invalid priority. Must be one of: ${validPriorities.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    // Validate projectId (can be string or null to unassign)
-    if (body.projectId !== undefined && body.projectId !== null && typeof body.projectId !== "string") {
-      return NextResponse.json(
-        { error: "projectId must be a string or null" },
-        { status: 400 }
-      );
-    }
-
-    // Validate archived (must be boolean)
-    if (body.archived !== undefined && typeof body.archived !== "boolean") {
-      return NextResponse.json(
-        { error: "archived must be a boolean" },
-        { status: 400 }
-      );
-    }
 
     if (
       isRequireCommentOnStatusFeatureEnabled()
@@ -169,7 +128,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // Emit real-time event
     const changes: Record<string, unknown> = {};
     if (body.title !== undefined) changes.title = body.title;
     if (body.description !== undefined) changes.description = body.description;

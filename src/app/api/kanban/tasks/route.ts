@@ -3,11 +3,11 @@ import {
   listTasks,
   createTask,
   type TaskPriority,
-  type CreateTaskInput,
   type ListTasksFilters,
 } from "@/lib/kanban-db";
 import { emitKanbanTaskCreated } from "@/lib/runtime-events";
 import { requireAuth } from "@/lib/auth-helpers";
+import { validateBody, CreateTaskSchema } from "@/lib/api-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -58,41 +58,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body: CreateTaskInput = await request.json();
-
-    if (!body.title || typeof body.title !== "string") {
-      return NextResponse.json(
-        { error: "Title is required" },
-        { status: 400 }
-      );
-    }
-
-    if (body.title.length > 200) {
-      return NextResponse.json(
-        { error: "Title must be 200 characters or less" },
-        { status: 400 }
-      );
-    }
-
-    const validPriorities: TaskPriority[] = ["low", "medium", "high", "critical"];
-    if (body.priority && !validPriorities.includes(body.priority)) {
-      return NextResponse.json(
-        { error: `Invalid priority. Must be one of: ${validPriorities.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const validation = validateBody(CreateTaskSchema, body);
+    if (!validation.success) return validation.error;
+    const { title, description, status, priority, assignee, labels, projectId, domain, createdBy } = validation.data;
 
     const task = createTask({
-      title: body.title,
-      description: body.description ?? null,
-      status: body.status,
-      priority: body.priority,
-      assignee: body.assignee ?? null,
-      labels: body.labels ?? [],
-      projectId: body.projectId ?? null,
+      title,
+      description: description ?? null,
+      status,
+      priority,
+      assignee: assignee ?? null,
+      labels: labels ?? [],
+      projectId: projectId ?? null,
+      domain,
+      createdBy,
     });
 
-    // Emit real-time event
     emitKanbanTaskCreated(
       task.id,
       task.title,

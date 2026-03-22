@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
+import { validateBody, FileDeleteSchema } from "@/lib/api-validation";
 
-// Protected paths - never allow deletion
 const PROTECTED = [
   "MEMORY.md", "SOUL.md", "USER.md", "AGENTS.md", "TOOLS.md",
   "package.json", "tsconfig.json", ".env", ".env.local",
@@ -14,12 +14,10 @@ const PROTECTED = [
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { workspace, path: filePath } = body;
-
-    if (!filePath) {
-      return NextResponse.json({ error: "Missing path" }, { status: 400 });
-    }
+    const rawBody = await request.json();
+    const validation = validateBody(FileDeleteSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const { workspace, path: filePath } = validation.data;
 
     const resolvedPath = await resolveWorkspacePath(workspace, filePath);
     if (!resolvedPath) {

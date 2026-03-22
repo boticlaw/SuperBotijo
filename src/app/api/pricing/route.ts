@@ -3,10 +3,11 @@ import { join } from "path";
 import { NextRequest, NextResponse } from "next/server";
 import {
   MODEL_PRICING,
-  PricingOverride,
   getMergedPricing,
   getPricingOverrides,
+  type PricingOverride,
 } from "@/lib/pricing";
+import { validateBody, UpdatePricingSchema } from "@/lib/api-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -37,58 +38,11 @@ function savePricingOverrides(overrides: PricingOverride[]): void {
   writeFileSync(PRICING_PATH, JSON.stringify(overrides, null, 2));
 }
 
-function validateOverride(override: unknown, knownModelIds: Set<string>): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  
-  if (!override || typeof override !== "object") {
-    return { valid: false, errors: ["Override must be an object"] };
-  }
-  
-  const o = override as Record<string, unknown>;
-  
-  if (typeof o.id !== "string" || o.id.trim() === "") {
-    errors.push("Model ID is required and must be a non-empty string");
-  } else if (!knownModelIds.has(o.id)) {
-    errors.push(`Unknown model ID: ${o.id}`);
-  }
-  
-  if (typeof o.inputPricePerMillion !== "number") {
-    errors.push("inputPricePerMillion is required and must be a number");
-  } else if (o.inputPricePerMillion < 0) {
-    errors.push("inputPricePerMillion cannot be negative");
-  }
-  
-  if (typeof o.outputPricePerMillion !== "number") {
-    errors.push("outputPricePerMillion is required and must be a number");
-  } else if (o.outputPricePerMillion < 0) {
-    errors.push("outputPricePerMillion cannot be negative");
-  }
-  
-  if (o.cacheReadPricePerMillion !== undefined) {
-    if (typeof o.cacheReadPricePerMillion !== "number") {
-      errors.push("cacheReadPricePerMillion must be a number if provided");
-    } else if (o.cacheReadPricePerMillion < 0) {
-      errors.push("cacheReadPricePerMillion cannot be negative");
-    }
-  }
-  
-  if (o.cacheWritePricePerMillion !== undefined) {
-    if (typeof o.cacheWritePricePerMillion !== "number") {
-      errors.push("cacheWritePricePerMillion must be a number if provided");
-    } else if (o.cacheWritePricePerMillion < 0) {
-      errors.push("cacheWritePricePerMillion cannot be negative");
-    }
-  }
-  
-  return { valid: errors.length === 0, errors };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const filter = url.searchParams.get("filter");
     
-    // Only filter by used models if explicitly requested
     const filterByUsed = filter === "used";
     const models = getMergedPricing(filterByUsed);
     const overrides = getPricingOverrides();
@@ -111,41 +65,27 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { overrides } = body;
-    
-    if (!Array.isArray(overrides)) {
-      return NextResponse.json<ErrorResponse>(
-        { error: "Request body must contain an 'overrides' array" },
-        { status: 400 }
-      );
-    }
+    const validation = validateBody(UpdatePricingSchema, body);
+    if (!validation.success) return validation.error;
+    const { overrides } = validation.data;
     
     const knownModelIds = new Set(MODEL_PRICING.map((m) => m.id));
-    const validOverrides: PricingOverride[] = [];
-    const allErrors: string[] = [];
+    const unknownIds = overrides.filter((o) => !knownModelIds.has(o.id)).map((o) => o.id);
     
-    for (let i = 0; i < overrides.length; i++) {
-      const validation = validateOverride(overrides[i], knownModelIds);
-      if (!validation.valid) {
-        allErrors.push(...validation.errors.map((e) => `Override ${i + 1}: ${e}`));
-      } else {
-        const o = overrides[i] as PricingOverride;
-        validOverrides.push({
-          id: o.id,
-          inputPricePerMillion: o.inputPricePerMillion,
-          outputPricePerMillion: o.outputPricePerMillion,
-          cacheReadPricePerMillion: o.cacheReadPricePerMillion,
-          cacheWritePricePerMillion: o.cacheWritePricePerMillion,
-        });
-      }
-    }
-    
-    if (allErrors.length > 0) {
+    if (unknownIds.length > 0) {
       return NextResponse.json<ErrorResponse>(
-        { error: "Validation failed", details: allErrors },
+        { error: "Unknown model IDs", details: unknownIds },
         { status: 400 }
       );
     }
+    
+    const validOverrides: PricingOverride[] = overrides.map((o) => ({
+      id: o.id,
+      inputPricePerMillion: o.inputPricePerMillion,
+      outputPricePerMillion: o.outputPricePerMillion,
+      cacheReadPricePerMillion: o.cacheReadPricePerMillion,
+      cacheWritePricePerMillion: o.cacheWritePricePerMillion,
+    }));
     
     savePricingOverrides(validOverrides);
     

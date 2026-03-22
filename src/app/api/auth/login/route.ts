@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sessionStore } from "@/lib/session-store";
+import { validateBody, LoginSchema } from "@/lib/api-validation";
 
 // Simple in-memory rate limiter (per-IP, resets on server restart)
 // Sufficient for a personal dashboard — no external dependency needed
@@ -73,7 +74,6 @@ function clearAttempts(ip: string): void {
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
 
-  // Rate limit check
   const { allowed, retryAfterMs } = checkRateLimit(ip);
   if (!allowed) {
     const retryAfterSec = Math.ceil((retryAfterMs ?? LOCKOUT_MS) / 1000);
@@ -86,12 +86,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { password } = await request.json();
+  const rawBody = await request.json();
+  const validation = validateBody(LoginSchema, rawBody);
+  if (!validation.success) return validation.error;
+  const { password } = validation.data;
 
   if (password === process.env.ADMIN_PASSWORD) {
-    clearAttempts(ip); // Reset on success
+    clearAttempts(ip);
 
-    const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
+    const ttlMs = 24 * 60 * 60 * 1000;
     const token = await sessionStore.generateToken(ttlMs);
 
     const response = NextResponse.json({
@@ -99,8 +102,6 @@ export async function POST(request: NextRequest) {
       expiresIn: Math.floor(ttlMs / 1000),
     });
 
-    // Set httpOnly cookie for browser auth
-    // Only use Secure flag if request is HTTPS (check x-forwarded-proto header)
     const isHttps = request.headers.get("x-forwarded-proto") === "https";
     response.cookies.set("auth_token", token, {
       httpOnly: true,
@@ -113,7 +114,6 @@ export async function POST(request: NextRequest) {
     return response;
   }
 
-  // Record failed attempt
   recordFailure(ip);
 
   return NextResponse.json(

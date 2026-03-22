@@ -1,8 +1,6 @@
-/**
- * Agents API - CRUD operations for agent management
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { registerAgent, getAgents } from '@/operations/agent-ops';
+import { validateBody, CreateAgentSchema } from '@/lib/api-validation';
 
 // GET /api/agents - List all agents
 export async function GET() {
@@ -23,36 +21,23 @@ export async function GET() {
   }
 }
 
-// POST /api/agents - Create a new agent
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, name, model, systemPrompt, skills, temperature, maxTokens, autoStart } = body;
+    const rawBody = await request.json();
+    const validation = validateBody(CreateAgentSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const { id, name, model, systemPrompt, skills, temperature, maxTokens, autoStart } = validation.data;
 
-    // Validation
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }
-
-    // Generate ID if not provided
     const agentId = id || `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Register the agent
     const result = await registerAgent(agentId, name, model || 'claude-sonnet-4-20250514');
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    // In production, we would also:
-    // - Create the agent's SOUL.md file
-    // - Set up the agent's workspace
-    // - Configure skills
-    // - Start the agent process if autoStart is true
-
     const agent = result.data!;
 
-    // Add additional config
     const fullAgent = {
       ...agent,
       systemPrompt,

@@ -1,8 +1,3 @@
-/**
- * Write file content endpoint
- * POST /api/files/write
- * Body: { workspace, path, content }
- */
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -10,15 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
+import { validateBody, FileWriteSchema } from "@/lib/api-validation";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { workspace, path: filePath, content } = body;
-
-    if (!filePath || content === undefined) {
-      return NextResponse.json({ error: "Missing path or content" }, { status: 400 });
-    }
+    const rawBody = await request.json();
+    const validation = validateBody(FileWriteSchema, rawBody);
+    if (!validation.success) return validation.error;
+    const { workspace, path: filePath, content } = validation.data;
 
     const resolvedPath = await resolveWorkspacePath(workspace, filePath);
     if (!resolvedPath) {
