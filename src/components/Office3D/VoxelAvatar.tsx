@@ -10,6 +10,7 @@ import { Glasses } from './Glasses';
 import { Hair } from './Hair';
 import { Hat } from './Hat';
 import { Beard } from './Beard';
+import { MATERIALS } from './materials';
 
 const FACE_EXPRESSIONS = {
   neutral: 'neutral',
@@ -217,12 +218,11 @@ export default function VoxelAvatar({
     }
   });
 
-  // Colores basados en el agente
   const skinColor = '#ffa07a'; // peach
   const noseColor = '#f08f6b';
-  const shirtColor = agent.color;
-  const pantsColor = '#4a5568';
   const browColor = '#4a3728';
+  const pantsColor = '#4a5568';
+  const shirtColor = agent.color;
   const accessories = agent.accessories;
   const hairStyle = accessories?.hair ?? AVATAR_HAIR_TYPES.none;
   const hatStyle = accessories?.hat ?? AVATAR_HAT_TYPES.none;
@@ -251,7 +251,7 @@ export default function VoxelAvatar({
       <group ref={headRef} position={[0, 0.35, 0]}>
         {/* Head cube */}
         <Box args={[0.2, 0.2, 0.2]} castShadow>
-          <meshStandardMaterial color={skinColor} />
+          <primitive object={MATERIALS.skin.face} attach="material" />
         </Box>
 
         {/* Accessories */}
@@ -263,119 +263,119 @@ export default function VoxelAvatar({
           <>
             <mesh position={[-0.105, 0, 0]}>
               <sphereGeometry args={[0.01, 8, 8]} />
-              <meshStandardMaterial color="#fbbf24" metalness={0.7} roughness={0.3} />
+              <primitive object={MATERIALS.earrings} attach="material" />
             </mesh>
             <mesh position={[0.105, 0, 0]}>
               <sphereGeometry args={[0.01, 8, 8]} />
-              <meshStandardMaterial color="#fbbf24" metalness={0.7} roughness={0.3} />
+              <primitive object={MATERIALS.earrings} attach="material" />
             </mesh>
           </>
         )}
 
         {/* Ears */}
         <Box args={[0.02, 0.06, 0.04]} position={[-0.11, 0, 0]} rotation={[0, 0, 0.25]}>
-          <meshStandardMaterial color={skinColor} />
+          <primitive object={MATERIALS.skin.face} attach="material" />
         </Box>
         <Box args={[0.02, 0.06, 0.04]} position={[0.11, 0, 0]} rotation={[0, -0.25, 0]}>
-          <meshStandardMaterial color={skinColor} />
+          <primitive object={MATERIALS.skin.face} attach="material" />
         </Box>
 
         {/* Eyes with sclera and pupil */}
         <group position={[-0.05, 0.02, 0.1]}>
           <Box args={[0.04, 0.04, 0.02]}>
-            <meshStandardMaterial color="#ffffff" />
+            <primitive object={MATERIALS.eyes.sclera} attach="material" />
           </Box>
           <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]}>
-            <meshStandardMaterial color="#1f2937" />
+            <primitive object={MATERIALS.eyes.pupil} attach="material" />
           </Box>
         </group>
         <group position={[0.05, 0.02, 0.1]}>
           <Box args={[0.04, 0.04, 0.02]}>
-            <meshStandardMaterial color="#ffffff" />
+            <primitive object={MATERIALS.eyes.sclera} attach="material" />
           </Box>
           <Box args={[0.02, 0.02, 0.01]} position={[0, 0, 0.011]}>
-            <meshStandardMaterial color="#1f2937" />
+            <primitive object={MATERIALS.eyes.pupil} attach="material" />
           </Box>
         </group>
 
         {/* Brows */}
         <Box args={[0.045, 0.008, 0.01]} position={[-0.05, 0.065, 0.106]} rotation={[0, 0, 0.1]}>
-          <meshStandardMaterial color={browColor} />
+          <primitive object={MATERIALS.hair.brow} attach="material" />
         </Box>
         <Box args={[0.045, 0.008, 0.01]} position={[0.05, 0.065, 0.106]} rotation={[0, 0, -0.1]}>
-          <meshStandardMaterial color={browColor} />
+          <primitive object={MATERIALS.hair.brow} attach="material" />
         </Box>
 
         {/* Nose */}
         <Box args={[0.03, 0.04, 0.02]} position={[0, -0.01, 0.115]}>
-          <meshStandardMaterial color={noseColor} />
+          <primitive object={MATERIALS.skin.nose} attach="material" />
         </Box>
 
         {/* Mouth by expression */}
         {expression === FACE_EXPRESSIONS.neutral && (
           <Box args={[0.06, 0.014, 0.01]} position={[0, -0.05, 0.114]}>
-            <meshStandardMaterial color="#111111" />
+            <primitive object={MATERIALS.mouth.neutral} attach="material" />
           </Box>
         )}
         {expression === FACE_EXPRESSIONS.surprised && (
           <Box args={[0.024, 0.024, 0.01]} position={[0, -0.052, 0.114]}>
-            <meshStandardMaterial color="#111111" />
+            <primitive object={MATERIALS.mouth.neutral} attach="material" />
           </Box>
         )}
         {expression === FACE_EXPRESSIONS.smile && (
           <group position={[0, -0.05, 0.114]}>
             <Box args={[0.02, 0.012, 0.01]} position={[-0.028, -0.003, 0]} rotation={[0, 0, 0.25]}>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
             <Box args={[0.02, 0.012, 0.01]} position={[0.028, -0.003, 0]} rotation={[0, 0, -0.25]}>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
             <Box args={[0.028, 0.01, 0.01]} position={[0, -0.006, 0]}>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
           </group>
         )}
         {expression === FACE_EXPRESSIONS.frown && (
           <group position={[0, -0.06, 0.114]}>
             <Box args={[0.02, 0.012, 0.01]} position={[-0.028, 0.003, 0]} rotation={[0, 0, -0.25]}>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
             <Box args={[0.02, 0.012, 0.01]} position={[0.028, 0.003, 0]} rotation={[0, 0, 0.25]}>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
             <Box args={[0.028, 0.01, 0.01]} position={[0, 0.006, 0]}>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
           </group>
         )}
         {expression === FACE_EXPRESSIONS.surprised && (
           <Box args={[0.024, 0.024, 0.01]} position={[0, -0.052, 0.114]} castShadow>
-            <meshStandardMaterial color="#111111" />
+            <primitive object={MATERIALS.mouth.neutral} attach="material" />
           </Box>
         )}
         {expression === FACE_EXPRESSIONS.smile && (
           <group position={[0, -0.05, 0.114]}>
             <Box args={[0.02, 0.012, 0.01]} position={[-0.028, -0.003, 0]} rotation={[0, 0, 0.25]} castShadow>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
             <Box args={[0.02, 0.012, 0.01]} position={[0.028, -0.003, 0]} rotation={[0, 0, -0.25]} castShadow>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
             <Box args={[0.028, 0.01, 0.01]} position={[0, -0.006, 0]} castShadow>
-              <meshStandardMaterial color="#111111" />
+              <primitive object={MATERIALS.mouth.neutral} attach="material" />
             </Box>
           </group>
         )}
         {expression === FACE_EXPRESSIONS.frown && (
           <group position={[0, -0.06, 0.114]}>
             <Box args={[0.02, 0.012, 0.01]} position={[-0.028, 0.003, 0]} rotation={[0, 0, -0.25]} castShadow>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
             <Box args={[0.02, 0.012, 0.01]} position={[0.028, 0.003, 0]} rotation={[0, 0, 0.25]} castShadow>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
             <Box args={[0.028, 0.01, 0.01]} position={[0, 0.006, 0]} castShadow>
-              <meshStandardMaterial color="#ef4444" />
+              <primitive object={MATERIALS.mouth.frown} attach="material" />
             </Box>
           </group>
         )}
@@ -385,15 +385,15 @@ export default function VoxelAvatar({
           <>
             <mesh position={[-0.15, 0.15, 0]}>
               <sphereGeometry args={[0.02]} />
-              <meshBasicMaterial color="#3b82f6" transparent opacity={0.6} />
+              <primitive object={MATERIALS.thinking.small} attach="material" />
             </mesh>
             <mesh position={[-0.18, 0.2, 0]}>
               <sphereGeometry args={[0.03]} />
-              <meshBasicMaterial color="#3b82f6" transparent opacity={0.5} />
+              <primitive object={MATERIALS.thinking.medium} attach="material" />
             </mesh>
             <mesh position={[-0.22, 0.26, 0]}>
               <sphereGeometry args={[0.04]} />
-              <meshBasicMaterial color="#3b82f6" transparent opacity={0.4} />
+              <primitive object={MATERIALS.thinking.large} attach="material" />
             </mesh>
           </>
         )}
@@ -401,7 +401,7 @@ export default function VoxelAvatar({
 
       {/* BODY */}
       <Box args={[0.2, 0.25, 0.12]} position={[0, 0.125, 0]} castShadow>
-        <meshStandardMaterial color={shirtColor} />
+        <meshStandardMaterial color={shirtColor} dispose={null} />
       </Box>
 
       {/* Emoji badge on shirt/chest - positioned on front of torso */}
@@ -419,39 +419,39 @@ export default function VoxelAvatar({
       {/* ARMS */}
       <group ref={leftArmRef} position={[-0.12, 0.18, 0]}>
         <Box args={[0.08, 0.2, 0.08]} position={[0, -0.1, 0]} castShadow>
-          <meshStandardMaterial color={shirtColor} />
+          <meshStandardMaterial color={shirtColor} dispose={null} />
         </Box>
         {/* Hand */}
         <Box args={[0.08, 0.06, 0.08]} position={[0, -0.23, 0]} castShadow>
-          <meshStandardMaterial color={skinColor} />
+          <primitive object={MATERIALS.skin.hand} attach="material" />
         </Box>
       </group>
 
       <group ref={rightArmRef} position={[0.12, 0.18, 0]}>
         <Box args={[0.08, 0.2, 0.08]} position={[0, -0.1, 0]} castShadow>
-          <meshStandardMaterial color={shirtColor} />
+          <meshStandardMaterial color={shirtColor} dispose={null} />
         </Box>
         {/* Hand */}
         <Box args={[0.08, 0.06, 0.08]} position={[0, -0.23, 0]} castShadow>
-          <meshStandardMaterial color={skinColor} />
+          <primitive object={MATERIALS.skin.hand} attach="material" />
         </Box>
       </group>
 
       {/* LEGS */}
       <group ref={leftLegRef} position={[-0.05, 0, 0]}>
         <Box args={[0.09, 0.18, 0.09]} position={[0, -0.09, 0]} castShadow>
-          <meshStandardMaterial color={pantsColor} />
+          <primitive object={MATERIALS.clothing.pants} attach="material" />
         </Box>
         <Box args={[0.09, 0.04, 0.12]} position={[0, -0.2, 0.015]} castShadow>
-          <meshStandardMaterial color="#1f2937" />
+          <primitive object={MATERIALS.clothing.shoes} attach="material" />
         </Box>
       </group>
       <group ref={rightLegRef} position={[0.05, 0, 0]}>
         <Box args={[0.09, 0.18, 0.09]} position={[0, -0.09, 0]} castShadow>
-          <meshStandardMaterial color={pantsColor} />
+          <primitive object={MATERIALS.clothing.pants} attach="material" />
         </Box>
         <Box args={[0.09, 0.04, 0.12]} position={[0, -0.2, 0.015]} castShadow>
-          <meshStandardMaterial color="#1f2937" />
+          <primitive object={MATERIALS.clothing.shoes} attach="material" />
         </Box>
       </group>
 
@@ -460,11 +460,11 @@ export default function VoxelAvatar({
         <>
           <mesh position={[0.15, 0.3, 0]}>
             <boxGeometry args={[0.02, 0.02, 0.02]} />
-            <meshBasicMaterial color="#ef4444" />
+            <primitive object={MATERIALS.error.spark1} attach="material" />
           </mesh>
           <mesh position={[-0.15, 0.25, 0]}>
             <boxGeometry args={[0.02, 0.02, 0.02]} />
-            <meshBasicMaterial color="#f59e0b" />
+            <primitive object={MATERIALS.error.spark2} attach="material" />
           </mesh>
         </>
       )}
