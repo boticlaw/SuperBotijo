@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Terminal, Send, Trash2, Copy } from "lucide-react";
 
+import { useToast } from "@/components/Toast";
+import { useI18n } from "@/i18n/provider";
+
 interface HistoryEntry {
   command: string;
   output: string;
@@ -27,6 +30,8 @@ const QUICK_COMMANDS = [
 ];
 
 export default function TerminalClient() {
+  const { t } = useI18n();
+  const { showError, showSuccess } = useToast();
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +39,7 @@ export default function TerminalClient() {
   const [cmdHistoryIdx, setCmdHistoryIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const runControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -54,11 +60,16 @@ export default function TerminalClient() {
     setCmdHistoryIdx(-1);
     setInput("");
 
+    runControllerRef.current?.abort();
+    const controller = new AbortController();
+    runControllerRef.current = controller;
+
     try {
       const res = await fetch("/api/terminal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ command: trimmed }),
+        signal: controller.signal,
       });
       const data = await res.json();
 
@@ -73,19 +84,29 @@ export default function TerminalClient() {
         },
       ]);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setHistory((prev) => [
         ...prev,
         {
           command: trimmed,
           output: "",
-          error: String(err),
+          error: t("terminal.errors.runFailed"),
           ts: new Date(),
         },
       ]);
     } finally {
+      if (runControllerRef.current === controller) {
+        runControllerRef.current = null;
+      }
       setLoading(false);
       inputRef.current?.focus();
     }
+  }, [t]);
+
+  useEffect(() => {
+    return () => {
+      runControllerRef.current?.abort();
+    };
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -108,7 +129,9 @@ export default function TerminalClient() {
 
   const copyAll = () => {
     const text = history.map((h) => `$ ${h.command}\n${h.output}`).join("\n\n");
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text)
+      .then(() => showSuccess(t("terminal.toast.copySuccess")))
+      .catch(() => showError(t("terminal.toast.copyError")));
   };
 
   return (
@@ -117,18 +140,26 @@ export default function TerminalClient() {
         <div className="flex items-center justify-between">
           <div>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.75rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.125rem" }}>
-              Browser Terminal
+              {t("terminal.title")}
             </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
-              Read-only commands only (ls, cat, df, ps, git status, etc.)
+              {t("terminal.subtitle")}
             </p>
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button onClick={copyAll} style={{ padding: "0.375rem 0.75rem", borderRadius: "0.5rem", background: "var(--card)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8rem" }}>
-              <Copy className="w-3.5 h-3.5" /> Copy
+            <button
+              onClick={copyAll}
+              aria-label={t("terminal.actions.copyAll")}
+              style={{ padding: "0.375rem 0.75rem", borderRadius: "0.5rem", background: "var(--card)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8rem" }}
+            >
+              <Copy className="w-3.5 h-3.5" /> {t("terminal.copy")}
             </button>
-            <button onClick={clearHistory} style={{ padding: "0.375rem 0.75rem", borderRadius: "0.5rem", background: "var(--card)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8rem" }}>
-              <Trash2 className="w-3.5 h-3.5" /> Clear
+            <button
+              onClick={clearHistory}
+              aria-label={t("terminal.actions.clearHistory")}
+              style={{ padding: "0.375rem 0.75rem", borderRadius: "0.5rem", background: "var(--card)", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8rem" }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> {t("terminal.clear")}
             </button>
           </div>
         </div>
@@ -173,9 +204,9 @@ export default function TerminalClient() {
         {history.length === 0 ? (
           <div style={{ color: "#8b949e", textAlign: "center", paddingTop: "2rem" }}>
             <Terminal className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p>Type a command or click a quick command above</p>
+            <p>{t("terminal.typeOrClick")}</p>
             <p style={{ fontSize: "0.7rem", marginTop: "0.5rem" }}>
-              Arrow Up/Down for command history
+              {t("terminal.arrowHistory")}
             </p>
           </div>
         ) : (
@@ -208,7 +239,7 @@ export default function TerminalClient() {
         {loading && (
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#8b949e" }}>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#4ade80", animation: "pulse 1s infinite" }} />
-            Running...
+            {t("terminal.running")}
           </div>
         )}
       </div>
@@ -229,7 +260,7 @@ export default function TerminalClient() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={loading}
-          placeholder="Enter command..."
+          placeholder={t("terminal.enterCommand")}
           autoComplete="off"
           spellCheck={false}
           style={{
@@ -245,6 +276,7 @@ export default function TerminalClient() {
         <button
           onClick={() => runCommand(input)}
           disabled={loading || !input.trim()}
+          aria-label={t("terminal.run")}
           style={{
             padding: "0.375rem 0.75rem",
             borderRadius: "0.5rem",
@@ -256,7 +288,7 @@ export default function TerminalClient() {
           }}
         >
           <Send className="w-3.5 h-3.5" />
-          Run
+          {t("terminal.run")}
         </button>
       </div>
     </div>

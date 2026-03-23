@@ -1,5 +1,8 @@
 import "server-only";
 
+import { existsSync, statSync } from "fs";
+import path from "path";
+
 import { safeExecFile, validatePath } from "@/lib/safe-exec";
 
 const WORKSPACE = process.env.OPENCLAW_DIR
@@ -27,6 +30,39 @@ export interface RepoStatus {
   isDirty: boolean;
 }
 
+function normalizeRepoPath(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.length > 1024 || trimmed.includes("\0")) {
+    return null;
+  }
+
+  const candidate = path.isAbsolute(trimmed)
+    ? path.resolve(trimmed)
+    : path.resolve(WORKSPACE, trimmed);
+
+  if (!validatePath(candidate, WORKSPACE)) {
+    return null;
+  }
+
+  if (!existsSync(candidate)) {
+    return null;
+  }
+
+  try {
+    if (!statSync(candidate).isDirectory()) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  if (!existsSync(path.join(candidate, ".git"))) {
+    return null;
+  }
+
+  return candidate;
+}
+
 function getRepos(): string[] {
   const result = safeExecFile(
     "find",
@@ -40,7 +76,9 @@ function getRepos(): string[] {
     .trim()
     .split("\n")
     .filter(Boolean)
-    .map((d) => d.replace("/.git", ""));
+    .map((d) => d.replace("/.git", ""))
+    .map((repoPath) => normalizeRepoPath(repoPath))
+    .filter((repoPath): repoPath is string => repoPath !== null);
 }
 
 function getRepoStatus(repoPath: string): RepoStatus {
@@ -149,6 +187,41 @@ function getRepoStatus(repoPath: string): RepoStatus {
     remoteUrl,
     isDirty: staged.length > 0 || unstaged.length > 0 || untracked.length > 0,
   };
+}
+
+export type GitAction = "status" | "pull" | "log" | "diff";
+
+export function normalizeGitRepoPath(input: unknown): string | null {
+  if (typeof input !== "string") {
+    return null;
+  }
+
+  return normalizeRepoPath(input);
+}
+
+export function runGitAction(repoPath: string, action: GitAction): string {
+  let result;
+
+  switch (action) {
+    case "status": {
+      result = safeExecFile("git", ["-C", repoPath, "status"], { timeout: 10000 });
+      break;
+    }
+    case "pull": {
+      result = safeExecFile("git", ["-C", repoPath, "pull"], { timeout: 30000 });
+      break;
+    }
+    case "log": {
+      result = safeExecFile("git", ["-C", repoPath, "log", "--oneline", "-20"], { timeout: 10000 });
+      break;
+    }
+    case "diff": {
+      result = safeExecFile("git", ["-C", repoPath, "diff", "--stat"], { timeout: 10000 });
+      break;
+    }
+  }
+
+  return result.stdout || result.stderr || "No output";
 }
 
 export async function getGitRepos(): Promise<RepoStatus[]> {

@@ -231,7 +231,7 @@ export function useRealtime(options: UseRealtimeOptions = {}): UseRealtimeReturn
     payload: unknown,
     actionOptions?: SendActionOptions
   ): Promise<{ success: boolean; result?: T; error?: string }> => {
-    const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const timeout = actionOptions?.timeout || 10000;
 
     try {

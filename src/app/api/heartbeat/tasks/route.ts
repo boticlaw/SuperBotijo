@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listTasks } from "@/lib/kanban-db";
 import { resolveDependencies, type ResolvedTask } from "@/lib/dependency-resolver";
+import { requireAgentAuth } from "@/lib/agent-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,18 +23,25 @@ interface TaskResponse {
  * Requires agentName in query params
  */
 export async function GET(request: NextRequest) {
+  const authResult = requireAgentAuth(request);
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+
+  const { agentId } = authResult;
+
   try {
     const { searchParams } = new URL(request.url);
-    const agentName = searchParams.get("agentName");
+    const requestedAgentName = searchParams.get("agentName");
+    const agentName = requestedAgentName && requestedAgentName.trim().length > 0
+      ? requestedAgentName.trim()
+      : agentId;
 
-    if (!agentName) {
-      // Return empty tasks list instead of error - page should still render
+    if (agentName !== agentId) {
       return NextResponse.json({
-        agentName: null,
-        count: 0,
-        tasks: [],
-        message: "No agent name provided. Use ?agentName=xxx",
-      });
+        error: "Agent mismatch",
+        message: "agentName must match authenticated X-Agent-Id",
+      }, { status: 403 });
     }
 
     // Get tasks where assignee = agentName AND status = 'in_progress'

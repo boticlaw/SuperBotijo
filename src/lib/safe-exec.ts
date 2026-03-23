@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "child_process";
+import path from "path";
 
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-./]+$/;
 const SAFE_SLUG_PATTERN = /^[a-zA-Z0-9_\-]+$/;
@@ -102,11 +103,22 @@ export function safeSpawn(
   }
 }
 
-export function validatePath(path: string, basePath: string): boolean {
-  if (!path || path.includes("\0")) return false;
-  if (!path.startsWith(basePath)) return false;
-  if (path.includes("..")) return false;
+export function validatePath(pathToCheck: string, basePath: string): boolean {
+  if (!pathToCheck || !basePath) return false;
+  if (pathToCheck.includes("\0") || basePath.includes("\0")) return false;
+
+  const resolvedBase = pathModuleResolve(basePath);
+  const resolvedTarget = pathModuleResolve(pathToCheck);
+  const relative = path.relative(resolvedBase, resolvedTarget);
+
+  if (relative === "") return true;
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return false;
+
   return true;
+}
+
+function pathModuleResolve(inputPath: string): string {
+  return path.resolve(inputPath);
 }
 
 export const ALLOWED_CRON_ACTIONS = ["status", "enable", "disable", "run", "rm", "add", "edit", "list", "runs"] as const;

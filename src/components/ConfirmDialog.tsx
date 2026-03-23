@@ -46,6 +46,9 @@ export function ConfirmDialog({
 
       {/* Dialog */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-busy={isLoading}
         className="relative rounded-2xl p-6 max-w-md w-full shadow-2xl"
         style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
       >

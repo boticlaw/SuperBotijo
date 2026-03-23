@@ -4,6 +4,18 @@
 import type { OperationResult } from "./index";
 import { getActivities } from "@/lib/activities-db"
 import { getAgentDefaults } from "@/lib/agent-auto-config"
+import {
+  addPersistedCustomAgent,
+  AGENT_MOOD,
+  AGENT_RUNTIME_STATUS,
+  clearPersistedStatusOverride,
+  getPersistedCustomAgents,
+  getPersistedMood,
+  getPersistedStatusOverride,
+  removePersistedCustomAgent,
+  setPersistedMood,
+  setPersistedStatusOverride,
+} from "@/lib/agent-state-store";
 import { getOpenClawSessionsTelemetry } from "@/lib/telemetry/sources/openclaw-sessions";
 import { createCache } from "@/lib/cache";
 import { readFileSync, existsSync, readdirSync } from "fs";
@@ -63,7 +75,7 @@ export interface AgentInfo {
 
 export interface AgentMood {
   agentId: string;
-  mood: "productive" | "busy" | "frustrated" | "content" | "tired";
+  mood: (typeof AGENT_MOOD)[keyof typeof AGENT_MOOD];
   emoji: string;
   streak: number;
   energyLevel: number;
@@ -73,6 +85,8 @@ export interface AgentMood {
 const AGENT_STATUS = {
   working: "working",
   idle: "idle",
+  error: "error",
+  paused: "paused",
   online: "online",
   offline: "offline",
 } as const;
@@ -87,10 +101,6 @@ export interface AgentStatusEntry {
   activeSessions: number;
   currentTask?: string;
 }
-
-// In-memory agent registry (would be DB in production)
-const agentRegistry = new Map<string, AgentInfo>();
-const agentMoods = new Map<string, AgentMood>();
 
 // Status classification windows:
 // - < 2 min ago → "online" (actively working right now, sitting at desk)
@@ -282,24 +292,48 @@ function calculateMoodFromActivities(
 /**
  * Get all registered agents
  */
+function getPersistedAgentEntries(): AgentInfo[] {
+  return getPersistedCustomAgents().map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    emoji: agent.emoji,
+    color: agent.color,
+    status: AGENT_RUNTIME_STATUS.idle,
+    model: agent.model,
+    workspace: agent.workspace,
+    tokensUsed: 0,
+    sessionCount: 0,
+    activeSessions: 0,
+  }));
+}
+
+function buildMergedAgentMap(): Map<string, AgentInfo> {
+  const merged = new Map<string, AgentInfo>();
+
+  for (const agent of loadAgentsFromConfig()) {
+    merged.set(agent.id, agent);
+  }
+
+  for (const agent of getPersistedAgentEntries()) {
+    if (!merged.has(agent.id)) {
+      merged.set(agent.id, agent);
+    }
+  }
+
+  return merged;
+}
+
 export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
   try {
-    // Load agents from openclaw.json
-    const configAgents = loadAgentsFromConfig();
-
-    // Update registry with config agents
-    for (const agent of configAgents) {
-      if (!agentRegistry.has(agent.id)) {
-        agentRegistry.set(agent.id, agent);
-      }
-    }
+    const agentsById = buildMergedAgentMap();
+    const allAgents = Array.from(agentsById.values());
 
     // Get activities ONCE for all agents — avoids N+1
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
 
     // Calculate stats for each agent using the shared dataset
-    for (const agent of configAgents) {
+    for (const agent of allAgents) {
       const agentActivities = recentActivities.filter(
         (a) => a.agent === agent.id || (a.agent?.toLowerCase().includes(agent.id.toLowerCase()))
       );
@@ -335,14 +369,24 @@ export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
 
       // Calculate mood from already-fetched activities (no extra DB query)
       const mood = calculateMoodFromActivities(agent.id, agentActivities);
-      agentMoods.set(agent.id, mood);
       agent.mood = mood;
 
-      // Update registry
-      agentRegistry.set(agent.id, agent);
+      // Apply status override if present
+      const statusOverride = getPersistedStatusOverride(agent.id);
+      if (statusOverride) {
+        agent.status = statusOverride.status;
+        if (statusOverride.currentTask !== undefined) {
+          agent.currentTask = statusOverride.currentTask;
+        }
+        if (statusOverride.lastActivity) {
+          agent.lastActivity = statusOverride.lastActivity;
+        }
+      }
+
+      agentsById.set(agent.id, agent);
     }
 
-    return { success: true, data: [...agentRegistry.values()] };
+    return { success: true, data: Array.from(agentsById.values()) };
   } catch (error) {
     return {
       success: false,
@@ -356,18 +400,19 @@ export async function getAgents(): Promise<OperationResult<AgentInfo[]>> {
  */
 export async function getAgentStatusList(): Promise<OperationResult<AgentStatusEntry[]>> {
   try {
-    const configAgents = loadAgentsFromConfig();
+    const agentsById = buildMergedAgentMap();
+    const allAgents = Array.from(agentsById.values());
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
     const sessionFreshnessByAgent = cachedSessionFreshness.get();
 
-    console.log(`[agent-ops] getAgentStatusList: ${configAgents.length} agents loaded, ${recentActivities.length} activities found`);
-    console.log(`[agent-ops] Agent IDs from config:`, configAgents.map(a => a.id));
+    console.log(`[agent-ops] getAgentStatusList: ${allAgents.length} agents loaded, ${recentActivities.length} activities found`);
+    console.log(`[agent-ops] Agent IDs from config:`, allAgents.map(a => a.id));
     if (recentActivities.length > 0) {
       console.log(`[agent-ops] Recent activity agents:`, [...new Set(recentActivities.map(a => a.agent))].filter(Boolean));
     }
 
-    const statuses = configAgents.map((agent) => {
+    const statuses = allAgents.map((agent) => {
       const agentActivities = recentActivities.filter(
         (activity) => activity.agent === agent.id || activity.agent?.toLowerCase().includes(agent.id.toLowerCase())
       );
@@ -383,7 +428,8 @@ export async function getAgentStatusList(): Promise<OperationResult<AgentStatusE
 
       console.log(`[agent-ops] ${agent.id}: ${agentActivities.length} activities, lastActivity=${lastActivity}, activeSessions=${activeSessions}`);
 
-      const status = classifyAgentStatus(lastActivity, activeSessions);
+      const statusOverride = getPersistedStatusOverride(agent.id);
+      const status = statusOverride?.status || classifyAgentStatus(lastActivity, activeSessions);
 
       return {
         id: agent.id,
@@ -440,17 +486,26 @@ export async function updateAgentStatus(
   currentTask?: string
 ): Promise<OperationResult<AgentInfo>> {
   try {
-    const agent = agentRegistry.get(id);
+    const agentResult = await getAgentById(id);
 
-    if (!agent) {
+    if (!agentResult.success || !agentResult.data) {
       return { success: false, error: "Agent not found" };
     }
+
+    const agent = { ...agentResult.data };
+
+    const lastActivity = new Date().toISOString();
+    setPersistedStatusOverride(id, {
+      status,
+      currentTask,
+      lastActivity,
+    });
 
     agent.status = status;
     if (currentTask !== undefined) {
       agent.currentTask = currentTask;
     }
-    agent.lastActivity = new Date().toISOString();
+    agent.lastActivity = lastActivity;
 
     return { success: true, data: { ...agent } };
   } catch (error) {
@@ -489,16 +544,20 @@ export async function pauseAgent(id: string): Promise<OperationResult> {
  */
 export async function resumeAgent(id: string): Promise<OperationResult> {
   try {
-    const agent = agentRegistry.get(id);
+    const agentResult = await getAgentById(id);
 
-    if (!agent) {
+    if (!agentResult.success || !agentResult.data) {
       return { success: false, error: "Agent not found" };
     }
 
-    if (agent.status !== "paused") {
+    const override = getPersistedStatusOverride(id);
+    const currentStatus = override?.status || agentResult.data.status;
+
+    if (currentStatus !== AGENT_RUNTIME_STATUS.paused) {
       return { success: false, error: "Agent is not paused" };
     }
 
+    clearPersistedStatusOverride(id);
     const result = await updateAgentStatus(id, "idle");
     return { success: result.success };
   } catch (error) {
@@ -516,9 +575,8 @@ export async function calculateAgentMood(
   id: string
 ): Promise<OperationResult<AgentMood>> {
   try {
-    const agent = agentRegistry.get(id);
-
-    if (!agent) {
+    const agentResult = await getAgentById(id);
+    if (!agentResult.success) {
       return { success: false, error: "Agent not found" };
     }
 
@@ -570,7 +628,7 @@ export async function calculateAgentMood(
       lastCalculated: new Date().toISOString(),
     };
 
-    agentMoods.set(id, agentMood);
+    setPersistedMood(id, agentMood);
 
     return { success: true, data: agentMood };
   } catch (error) {
@@ -589,7 +647,7 @@ export async function getAgentMood(
   forceRefresh: boolean = false
 ): Promise<OperationResult<AgentMood>> {
   try {
-    const cached = agentMoods.get(id);
+    const cached = getPersistedMood(id);
 
     // Return cached if fresh (< 5 minutes old)
     if (!forceRefresh && cached) {
@@ -617,7 +675,8 @@ export async function registerAgent(
   model: string
 ): Promise<OperationResult<AgentInfo>> {
   try {
-    if (agentRegistry.has(id)) {
+    const existingAgents = await getAgents();
+    if (existingAgents.success && existingAgents.data?.some((agent) => agent.id === id)) {
       return { success: false, error: "Agent already exists" };
     }
 
@@ -635,7 +694,15 @@ export async function registerAgent(
       workspace: join(OPENCLAW_DIR, "workspace", id),
     };
 
-    agentRegistry.set(id, agent);
+    addPersistedCustomAgent({
+      id,
+      name,
+      model,
+      emoji: defaults.emoji,
+      color: defaults.color,
+      workspace: agent.workspace || join(OPENCLAW_DIR, "workspace", id),
+      createdAt: new Date().toISOString(),
+    });
 
     return { success: true, data: agent };
   } catch (error) {
@@ -651,17 +718,18 @@ export async function registerAgent(
  */
 export async function unregisterAgent(id: string): Promise<OperationResult> {
   try {
-    if (!agentRegistry.has(id)) {
-      return { success: false, error: "Agent not found" };
-    }
-
     // Don't allow unregistering the main agent
     if (id === "superbotijo") {
       return { success: false, error: "Cannot unregister main agent" };
     }
 
-    agentRegistry.delete(id);
-    agentMoods.delete(id);
+    const customAgents = getPersistedCustomAgents();
+    const customAgent = customAgents.find((agent) => agent.id === id);
+    if (!customAgent) {
+      return { success: false, error: "Only custom agents can be unregistered" };
+    }
+
+    removePersistedCustomAgent(id);
 
     return { success: true };
   } catch (error) {

@@ -174,7 +174,8 @@ export default function FilesClient({
                 <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                   <button
                     onClick={() => setViewMode("list")}
-                    title="Vista lista"
+                    title={t("files.listView")}
+                    aria-label={t("files.listView")}
                     style={{
                       padding: "5px 7px",
                       borderRadius: "6px",
@@ -192,7 +193,8 @@ export default function FilesClient({
                   </button>
                   <button
                     onClick={() => setViewMode("grid")}
-                    title="Vista iconos"
+                    title={t("files.gridView")}
+                    aria-label={t("files.gridView")}
                     style={{
                       padding: "5px 7px",
                       borderRadius: "6px",
@@ -230,8 +232,8 @@ export default function FilesClient({
                 color: "var(--text-muted)",
                 fontSize: "14px",
               }}
-            >
-              Selecciona un workspace para explorar sus archivos
+              >
+              {t("files.selectWorkspace")}
             </div>
           )}
         </main>

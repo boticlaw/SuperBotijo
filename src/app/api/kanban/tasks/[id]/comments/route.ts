@@ -39,6 +39,11 @@ function getClientIp(request: NextRequest): string {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

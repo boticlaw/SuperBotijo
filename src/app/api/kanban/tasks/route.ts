@@ -18,6 +18,11 @@ export const dynamic = "force-dynamic";
  * - view: "active" (default), "archived", or "all"
  */
 export async function GET(request: NextRequest) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
 

@@ -20,6 +20,40 @@
     }
   },
   "reports": {
+    "page": {
+      "title": "Reportes",
+      "subtitle": "Reportes de análisis e insights",
+      "count": "{count} reportes",
+      "period": {
+        "weekly": "Semanal",
+        "monthly": "Mensual"
+      },
+      "actions": {
+        "refresh": "Actualizar reportes",
+        "export": "Exportar",
+        "share": "Compartir"
+      },
+      "empty": {
+        "title": "No se encontraron reportes",
+        "hint": "Hacé clic en \"Semanal\" o \"Mensual\" para generar un reporte"
+      },
+      "preview": {
+        "loading": "Cargando reporte...",
+        "select": "Seleccioná un reporte para previsualizar",
+        "errorTitle": "Error"
+      },
+      "toast": {
+        "generated": "Reporte {type} generado!",
+        "linkCopied": "Enlace copiado al portapapeles!"
+      },
+      "errors": {
+        "loadReports": "Error al cargar reportes",
+        "loadReport": "Error al cargar el reporte",
+        "loadReportContent": "Error al cargar el contenido del reporte.",
+        "generate": "Error al generar el reporte",
+        "share": "Error al compartir el reporte"
+      }
+    },
     "shared": {
       "notFound": "Reporte no encontrado o expirado",
       "loadError": "Error al cargar el reporte",
@@ -52,6 +86,7 @@
     "retry": "Reintentar",
     "dismiss": "Descartar",
     "confirm": "Confirmar",
+    "close": "Cerrar",
     "yes": "Sí",
     "no": "No",
     "all": "Todos",
@@ -306,6 +341,56 @@
     "selectWorkspace": "Seleccioná un workspace para explorar",
     "listView": "Vista de lista",
     "gridView": "Vista de cuadrícula",
+    "browser": {
+      "actions": {
+        "upload": "Subir",
+        "newFolder": "Nueva Carpeta",
+        "newFile": "Nuevo Archivo",
+        "download": "Descargar"
+      },
+      "folderPlaceholder": "Nombre de carpeta...",
+      "filePlaceholder": "archivo.ts",
+      "dropzone": "Soltá archivos para subir",
+      "folder": "Carpeta",
+      "empty": {
+        "title": "Esta carpeta está vacía",
+        "hint": "Arrastrá y soltá archivos para subir"
+      },
+      "columns": {
+        "name": "Nombre",
+        "size": "Tamaño",
+        "modified": "Modificado"
+      },
+      "hints": {
+        "doubleClickEdit": "doble clic para editar"
+      },
+      "errors": {
+        "loadDirectory": "Error al cargar el directorio",
+        "upload": "Error al subir archivos",
+        "delete": "Error al eliminar",
+        "createFolder": "Error al crear carpeta",
+        "createFile": "Error al crear archivo"
+      },
+      "deleteDialog": {
+        "titleFile": "¿Eliminar archivo?",
+        "titleFolder": "¿Eliminar carpeta?",
+        "messageFile": "¿Seguro que querés eliminar {name}? Esta acción no se puede deshacer.",
+        "messageFolder": "¿Seguro que querés eliminar {name}? Esto va a eliminar todo su contenido y no se puede deshacer."
+      },
+      "editor": {
+        "dialogLabel": "Editar archivo {name}",
+        "edit": "Editar",
+        "preview": "Vista previa",
+        "openNewTab": "Abrir vista previa en nueva pestaña",
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "saved": "Guardado!",
+        "errors": {
+          "load": "Error al cargar el archivo",
+          "save": "Error al guardar el archivo"
+        }
+      }
+    },
     "pdf": {
       "page": "Página {current} de {total}",
       "zoom": "Zoom",
@@ -345,7 +430,18 @@
     "running": "Ejecutando...",
     "enterCommand": "Ingresá un comando...",
     "typeOrClick": "Escribí un comando o hacé clic en un comando rápido arriba",
-    "arrowHistory": "Flecha Arriba/Abajo para historial de comandos"
+    "arrowHistory": "Flecha Arriba/Abajo para historial de comandos",
+    "actions": {
+      "copyAll": "Copiar salida de terminal",
+      "clearHistory": "Limpiar historial de terminal"
+    },
+    "errors": {
+      "runFailed": "El comando falló"
+    },
+    "toast": {
+      "copySuccess": "Salida copiada",
+      "copyError": "No se pudo copiar la salida"
+    }
   },
   "skills": {
     "title": "Gestor de Skills",
@@ -443,7 +539,15 @@
     "loadError": "Error al cargar precios",
     "saveError": "Error al guardar precios",
     "resetError": "Error al restablecer precios",
-    "discardSuccess": "Cambios descartados"
+    "discardSuccess": "Cambios descartados",
+    "discardChanges": "Descartar cambios",
+    "default": "por defecto",
+    "customized": "Personalizado",
+    "failedToLoad": "Error al cargar datos de precios",
+    "resetDialog": {
+      "title": "¿Restablecer todos los precios?",
+      "message": "Esto va a eliminar todos los overrides de precios y volver a los valores por defecto. Esta acción no se puede deshacer."
+    }
   },
   "config": {
     "warningTitle": "Ten cuidado al editar la configuración",

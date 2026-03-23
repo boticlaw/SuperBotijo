@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import {
   Folder,
@@ -25,6 +24,8 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useI18n } from "@/i18n/provider";
 import { FilePreview } from "./FilePreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { useToast } from "./Toast";
@@ -113,6 +114,7 @@ interface EditorModalProps {
 }
 
 function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview", onClose }: EditorModalProps) {
+  const { t } = useI18n();
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,18 +124,26 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
   const previewIsHtml = isHtmlFile(fileName);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    fetch(`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(filePath)}&content=true`)
-      .then((r) => r.json())
+    fetch(`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(filePath)}&content=true`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(t("files.browser.editor.errors.load"));
+        }
+        return r.json();
+      })
       .then((data) => {
         setContent(data.content || "");
         setLoading(false);
       })
-      .catch(() => {
-        setError("Failed to load file");
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(t("files.browser.editor.errors.load"));
         setLoading(false);
       });
-  }, [workspace, filePath]);
+    return () => controller.abort();
+  }, [workspace, filePath, t]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -144,15 +154,15 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace, path: filePath, content }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) throw new Error(t("files.browser.editor.errors.save"));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      setError("Failed to save file");
+      setError(t("files.browser.editor.errors.save"));
     } finally {
       setSaving(false);
     }
-  }, [workspace, filePath, content]);
+  }, [workspace, filePath, content, t]);
 
   const handleOpenPreviewInNewTab = useCallback(() => {
     const htmlBlob = new Blob([content], { type: "text/html;charset=utf-8" });
@@ -181,12 +191,17 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
   }, [handleSave, onClose]);
 
   return (
-    <div style={{
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("files.browser.editor.dialogLabel", { name: fileName })}
+      style={{
       position: "fixed", inset: 0, zIndex: 1000,
       backgroundColor: "rgba(0,0,0,0.8)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "1rem",
-    }}>
+      }}
+    >
       <div style={{
         width: "95vw", maxWidth: "1200px", height: "90vh",
         backgroundColor: "var(--card)",
@@ -211,6 +226,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           <div style={{ display: "flex", gap: "0.25rem" }}>
             <button
               onClick={() => setViewMode("edit")}
+              aria-label={t("files.browser.editor.edit")}
               style={{
                 padding: "0.375rem 0.75rem", borderRadius: "0.375rem", fontSize: "0.75rem",
                 backgroundColor: viewMode === "edit" ? "var(--accent)" : "var(--card-elevated)",
@@ -218,10 +234,11 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
                 border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem",
               }}
             >
-              <Code2 className="w-3.5 h-3.5" /> Edit
+              <Code2 className="w-3.5 h-3.5" /> {t("files.browser.editor.edit")}
             </button>
             <button
               onClick={() => setViewMode("preview")}
+              aria-label={t("files.browser.editor.preview")}
               style={{
                 padding: "0.375rem 0.75rem", borderRadius: "0.375rem", fontSize: "0.75rem",
                 backgroundColor: viewMode === "preview" ? "var(--accent)" : "var(--card-elevated)",
@@ -229,14 +246,15 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
                 border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem",
               }}
             >
-              <Eye className="w-3.5 h-3.5" /> Preview
+              <Eye className="w-3.5 h-3.5" /> {t("files.browser.editor.preview")}
             </button>
           </div>
 
           {viewMode === "preview" && previewIsHtml && (
             <button
               onClick={handleOpenPreviewInNewTab}
-              title="Open preview in new tab"
+              title={t("files.browser.editor.openNewTab")}
+              aria-label={t("files.browser.editor.openNewTab")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -256,6 +274,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           <button
             onClick={handleSave}
             disabled={saving}
+            aria-label={t("files.browser.editor.save")}
             style={{
               display: "flex", alignItems: "center", gap: "0.5rem",
               padding: "0.5rem 1rem", borderRadius: "0.5rem",
@@ -265,11 +284,12 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
             }}
           >
             <Save className="w-4 h-4" />
-            {saved ? "Saved!" : saving ? "Saving..." : "Save"}
+            {saved ? t("files.browser.editor.saved") : saving ? t("files.browser.editor.saving") : t("files.browser.editor.save")}
           </button>
 
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             style={{ padding: "0.5rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", backgroundColor: "var(--card-elevated)", color: "var(--text-secondary)" }}
           >
             <X className="w-4 h-4" />
@@ -334,6 +354,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
 
 // ─── Main FileBrowser Component ────────────────────────────────────────────────
 export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: FileBrowserProps) {
+  const { t } = useI18n();
   const { showError } = useToast();
   const [items, setItems] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -348,13 +369,17 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
   const [newFileName, setNewFileName] = useState("");
   const [showNewFile, setShowNewFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadItemsControllerRef = useRef<AbortController | null>(null);
 
   const loadItems = useCallback(() => {
+    loadItemsControllerRef.current?.abort();
+    const controller = new AbortController();
+    loadItemsControllerRef.current = controller;
     setLoading(true);
     setError(null);
-    fetch(`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}`)
+    fetch(`/api/browse?workspace=${encodeURIComponent(workspace)}&path=${encodeURIComponent(path)}`, { signal: controller.signal })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load directory");
+        if (!res.ok) throw new Error(t("files.browser.errors.loadDirectory"));
         return res.json();
       })
       .then((data) => {
@@ -362,14 +387,26 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         setLoading(false);
       })
       .catch((err) => {
+        if (err instanceof Error && err.name === "AbortError") return;
         setError(err.message);
         setLoading(false);
+      })
+      .finally(() => {
+        if (loadItemsControllerRef.current === controller) {
+          loadItemsControllerRef.current = null;
+        }
       });
-  }, [workspace, path]);
+  }, [workspace, path, t]);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  useEffect(() => {
+    return () => {
+      loadItemsControllerRef.current?.abort();
+    };
+  }, []);
 
   const handleItemClick = (item: FileEntry, openMode: "preview" | "edit" = "preview") => {
     if (item.type === "folder") {
@@ -406,10 +443,11 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         formData.append("files", file);
       }
       const res = await fetch("/api/files/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) throw new Error(t("files.browser.errors.upload"));
       loadItems();
     } catch (e) {
       console.error("Upload error:", e);
+      showError(t("files.browser.errors.upload"));
     } finally {
       setUploading(false);
     }
@@ -436,12 +474,12 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       });
       if (!res.ok) {
         const data = await res.json();
-        showError(data.error || "Delete failed");
+        showError(data.error || t("files.browser.errors.delete"));
       } else {
         loadItems();
       }
     } catch {
-      showError("Delete failed");
+      showError(t("files.browser.errors.delete"));
     } finally {
       setConfirmDelete(null);
     }
@@ -460,7 +498,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       setShowNewFolder(false);
       loadItems();
     } catch {
-      showError("Failed to create folder");
+      showError(t("files.browser.errors.createFolder"));
     }
   };
 
@@ -480,7 +518,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
       // Open editor immediately
       setEditorFile({ workspace, path: filePath, name: newFileName.trim(), initialViewMode: "edit" });
     } catch {
-      showError("Failed to create file");
+      showError(t("files.browser.errors.createFile"));
     }
   };
 
@@ -523,7 +561,8 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          title="Upload files"
+          title={t("files.browser.actions.upload")}
+          aria-label={t("files.browser.actions.upload")}
           style={{
             display: "flex", alignItems: "center", gap: "0.375rem",
             padding: "0.375rem 0.75rem", borderRadius: "0.5rem",
@@ -532,7 +571,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
           }}
         >
           {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-          Upload
+          {t("files.browser.actions.upload")}
         </button>
         <input
           ref={fileInputRef}
@@ -545,7 +584,8 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         {/* New Folder */}
         <button
           onClick={() => setShowNewFolder(true)}
-          title="New folder"
+          title={t("files.browser.actions.newFolder")}
+          aria-label={t("files.browser.actions.newFolder")}
           style={{
             display: "flex", alignItems: "center", gap: "0.375rem",
             padding: "0.375rem 0.75rem", borderRadius: "0.5rem",
@@ -553,13 +593,14 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
             border: "1px solid var(--border)", cursor: "pointer", fontSize: "0.8rem",
           }}
         >
-          <FolderPlus className="w-3.5 h-3.5" /> New Folder
+          <FolderPlus className="w-3.5 h-3.5" /> {t("files.browser.actions.newFolder")}
         </button>
 
         {/* New File */}
         <button
           onClick={() => setShowNewFile(true)}
-          title="New file"
+          title={t("files.browser.actions.newFile")}
+          aria-label={t("files.browser.actions.newFile")}
           style={{
             display: "flex", alignItems: "center", gap: "0.375rem",
             padding: "0.375rem 0.75rem", borderRadius: "0.5rem",
@@ -567,12 +608,13 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
             border: "1px solid var(--border)", cursor: "pointer", fontSize: "0.8rem",
           }}
         >
-          <FilePlus className="w-3.5 h-3.5" /> New File
+          <FilePlus className="w-3.5 h-3.5" /> {t("files.browser.actions.newFile")}
         </button>
 
         <button
           onClick={loadItems}
-          title="Refresh"
+          title={t("common.refresh")}
+          aria-label={t("common.refresh")}
           style={{
             display: "flex", alignItems: "center",
             padding: "0.375rem", borderRadius: "0.5rem",
@@ -593,11 +635,11 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); if (e.key === "Escape") setShowNewFolder(false); }}
-            placeholder="Folder name..."
+            placeholder={t("files.browser.folderPlaceholder")}
             style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: "0.9rem" }}
           />
-          <button onClick={handleCreateFolder} style={{ padding: "0.25rem 0.75rem", borderRadius: "0.375rem", background: "var(--accent)", color: "#000", border: "none", cursor: "pointer", fontSize: "0.8rem" }}>Create</button>
-          <button onClick={() => setShowNewFolder(false)} style={{ padding: "0.25rem", borderRadius: "0.375rem", background: "none", color: "var(--text-muted)", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
+          <button onClick={handleCreateFolder} style={{ padding: "0.25rem 0.75rem", borderRadius: "0.375rem", background: "var(--accent)", color: "#000", border: "none", cursor: "pointer", fontSize: "0.8rem" }}>{t("common.create")}</button>
+          <button onClick={() => setShowNewFolder(false)} aria-label={t("common.cancel")} style={{ padding: "0.25rem", borderRadius: "0.375rem", background: "none", color: "var(--text-muted)", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -610,11 +652,11 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
             value={newFileName}
             onChange={(e) => setNewFileName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleCreateFile(); if (e.key === "Escape") setShowNewFile(false); }}
-            placeholder="filename.ts"
+            placeholder={t("files.browser.filePlaceholder")}
             style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: "0.9rem" }}
           />
-          <button onClick={handleCreateFile} style={{ padding: "0.25rem 0.75rem", borderRadius: "0.375rem", background: "var(--accent)", color: "#000", border: "none", cursor: "pointer", fontSize: "0.8rem" }}>Create</button>
-          <button onClick={() => setShowNewFile(false)} style={{ padding: "0.25rem", borderRadius: "0.375rem", background: "none", color: "var(--text-muted)", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
+          <button onClick={handleCreateFile} style={{ padding: "0.25rem 0.75rem", borderRadius: "0.375rem", background: "var(--accent)", color: "#000", border: "none", cursor: "pointer", fontSize: "0.8rem" }}>{t("common.create")}</button>
+          <button onClick={() => setShowNewFile(false)} aria-label={t("common.cancel")} style={{ padding: "0.25rem", borderRadius: "0.375rem", background: "none", color: "var(--text-muted)", border: "none", cursor: "pointer" }}><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -634,15 +676,15 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         {items.length === 0 && !dragging && (
           <div className="flex flex-col items-center justify-center py-12" style={{ color: "var(--text-secondary)" }}>
             <FolderOpen className="w-16 h-16 mb-4 opacity-50" />
-            <p>This folder is empty</p>
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>Drag & drop files to upload</p>
+            <p>{t("files.browser.empty.title")}</p>
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>{t("files.browser.empty.hint")}</p>
           </div>
         )}
 
         {dragging && (
           <div className="flex flex-col items-center justify-center py-12" style={{ color: "var(--accent)" }}>
             <Upload className="w-16 h-16 mb-4" />
-            <p>Drop files to upload</p>
+            <p>{t("files.browser.dropzone")}</p>
           </div>
         )}
 
@@ -653,9 +695,9 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
               className="hidden md:grid grid-cols-12 gap-4 px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-medium"
               style={{ backgroundColor: "var(--background)", color: "var(--text-secondary)" }}
             >
-              <div className="col-span-6">Name</div>
-              <div className="col-span-2">Size</div>
-              <div className="col-span-3">Modified</div>
+              <div className="col-span-6">{t("files.browser.columns.name")}</div>
+              <div className="col-span-2">{t("files.browser.columns.size")}</div>
+              <div className="col-span-3">{t("files.browser.columns.modified")}</div>
               <div className="col-span-1"></div>
             </div>
 
@@ -681,8 +723,8 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                       {item.name}
                     </span>
                     {isEditable(item.name) && item.type === "file" && (
-                      <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0 }} className="group-hover:opacity-100">
-                        double-click to edit
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0 }} className="group-hover:opacity-100">
+                        {t("files.browser.hints.doubleClickEdit")}
                       </span>
                     )}
                   </div>
@@ -702,7 +744,7 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     onClick={() => handleItemClick(item)}
                     onDoubleClick={() => handleItemDoubleClick(item)}
                   >
-                    {format(new Date(item.modified), "MMM d, yyyy HH:mm")}
+                    {new Date(item.modified).toLocaleString()}
                   </div>
 
                   {/* Actions */}
@@ -710,17 +752,19 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     {item.type === "file" && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDownload(item); }}
-                        title="Download"
+                        title={t("files.browser.actions.download")}
+                        aria-label={t("files.browser.actions.download")}
                         style={{ padding: "0.25rem", borderRadius: "0.25rem", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(item); }}
-                      title="Delete"
-                      style={{ padding: "0.25rem", borderRadius: "0.25rem", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
-                    >
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(item); }}
+                        title={t("common.delete")}
+                        aria-label={t("common.delete")}
+                        style={{ padding: "0.25rem", borderRadius: "0.25rem", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
+                      >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -752,14 +796,14 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     {item.name}
                   </span>
                   <span className="text-[10px] md:text-xs mt-0.5 md:mt-1" style={{ color: "var(--text-muted)" }}>
-                    {item.type === "folder" ? "Folder" : formatFileSize(item.size)}
+                    {item.type === "folder" ? t("files.browser.folder") : formatFileSize(item.size)}
                   </span>
                   {isEditable(item.name) && item.type === "file" && (
                     <span
                       className="text-[10px] mt-1 transition-opacity opacity-0 group-hover:opacity-100"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Double-click to edit
+                      {t("files.browser.hints.doubleClickEdit")}
                     </span>
                   )}
 
@@ -772,6 +816,8 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     {item.type === "file" && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDownload(item); }}
+                        aria-label={t("files.browser.actions.download")}
+                        title={t("files.browser.actions.download")}
                         style={{ padding: "0.2rem", borderRadius: "0.25rem", background: "var(--card-elevated)", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
                       >
                         <Download className="w-3 h-3" />
@@ -779,6 +825,8 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
                     )}
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDelete(item); }}
+                      aria-label={t("common.delete")}
+                      title={t("common.delete")}
                       style={{ padding: "0.2rem", borderRadius: "0.25rem", background: "var(--card-elevated)", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
                     >
                       <Trash2 className="w-3 h-3" />
@@ -791,43 +839,32 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 999,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{
-            backgroundColor: "var(--card)", borderRadius: "1rem",
-            padding: "2rem", maxWidth: "400px", width: "90%",
-            border: "1px solid var(--border)",
-          }}>
-            <h3 style={{ color: "var(--text-primary)", marginBottom: "0.75rem", fontSize: "1.1rem", fontWeight: 600 }}>
-              Delete {confirmDelete.type === "folder" ? "Folder" : "File"}?
-            </h3>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              Are you sure you want to delete <strong style={{ color: "var(--text-primary)" }}>{confirmDelete.name}</strong>?
-              {confirmDelete.type === "folder" && " This will delete all contents inside."}
-              This action cannot be undone.
-            </p>
-            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                style={{ padding: "0.5rem 1rem", borderRadius: "0.5rem", background: "var(--card-elevated)", color: "var(--text-secondary)", border: "none", cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDelete)}
-                style={{ padding: "0.5rem 1rem", borderRadius: "0.5rem", background: "var(--error, #ef4444)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(confirmDelete)}
+        title={
+          confirmDelete?.type === "folder"
+            ? t("files.browser.deleteDialog.titleFolder")
+            : t("files.browser.deleteDialog.titleFile")
+        }
+        message={
+          confirmDelete
+            ? t(
+              confirmDelete.type === "folder"
+                ? "files.browser.deleteDialog.messageFolder"
+                : "files.browser.deleteDialog.messageFile",
+              { name: confirmDelete.name }
+            )
+            : ""
+        }
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("common.delete")}
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => {
+          if (confirmDelete) {
+            void handleDelete(confirmDelete);
+          }
+        }}
+      />
 
       {/* File Preview Modal */}
       {previewFile && (

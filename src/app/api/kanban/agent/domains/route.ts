@@ -4,7 +4,8 @@
  * Returns list of unique domains from existing tasks in the database.
  * Used for UI filters in the Kanban board.
  */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAgentAuth } from "@/lib/agent-auth";
 import { listTasks } from "@/lib/kanban-db";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,12 @@ export const dynamic = "force-dynamic";
  * GET /api/kanban/agent/domains
  * Returns list of unique domains from tasks in the database
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResult = requireAgentAuth(request);
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+
   try {
     // Get all tasks and extract unique domains
     const tasks = listTasks();

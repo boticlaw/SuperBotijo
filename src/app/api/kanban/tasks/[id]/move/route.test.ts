@@ -2,13 +2,24 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { clearAllDataForTesting, createTask } from "@/lib/kanban-db";
+import { sessionStore } from "@/lib/session-store";
 
-function createMockRequest(url: string, options?: { method?: string; body?: unknown }): NextRequest {
+let authToken = "";
+const previousAuthSecret = process.env.AUTH_SECRET;
+
+function createMockRequest(
+  url: string,
+  options?: { method?: string; body?: unknown; headers?: Record<string, string> }
+): NextRequest {
   const fullUrl = new URL(url, "http://localhost");
   return new NextRequest(fullUrl, {
     method: options?.method ?? "POST",
     body: options?.body ? JSON.stringify(options.body) : undefined,
-    headers: options?.body ? { "Content-Type": "application/json" } : undefined,
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      ...(options?.headers ?? {}),
+    },
   });
 }
 
@@ -17,12 +28,21 @@ function createParams(id: string): Promise<{ id: string }> {
 }
 
 describe("/api/kanban/tasks/[id]/move", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearAllDataForTesting();
+    process.env.AUTH_SECRET = "test-secret-123456789012345678901234567890";
+    authToken = await sessionStore.generateToken();
   });
 
   afterEach(() => {
     clearAllDataForTesting();
+    sessionStore.clearRevoked();
+
+    if (previousAuthSecret === undefined) {
+      delete process.env.AUTH_SECRET;
+    } else {
+      process.env.AUTH_SECRET = previousAuthSecret;
+    }
   });
 
   describe("POST", () => {

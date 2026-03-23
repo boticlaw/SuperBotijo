@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FileBarChart, FileText, RefreshCw, Clock, HardDrive, Download, Share2, Plus, Loader2 } from "lucide-react";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { useToast } from "@/components/Toast";
+import { useI18n } from "@/i18n/provider";
 import type { ReportItem } from "@/operations/reports-ops";
 
 function formatSize(bytes: number): string {
@@ -14,7 +15,7 @@ function formatSize(bytes: number): string {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("es-ES", {
+  return d.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -30,37 +31,55 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [sharingPath, setSharingPath] = useState<string | null>(null);
+  const reportsControllerRef = useRef<AbortController | null>(null);
+  const contentControllerRef = useRef<AbortController | null>(null);
+  const { t } = useI18n();
   const { showSuccess, showError } = useToast();
 
   const loadReports = useCallback(async () => {
+    reportsControllerRef.current?.abort();
+    const controller = new AbortController();
+    reportsControllerRef.current = controller;
     try {
       setIsLoading(true);
-      const res = await fetch("/api/reports");
-      if (!res.ok) throw new Error("Failed to load reports");
+      const res = await fetch("/api/reports", { signal: controller.signal });
+      if (!res.ok) throw new Error(t("reports.page.errors.loadReports"));
       const data = await res.json();
       setReports(data);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error(err);
+      showError(t("reports.page.errors.loadReports"));
     } finally {
       setIsLoading(false);
+      if (reportsControllerRef.current === controller) {
+        reportsControllerRef.current = null;
+      }
     }
-  }, []);
+  }, [showError, t]);
 
   const loadContent = useCallback(async (path: string) => {
+    contentControllerRef.current?.abort();
+    const controller = new AbortController();
+    contentControllerRef.current = controller;
     try {
       setIsLoadingContent(true);
-      const res = await fetch(`/api/reports?path=${encodeURIComponent(path)}`);
-      if (!res.ok) throw new Error("Failed to load report");
+      const res = await fetch(`/api/reports?path=${encodeURIComponent(path)}`, { signal: controller.signal });
+      if (!res.ok) throw new Error(t("reports.page.errors.loadReport"));
       const data = await res.json();
       setContent(data.content);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error(err);
-      setContent("# Error\n\nFailed to load report content.");
+      setContent(`# ${t("reports.page.preview.errorTitle")}\n\n${t("reports.page.errors.loadReportContent")}`);
     } finally {
       setIsLoadingContent(false);
+      if (contentControllerRef.current === controller) {
+        contentControllerRef.current = null;
+      }
     }
-  }, []);
+  }, [t]);
 
   const handleSelect = useCallback(
     (report: ReportItem) => {
@@ -82,19 +101,19 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
           body: JSON.stringify({ name, type, period: type }),
         });
         if (res.ok) {
-          showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated!`);
+          showSuccess(t("reports.page.toast.generated", { type: t(`reports.page.period.${type}`) }));
           loadReports();
         } else {
-          showError("Failed to generate report");
+          showError(t("reports.page.errors.generate"));
         }
       } catch (err) {
         console.error(err);
-        showError("Error generating report");
+        showError(t("reports.page.errors.generate"));
       } finally {
         setIsGenerating(false);
       }
     },
-    [loadReports, showError, showSuccess]
+    [loadReports, showError, showSuccess, t]
   );
 
   const handleExport = useCallback((reportPath: string) => {
@@ -105,25 +124,32 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
   const handleShare = useCallback(
     async (reportPath: string) => {
       const id = reportPath.split("/").pop()?.replace(".md", "") || reportPath;
-      setSharingId(id);
+      setSharingPath(reportPath);
       try {
         const res = await fetch(`/api/reports/${id}/share`, { method: "POST" });
         if (res.ok) {
           const data = await res.json();
           await navigator.clipboard.writeText(data.shareUrl);
-          showSuccess("Link copied to clipboard!");
+          showSuccess(t("reports.page.toast.linkCopied"));
         } else {
-          showError("Failed to share report");
+          showError(t("reports.page.errors.share"));
         }
       } catch (err) {
         console.error(err);
-        showError("Error sharing report");
+        showError(t("reports.page.errors.share"));
       } finally {
-        setSharingId(null);
+        setSharingPath(null);
       }
     },
-    [showError, showSuccess]
+    [showError, showSuccess, t]
   );
+
+  useEffect(() => {
+    return () => {
+      reportsControllerRef.current?.abort();
+      contentControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (reports.length > 0 && !selectedPath) {
@@ -150,10 +176,10 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                 fontFamily: "var(--font-heading)",
               }}
             >
-              Reports
+              {t("reports.page.title")}
             </h1>
             <p className="text-xs md:text-sm hidden sm:block" style={{ color: "var(--text-secondary)" }}>
-              Analysis reports and insights
+              {t("reports.page.subtitle")}
             </p>
           </div>
         </div>
@@ -174,7 +200,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Weekly
+              {t("reports.page.period.weekly")}
             </button>
             <button
               onClick={() => handleGenerate("monthly")}
@@ -186,14 +212,15 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                 color: "var(--text-primary)",
               }}
             >
-              Monthly
+              {t("reports.page.period.monthly")}
             </button>
           </div>
           <button
             onClick={loadReports}
             className="p-2 rounded-lg transition-colors hover:opacity-80"
             style={{ color: "var(--text-secondary)" }}
-            title="Refresh reports"
+            title={t("reports.page.actions.refresh")}
+            aria-label={t("reports.page.actions.refresh")}
           >
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -214,15 +241,15 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
               className="text-sm font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-secondary)" }}
             >
-              {isLoading ? "Loading..." : `${reports.length} Reports`}
+              {isLoading ? t("common.loading") : t("reports.page.count", { count: reports.length })}
             </h2>
           </div>
 
           {!isLoading && reports.length === 0 && (
             <div className="p-6 text-center" style={{ color: "var(--text-muted)" }}>
               <FileBarChart className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No reports found</p>
-              <p className="text-xs mt-1">Click &quot;Weekly&quot; or &quot;Monthly&quot; to generate a report</p>
+              <p>{t("reports.page.empty.title")}</p>
+              <p className="text-xs mt-1">{t("reports.page.empty.hint")}</p>
             </div>
           )}
 
@@ -306,7 +333,8 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                     style={{
                       color: selectedPath === report.path ? "var(--text-primary)" : "var(--text-muted)",
                     }}
-                    title="Export"
+                    title={t("reports.page.actions.export")}
+                    aria-label={t("reports.page.actions.export")}
                   >
                     <Download className="w-4 h-4" />
                   </button>
@@ -315,14 +343,15 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                       e.stopPropagation();
                       handleShare(report.path);
                     }}
-                    disabled={sharingId === report.path}
+                    disabled={sharingPath === report.path}
                     className="p-1.5 rounded transition-all hover:opacity-100"
                     style={{
                       color: selectedPath === report.path ? "var(--text-primary)" : "var(--text-muted)",
                     }}
-                    title="Share"
+                    title={t("reports.page.actions.share")}
+                    aria-label={t("reports.page.actions.share")}
                   >
-                    {sharingId === report.path ? (
+                    {sharingPath === report.path ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Share2 className="w-4 h-4" />
@@ -341,7 +370,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                 className="flex items-center justify-center h-full"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Loading report...
+                {t("reports.page.preview.loading")}
               </div>
             ) : (
               <MarkdownPreview content={content} />
@@ -353,7 +382,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
             >
               <div className="text-center">
                 <FileBarChart className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg">Select a report to preview</p>
+                <p className="text-lg">{t("reports.page.preview.select")}</p>
               </div>
             </div>
           )}

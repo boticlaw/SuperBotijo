@@ -26,6 +26,11 @@ interface RouteParams {
  * Get a single task by ID
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
+  }
+
   try {
     const { id } = await params;
 

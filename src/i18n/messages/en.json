@@ -20,6 +20,40 @@
     }
   },
   "reports": {
+    "page": {
+      "title": "Reports",
+      "subtitle": "Analysis reports and insights",
+      "count": "{count} Reports",
+      "period": {
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "actions": {
+        "refresh": "Refresh reports",
+        "export": "Export",
+        "share": "Share"
+      },
+      "empty": {
+        "title": "No reports found",
+        "hint": "Click \"Weekly\" or \"Monthly\" to generate a report"
+      },
+      "preview": {
+        "loading": "Loading report...",
+        "select": "Select a report to preview",
+        "errorTitle": "Error"
+      },
+      "toast": {
+        "generated": "{type} report generated!",
+        "linkCopied": "Link copied to clipboard!"
+      },
+      "errors": {
+        "loadReports": "Failed to load reports",
+        "loadReport": "Failed to load report",
+        "loadReportContent": "Failed to load report content.",
+        "generate": "Failed to generate report",
+        "share": "Failed to share report"
+      }
+    },
     "shared": {
       "notFound": "Report not found or expired",
       "loadError": "Failed to load report",
@@ -52,6 +86,7 @@
     "retry": "Retry",
     "dismiss": "Dismiss",
     "confirm": "Confirm",
+    "close": "Close",
     "yes": "Yes",
     "no": "No",
     "all": "All",
@@ -306,6 +341,56 @@
     "selectWorkspace": "Select a workspace to browse files",
     "listView": "List view",
     "gridView": "Grid view",
+    "browser": {
+      "actions": {
+        "upload": "Upload",
+        "newFolder": "New Folder",
+        "newFile": "New File",
+        "download": "Download"
+      },
+      "folderPlaceholder": "Folder name...",
+      "filePlaceholder": "filename.ts",
+      "dropzone": "Drop files to upload",
+      "folder": "Folder",
+      "empty": {
+        "title": "This folder is empty",
+        "hint": "Drag and drop files to upload"
+      },
+      "columns": {
+        "name": "Name",
+        "size": "Size",
+        "modified": "Modified"
+      },
+      "hints": {
+        "doubleClickEdit": "double-click to edit"
+      },
+      "errors": {
+        "loadDirectory": "Failed to load directory",
+        "upload": "Upload failed",
+        "delete": "Delete failed",
+        "createFolder": "Failed to create folder",
+        "createFile": "Failed to create file"
+      },
+      "deleteDialog": {
+        "titleFile": "Delete file?",
+        "titleFolder": "Delete folder?",
+        "messageFile": "Are you sure you want to delete {name}? This action cannot be undone.",
+        "messageFolder": "Are you sure you want to delete {name}? This will delete all contents inside and cannot be undone."
+      },
+      "editor": {
+        "dialogLabel": "Edit file {name}",
+        "edit": "Edit",
+        "preview": "Preview",
+        "openNewTab": "Open preview in new tab",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "Saved!",
+        "errors": {
+          "load": "Failed to load file",
+          "save": "Failed to save file"
+        }
+      }
+    },
     "pdf": {
       "page": "Page {current} of {total}",
       "zoom": "Zoom",
@@ -345,7 +430,18 @@
     "running": "Running...",
     "enterCommand": "Enter command...",
     "typeOrClick": "Type a command or click a quick command above",
-    "arrowHistory": "Arrow Up/Down for command history"
+    "arrowHistory": "Arrow Up/Down for command history",
+    "actions": {
+      "copyAll": "Copy terminal output",
+      "clearHistory": "Clear terminal history"
+    },
+    "errors": {
+      "runFailed": "Command failed"
+    },
+    "toast": {
+      "copySuccess": "Output copied",
+      "copyError": "Failed to copy output"
+    }
   },
   "skills": {
     "title": "Skills Manager",
@@ -443,7 +539,15 @@
     "loadError": "Error loading prices",
     "saveError": "Error saving prices",
     "resetError": "Error resetting prices",
-    "discardSuccess": "Changes discarded"
+    "discardSuccess": "Changes discarded",
+    "discardChanges": "Discard Changes",
+    "default": "default",
+    "customized": "Customized",
+    "failedToLoad": "Failed to load pricing data",
+    "resetDialog": {
+      "title": "Reset all pricing?",
+      "message": "This will remove all custom pricing overrides and revert to default values. This action cannot be undone."
+    }
   },
   "config": {
     "warningTitle": "Be careful when editing configuration",

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DollarSign, RotateCcw, Save, X, RefreshCw, Loader2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useI18n } from "@/i18n/provider";
 import { useToast } from "@/components/Toast";
 
@@ -56,12 +57,13 @@ interface PriceInputProps {
   label: string;
   value: number;
   defaultValue?: number;
+  defaultLabel: string;
   onChange: (value: number) => void;
   hasOverride: boolean;
   showDefault?: boolean;
 }
 
-function PriceInput({ label, value, defaultValue, onChange, hasOverride, showDefault = true }: PriceInputProps) {
+function PriceInput({ label, value, defaultValue, defaultLabel, onChange, hasOverride, showDefault = true }: PriceInputProps) {
   const isDifferent = defaultValue !== undefined && value !== defaultValue;
   const formattedDefault = defaultValue !== undefined ? `$${defaultValue.toFixed(4)}` : null;
 
@@ -91,7 +93,7 @@ function PriceInput({ label, value, defaultValue, onChange, hasOverride, showDef
         </div>
         {hasOverride && isDifferent && showDefault && (
           <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-            default: {formattedDefault}
+            {defaultLabel}: {formattedDefault}
           </span>
         )}
       </div>
@@ -103,7 +105,7 @@ interface ModelCardProps {
   model: ModelPricingEntry;
   localChanges: LocalChanges[string];
   onChange: (field: string, value: number) => void;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }
 
 function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
@@ -140,7 +142,7 @@ function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
             <span
               className="text-xs px-2 py-0.5 rounded-full bg-accent text-white"
             >
-              Customized
+              {t("pricing.customized")}
             </span>
           )}
         </div>
@@ -154,6 +156,7 @@ function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
           label={t("pricing.inputPrice")}
           value={currentInput}
           defaultValue={model.defaults?.inputPricePerMillion}
+          defaultLabel={t("pricing.default")}
           onChange={(v) => onChange("inputPricePerMillion", v)}
           hasOverride={model.isCustomized || hasLocalChanges}
         />
@@ -161,6 +164,7 @@ function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
           label={t("pricing.outputPrice")}
           value={currentOutput}
           defaultValue={model.defaults?.outputPricePerMillion}
+          defaultLabel={t("pricing.default")}
           onChange={(v) => onChange("outputPricePerMillion", v)}
           hasOverride={model.isCustomized || hasLocalChanges}
         />
@@ -173,6 +177,7 @@ function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
               label={t("pricing.cacheReadPrice")}
               value={currentCacheRead ?? 0}
               defaultValue={model.defaults?.cacheReadPricePerMillion}
+              defaultLabel={t("pricing.default")}
               onChange={(v) => onChange("cacheReadPricePerMillion", v)}
               hasOverride={model.isCustomized || hasLocalChanges}
             />
@@ -182,63 +187,13 @@ function ModelCard({ model, localChanges, onChange, t }: ModelCardProps) {
               label={t("pricing.cacheWritePrice")}
               value={currentCacheWrite ?? 0}
               defaultValue={model.defaults?.cacheWritePricePerMillion}
+              defaultLabel={t("pricing.default")}
               onChange={(v) => onChange("cacheWritePricePerMillion", v)}
               hasOverride={model.isCustomized || hasLocalChanges}
             />
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isLoading?: boolean;
-}
-
-function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, isLoading }: ConfirmDialogProps) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
-      <div
-        className="relative rounded-xl p-6 max-w-md w-full"
-        style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
-      >
-        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-          {title}
-        </h3>
-        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-          {message}
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg text-sm"
-            style={{
-              backgroundColor: "var(--card-elevated)",
-              color: "var(--text-primary)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg text-sm bg-error text-white"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reset All"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -252,23 +207,40 @@ export function PricingEditor() {
   const [resetting, setResetting] = useState(false);
   const [localChanges, setLocalChanges] = useState<LocalChanges>({});
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const fetchPricingControllerRef = useRef<AbortController | null>(null);
 
   const fetchPricing = useCallback(async () => {
+    fetchPricingControllerRef.current?.abort();
+    const controller = new AbortController();
+    fetchPricingControllerRef.current = controller;
     try {
-      const res = await fetch("/api/pricing");
+      const res = await fetch("/api/pricing", { signal: controller.signal });
+      if (!res.ok) {
+        throw new Error(t("pricing.loadError"));
+      }
       const data = await res.json();
       setPricing(data);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       console.error("Failed to fetch pricing:", error);
       showError(t("pricing.loadError"));
     } finally {
       setLoading(false);
+      if (fetchPricingControllerRef.current === controller) {
+        fetchPricingControllerRef.current = null;
+      }
     }
   }, [showError, t]);
 
   useEffect(() => {
     fetchPricing();
   }, [fetchPricing]);
+
+  useEffect(() => {
+    return () => {
+      fetchPricingControllerRef.current?.abort();
+    };
+  }, []);
 
   const hasChanges = Object.keys(localChanges).some((modelId) => {
     const changes = localChanges[modelId];
@@ -356,7 +328,7 @@ export function PricingEditor() {
       >
         <X className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--error)" }} />
         <p className="mb-4" style={{ color: "var(--text-primary)" }}>
-          Failed to load pricing data
+          {t("pricing.failedToLoad")}
         </p>
         <button
           onClick={fetchPricing}
@@ -364,7 +336,7 @@ export function PricingEditor() {
           style={{ backgroundColor: "var(--accent)", color: "white" }}
         >
           <RefreshCw className="w-4 h-4" />
-          Retry
+          {t("common.retry")}
         </button>
       </div>
     );
@@ -438,15 +410,17 @@ export function PricingEditor() {
             }}
           >
             <X className="w-4 h-4" />
-            Discard Changes
+            {t("pricing.discardChanges")}
           </button>
         )}
       </div>
 
       <ConfirmDialog
         isOpen={showResetDialog}
-        title="Reset All Pricing?"
-        message="This will remove all custom pricing overrides and revert to default values. This action cannot be undone."
+        title={t("pricing.resetDialog.title")}
+        message={t("pricing.resetDialog.message")}
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("pricing.resetAll")}
         onConfirm={handleReset}
         onCancel={() => setShowResetDialog(false)}
         isLoading={resetting}

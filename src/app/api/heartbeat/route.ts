@@ -92,6 +92,11 @@ function getDefaultHeartbeatPaths(): string[] {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (!auth.authorized) {
+    return auth.error;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get("agentId");

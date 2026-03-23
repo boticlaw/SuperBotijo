@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { validateAgentAuth } from "@/lib/agent-auth";
 import { sessionStore } from "@/lib/session-store";
 
 // Routes that never require authentication
@@ -9,11 +10,12 @@ const PUBLIC_ROUTES = new Set(["/login"]);
 const PUBLIC_API_PREFIXES = [
   "/api/auth/",
   "/api/health",
-  "/api/heartbeat",
-  "/api/kanban/agent",
-  "/api/kanban/tasks/",
-  "/api/agents/config",
   "/api/debug/public",
+];
+
+const AGENT_API_PREFIXES = [
+  "/api/heartbeat/tasks",
+  "/api/kanban/agent/",
 ];
 
 function extractToken(request: NextRequest): string | null {
@@ -44,6 +46,23 @@ export async function middleware(request: NextRequest) {
 
   // Always allow public API routes
   if (PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return NextResponse.next();
+  }
+
+  // Agent API routes must use explicit agent credentials
+  if (AGENT_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    const agentId = validateAgentAuth(request);
+
+    if (!agentId) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "Valid X-Agent-Id and X-Agent-Key headers required",
+        },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.next();
   }
 

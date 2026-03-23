@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { registerAgent, getAgents } from '@/operations/agent-ops';
 import { validateBody, CreateAgentSchema } from '@/lib/api-validation';
 
+export const dynamic = "force-dynamic";
+
 // GET /api/agents - List all agents
 export async function GET() {
   try {
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (!validation.success) return validation.error;
     const { id, name, model, systemPrompt, skills, temperature, maxTokens, autoStart } = validation.data;
 
-    const agentId = id || `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const agentId = id || `agent-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
     const result = await registerAgent(agentId, name, model || 'claude-sonnet-4-20250514');
 

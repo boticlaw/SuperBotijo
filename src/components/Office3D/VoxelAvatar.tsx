@@ -218,10 +218,6 @@ export default function VoxelAvatar({
     }
   });
 
-  const skinColor = '#ffa07a'; // peach
-  const noseColor = '#f08f6b';
-  const browColor = '#4a3728';
-  const pantsColor = '#4a5568';
   const shirtColor = agent.color;
   const accessories = agent.accessories;
   const hairStyle = accessories?.hair ?? AVATAR_HAIR_TYPES.none;
@@ -348,38 +344,6 @@ export default function VoxelAvatar({
             </Box>
           </group>
         )}
-        {expression === FACE_EXPRESSIONS.surprised && (
-          <Box args={[0.024, 0.024, 0.01]} position={[0, -0.052, 0.114]} castShadow>
-            <primitive object={MATERIALS.mouth.neutral} attach="material" />
-          </Box>
-        )}
-        {expression === FACE_EXPRESSIONS.smile && (
-          <group position={[0, -0.05, 0.114]}>
-            <Box args={[0.02, 0.012, 0.01]} position={[-0.028, -0.003, 0]} rotation={[0, 0, 0.25]} castShadow>
-              <primitive object={MATERIALS.mouth.neutral} attach="material" />
-            </Box>
-            <Box args={[0.02, 0.012, 0.01]} position={[0.028, -0.003, 0]} rotation={[0, 0, -0.25]} castShadow>
-              <primitive object={MATERIALS.mouth.neutral} attach="material" />
-            </Box>
-            <Box args={[0.028, 0.01, 0.01]} position={[0, -0.006, 0]} castShadow>
-              <primitive object={MATERIALS.mouth.neutral} attach="material" />
-            </Box>
-          </group>
-        )}
-        {expression === FACE_EXPRESSIONS.frown && (
-          <group position={[0, -0.06, 0.114]}>
-            <Box args={[0.02, 0.012, 0.01]} position={[-0.028, 0.003, 0]} rotation={[0, 0, -0.25]} castShadow>
-              <primitive object={MATERIALS.mouth.frown} attach="material" />
-            </Box>
-            <Box args={[0.02, 0.012, 0.01]} position={[0.028, 0.003, 0]} rotation={[0, 0, 0.25]} castShadow>
-              <primitive object={MATERIALS.mouth.frown} attach="material" />
-            </Box>
-            <Box args={[0.028, 0.01, 0.01]} position={[0, 0.006, 0]} castShadow>
-              <primitive object={MATERIALS.mouth.frown} attach="material" />
-            </Box>
-          </group>
-        )}
-
         {/* Thinking particles effect */}
         {isThinking && (
           <>

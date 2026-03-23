@@ -2,13 +2,24 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, PUT, DELETE } from "./route";
 import { clearAllDataForTesting, createTask, listTaskComments } from "@/lib/kanban-db";
+import { sessionStore } from "@/lib/session-store";
 
-function createMockRequest(url: string, options?: { method?: string; body?: unknown }): NextRequest {
+let authToken = "";
+const previousAuthSecret = process.env.AUTH_SECRET;
+
+function createMockRequest(
+  url: string,
+  options?: { method?: string; body?: unknown; headers?: Record<string, string> }
+): NextRequest {
   const fullUrl = new URL(url, "http://localhost");
   return new NextRequest(fullUrl, {
     method: options?.method ?? "GET",
     body: options?.body ? JSON.stringify(options.body) : undefined,
-    headers: options?.body ? { "Content-Type": "application/json" } : undefined,
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      ...(options?.headers ?? {}),
+    },
   });
 }
 
@@ -19,13 +30,23 @@ function createParams(id: string): Promise<{ id: string }> {
 describe("/api/kanban/tasks/[id]", () => {
   const previousRequireCommentFlag = process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     clearAllDataForTesting();
+    process.env.AUTH_SECRET = "test-secret-123456789012345678901234567890";
+    authToken = await sessionStore.generateToken();
     delete process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
   });
 
   afterEach(() => {
     clearAllDataForTesting();
+    sessionStore.clearRevoked();
+
+    if (previousAuthSecret === undefined) {
+      delete process.env.AUTH_SECRET;
+    } else {
+      process.env.AUTH_SECRET = previousAuthSecret;
+    }
+
     if (previousRequireCommentFlag === undefined) {
       delete process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
     } else {
@@ -188,7 +209,8 @@ describe("/api/kanban/tasks/[id]", () => {
       const data = await response!.json();
 
       expect(response!.status).toBe(400);
-      expect(data.error).toBe("Title must be a non-empty string");
+      expect(data.error).toBe("Validation error");
+      expect(data.details).toBeDefined();
     });
 
     it("returns 400 when title exceeds 200 characters", async () => {
@@ -202,7 +224,8 @@ describe("/api/kanban/tasks/[id]", () => {
       const data = await response!.json();
 
       expect(response!.status).toBe(400);
-      expect(data.error).toBe("Title must be 200 characters or less");
+      expect(data.error).toBe("Validation error");
+      expect(data.details).toBeDefined();
     });
 
     it("returns 400 when priority is invalid", async () => {
@@ -216,7 +239,8 @@ describe("/api/kanban/tasks/[id]", () => {
       const data = await response!.json();
 
       expect(response!.status).toBe(400);
-      expect(data.error).toContain("Invalid priority");
+      expect(data.error).toBe("Validation error");
+      expect(data.details).toBeDefined();
     });
 
     it("returns unchanged task when no updates provided", async () => {

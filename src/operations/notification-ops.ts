@@ -104,7 +104,7 @@ export async function createNotification(
   options: { link?: string; source?: string } = {}
 ): Promise<OperationResult<Notification>> {
   try {
-    const id = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     
     const notification: Notification = {
       id,

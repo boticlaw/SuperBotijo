@@ -12,6 +12,8 @@ import { NextRequest } from 'next/server';
 import { getActivities } from '@/lib/activities-db';
 import { createEvent, CHANNELS, type ChannelName } from '@/lib/realtime-events';
 
+export const dynamic = "force-dynamic";
+
 // In-memory subscription store (resets on server restart, but that's fine for SSE)
 const clientSubscriptions = new Map<string, Set<ChannelName>>();
 
@@ -24,7 +26,7 @@ const DEFAULT_CHANNELS: ChannelName[] = [
 
 // Generate a simple client ID
 function generateClientId(): string {
-  return `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `client-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 // Exponential backoff calculation
