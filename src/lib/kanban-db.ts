@@ -1,6 +1,26 @@
 /**
  * SQLite-backed Kanban Board Storage
  * Stores tasks and columns with float-based ordering for drag & drop
+ *
+ * REFACTOR PLAN (deferred - high risk):
+ * This file is ~2100 lines and handles multiple domains. To split safely:
+ *
+ * 1. Extract types to src/lib/kanban-types.ts (low risk)
+ * 2. Create src/lib/db/kanban-connection.ts for DB singleton (medium risk)
+ * 3. Split by domain into separate modules:
+ *    - src/lib/kanban-tasks.ts (task CRUD, ~500 lines)
+ *    - src/lib/kanban-columns.ts (column CRUD, ~200 lines)
+ *    - src/lib/kanban-comments.ts (comments, ~300 lines)
+ *    - src/lib/kanban-projects.ts (projects, ~200 lines)
+ *    - src/lib/kanban-agents.ts (agent identities, ~150 lines)
+ *    - src/lib/kanban-journal.ts (operations journal, ~150 lines)
+ * 4. Update all API route imports (high effort - ~30 files)
+ * 5. Add integration tests before splitting (critical)
+ *
+ * Risk: The `_db` singleton is shared across all functions. Splitting
+ * requires careful coordination to avoid breaking DB initialization.
+ *
+ * See: Issue #132 - Technical Debt Reduction
  */
 import Database from "better-sqlite3";
 import path from "path";
