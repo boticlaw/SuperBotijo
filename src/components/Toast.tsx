@@ -90,7 +90,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast, showInfo, showSuccess, showWarning, showError }}>
       {children}
 
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm pointer-events-none">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label="Notifications"
+        className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm pointer-events-none"
+      >
         {toasts.map((toast) => {
           const Icon = icons[toast.type];
           const color = colors[toast.type];
@@ -117,6 +122,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </div>
               <button
                 onClick={() => dismissToast(toast.id)}
+                aria-label="Dismiss notification"
                 className="p-1 rounded hover:opacity-70 flex-shrink-0"
               >
                 <X className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
