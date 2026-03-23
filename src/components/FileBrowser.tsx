@@ -122,6 +122,25 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">(initialViewMode);
   const previewIsHtml = isHtmlFile(fileName);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  const dialogTitleId = `editor-dialog-title-${fileName.replace(/[^a-zA-Z0-9]/g, "-")}`;
+
+  useEffect(() => {
+    previousActiveElement.current = document.activeElement as HTMLElement;
+    const timer = setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    if (previousActiveElement.current) {
+      previousActiveElement.current.focus();
+    }
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -177,24 +196,23 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
     URL.revokeObjectURL(previewUrl);
   }, [content]);
 
-  // Keyboard shortcut: Ctrl/Cmd+S to save
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         handleSave();
       }
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSave, onClose]);
+  }, [handleSave, handleClose]);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={t("files.browser.editor.dialogLabel", { name: fileName })}
+      aria-labelledby={dialogTitleId}
       style={{
       position: "fixed", inset: 0, zIndex: 1000,
       backgroundColor: "rgba(0,0,0,0.8)",
@@ -210,7 +228,6 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
         display: "flex", flexDirection: "column",
         overflow: "hidden",
       }}>
-        {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", gap: "1rem",
           padding: "0.75rem 1rem",
@@ -218,7 +235,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           flexShrink: 0,
         }}>
           <FileCode className="w-5 h-5" style={{ color: "var(--accent)" }} />
-          <span style={{ color: "var(--text-primary)", fontFamily: "monospace", fontSize: "0.9rem", flex: 1 }}>
+          <span id={dialogTitleId} style={{ color: "var(--text-primary)", fontFamily: "monospace", fontSize: "0.9rem", flex: 1 }}>
             {fileName}
           </span>
 
@@ -288,7 +305,8 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           </button>
 
           <button
-            onClick={onClose}
+            ref={closeButtonRef}
+            onClick={handleClose}
             aria-label={t("common.close")}
             style={{ padding: "0.5rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", backgroundColor: "var(--card-elevated)", color: "var(--text-secondary)" }}
           >
@@ -333,7 +351,7 @@ function EditorModal({ workspace, filePath, fileName, initialViewMode = "preview
           ) : viewMode === "preview" && previewIsHtml ? (
             <div style={{ height: "100%", backgroundColor: "#fff" }}>
               <iframe
-                title={`${fileName} preview`}
+                title={t("files.browser.editor.iframeTitle", { name: fileName })}
                 srcDoc={content}
                 sandbox="allow-forms allow-modals allow-popups allow-scripts"
                 style={{ width: "100%", height: "100%", border: "none" }}
@@ -489,11 +507,16 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
     try {
-      await fetch("/api/files/mkdir", {
+      const res = await fetch("/api/files/mkdir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace, path, name: newFolderName.trim() }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || t("files.browser.errors.createFolder"));
+        return;
+      }
       setNewFolderName("");
       setShowNewFolder(false);
       loadItems();
@@ -502,20 +525,23 @@ export function FileBrowser({ workspace, path, onNavigate, viewMode = "list" }: 
     }
   };
 
-  // Create file
   const handleCreateFile = async () => {
     if (!newFileName.trim()) return;
     const filePath = path ? `${path}/${newFileName.trim()}` : newFileName.trim();
     try {
-      await fetch("/api/files/write", {
+      const res = await fetch("/api/files/write", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace, path: filePath, content: "" }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || t("files.browser.errors.createFile"));
+        return;
+      }
       setNewFileName("");
       setShowNewFile(false);
       loadItems();
-      // Open editor immediately
       setEditorFile({ workspace, path: filePath, name: newFileName.trim(), initialViewMode: "edit" });
     } catch {
       showError(t("files.browser.errors.createFile"));

@@ -31,7 +31,8 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sharingPath, setSharingPath] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const shareControllerRef = useRef<AbortController | null>(null);
   const reportsControllerRef = useRef<AbortController | null>(null);
   const contentControllerRef = useRef<AbortController | null>(null);
   const { t } = useI18n();
@@ -124,9 +125,12 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
   const handleShare = useCallback(
     async (reportPath: string) => {
       const id = reportPath.split("/").pop()?.replace(".md", "") || reportPath;
-      setSharingPath(reportPath);
+      setSharingId(id);
+      shareControllerRef.current?.abort();
+      const controller = new AbortController();
+      shareControllerRef.current = controller;
       try {
-        const res = await fetch(`/api/reports/${id}/share`, { method: "POST" });
+        const res = await fetch(`/api/reports/${id}/share`, { method: "POST", signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           await navigator.clipboard.writeText(data.shareUrl);
@@ -135,10 +139,14 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
           showError(t("reports.page.errors.share"));
         }
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
         console.error(err);
         showError(t("reports.page.errors.share"));
       } finally {
-        setSharingPath(null);
+        if (shareControllerRef.current === controller) {
+          shareControllerRef.current = null;
+        }
+        setSharingId(null);
       }
     },
     [showError, showSuccess, t]
@@ -148,6 +156,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
     return () => {
       reportsControllerRef.current?.abort();
       contentControllerRef.current?.abort();
+      shareControllerRef.current?.abort();
     };
   }, []);
 
@@ -343,7 +352,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                       e.stopPropagation();
                       handleShare(report.path);
                     }}
-                    disabled={sharingPath === report.path}
+                    disabled={sharingId === report.path.split("/").pop()?.replace(".md", "")}
                     className="p-1.5 rounded transition-all hover:opacity-100"
                     style={{
                       color: selectedPath === report.path ? "var(--text-primary)" : "var(--text-muted)",
@@ -351,7 +360,7 @@ export default function ReportsClient({ initialReports }: { initialReports: Repo
                     title={t("reports.page.actions.share")}
                     aria-label={t("reports.page.actions.share")}
                   >
-                    {sharingPath === report.path ? (
+                    {sharingId === report.path.split("/").pop()?.replace(".md", "") ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Share2 className="w-4 h-4" />
