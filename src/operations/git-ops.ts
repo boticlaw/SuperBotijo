@@ -3,11 +3,15 @@ import "server-only";
 import { existsSync, statSync } from "fs";
 import path from "path";
 
-import { safeExecFile, validatePath } from "@/lib/safe-exec";
+import { resolvePathWithinBase, safeExecFile, validatePath } from "@/lib/safe-exec";
 
 const WORKSPACE = process.env.OPENCLAW_DIR
   ? `${process.env.OPENCLAW_DIR}/workspace`
   : "/home/daniel/.openclaw/workspace";
+
+export function getGitWorkspacePath(): string {
+  return WORKSPACE;
+}
 
 export interface CommitInfo {
   hash: string;
@@ -40,27 +44,28 @@ function normalizeRepoPath(input: string): string | null {
     ? path.resolve(trimmed)
     : path.resolve(WORKSPACE, trimmed);
 
-  if (!validatePath(candidate, WORKSPACE)) {
-    return null;
-  }
-
   if (!existsSync(candidate)) {
     return null;
   }
 
+  const containedPath = resolvePathWithinBase(candidate, WORKSPACE);
+  if (!containedPath) {
+    return null;
+  }
+
   try {
-    if (!statSync(candidate).isDirectory()) {
+    if (!statSync(containedPath).isDirectory()) {
       return null;
     }
   } catch {
     return null;
   }
 
-  if (!existsSync(path.join(candidate, ".git"))) {
+  if (!existsSync(path.join(containedPath, ".git"))) {
     return null;
   }
 
-  return candidate;
+  return containedPath;
 }
 
 function getRepos(): string[] {
@@ -200,6 +205,10 @@ export function normalizeGitRepoPath(input: unknown): string | null {
 }
 
 export function runGitAction(repoPath: string, action: GitAction): string {
+  if (!validatePath(repoPath, WORKSPACE)) {
+    return "Invalid repository path";
+  }
+
   let result;
 
   switch (action) {

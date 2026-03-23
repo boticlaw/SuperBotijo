@@ -5,8 +5,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
-import { isValidGitAction } from "@/lib/safe-exec";
-import { getGitRepos, normalizeGitRepoPath, runGitAction, type GitAction } from "@/operations/git-ops";
+import { isValidGitAction, validatePath } from "@/lib/safe-exec";
+import { getGitRepos, getGitWorkspacePath, normalizeGitRepoPath, runGitAction, type GitAction } from "@/operations/git-ops";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
 
     if (typeof action !== "string" || !isValidGitAction(action)) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    if (!validatePath(normalizedRepo, getGitWorkspacePath())) {
+      return NextResponse.json({ error: "Invalid repo path" }, { status: 400 });
     }
 
     const output = runGitAction(normalizedRepo, action as GitAction);

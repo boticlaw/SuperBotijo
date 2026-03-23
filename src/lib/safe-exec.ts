@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "child_process";
+import { realpathSync } from "fs";
 import path from "path";
 
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-./]+$/;
@@ -104,21 +105,32 @@ export function safeSpawn(
 }
 
 export function validatePath(pathToCheck: string, basePath: string): boolean {
-  if (!pathToCheck || !basePath) return false;
-  if (pathToCheck.includes("\0") || basePath.includes("\0")) return false;
-
-  const resolvedBase = pathModuleResolve(basePath);
-  const resolvedTarget = pathModuleResolve(pathToCheck);
-  const relative = path.relative(resolvedBase, resolvedTarget);
-
-  if (relative === "") return true;
-  if (relative.startsWith("..") || path.isAbsolute(relative)) return false;
-
-  return true;
+  return resolvePathWithinBase(pathToCheck, basePath) !== null;
 }
 
-function pathModuleResolve(inputPath: string): string {
-  return path.resolve(inputPath);
+export function resolvePathWithinBase(pathToCheck: string, basePath: string): string | null {
+  if (!pathToCheck || !basePath) return null;
+  if (pathToCheck.includes("\0") || basePath.includes("\0")) return null;
+
+  const resolvedBase = path.resolve(basePath);
+  const resolvedTarget = path.resolve(pathToCheck);
+
+  let canonicalBase: string;
+  let canonicalTarget: string;
+
+  try {
+    canonicalBase = realpathSync.native(resolvedBase);
+    canonicalTarget = realpathSync.native(resolvedTarget);
+  } catch {
+    return null;
+  }
+
+  const relative = path.relative(canonicalBase, canonicalTarget);
+
+  if (relative === "") return canonicalTarget;
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
+
+  return canonicalTarget;
 }
 
 export const ALLOWED_CRON_ACTIONS = ["status", "enable", "disable", "run", "rm", "add", "edit", "list", "runs"] as const;
