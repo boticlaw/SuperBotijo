@@ -5,7 +5,7 @@
  * Used for UI filters in the Kanban board.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAgentAuth } from "@/lib/agent-auth";
+import { requireAgentOrSessionAuth } from "@/lib/auth-helpers";
 import { listTasks } from "@/lib/kanban-db";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +15,9 @@ export const dynamic = "force-dynamic";
  * Returns list of unique domains from tasks in the database
  */
 export async function GET(request: NextRequest) {
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
 
   try {

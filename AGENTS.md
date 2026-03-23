@@ -592,6 +592,10 @@ Add to `openclaw.json`:
 
 #### GET /api/heartbeat/tasks
 
+Requires agent authentication headers:
+- `X-Agent-Id`
+- `X-Agent-Key`
+
 Returns tasks assigned to the agent with status `in_progress`:
 
 ```json
@@ -639,6 +643,7 @@ Returns all scheduled tasks (cron + heartbeat):
 1. Timer fires (every N minutes)
         ↓
 2. Agent calls GET /api/heartbeat/tasks?agentName=me
+   (with X-Agent-Id + X-Agent-Key headers)
         ↓
 3. API returns assigned tasks (status=in_progress)
         ↓

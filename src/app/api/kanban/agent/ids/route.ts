@@ -5,7 +5,7 @@
  * Used for UI filters in the Kanban board.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAgentAuth } from "@/lib/agent-auth";
+import { requireAgentOrSessionAuth } from "@/lib/auth-helpers";
 import { getOpenClawAgents } from "@/lib/openclaw-agents";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +14,12 @@ export const dynamic = "force-dynamic";
  * GET /api/kanban/agent/ids
  * Returns list of agent IDs from openclaw.json
  * 
- * No authentication required - this is read-only for UI purposes
+ * Requires agent credentials or an authenticated session
  */
 export async function GET(request: NextRequest) {
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
 
   try {

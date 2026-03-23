@@ -4,6 +4,7 @@ import { GET, POST } from "./route";
 import { clearAllDataForTesting, createTask } from "@/lib/kanban-db";
 import { resetAgentKeysCache } from "@/lib/agent-auth";
 import { resetCommentRateLimitForTesting } from "@/lib/kanban-comments";
+import { sessionStore } from "@/lib/session-store";
 
 function createMockRequest(
   url: string,
@@ -26,31 +27,60 @@ function createParams(id: string): Promise<{ id: string }> {
 
 describe("/api/kanban/agent/tasks/[id]/comments", () => {
   const previousAgentKeys = process.env.OPENCLAW_AGENT_KEYS;
+  const previousAuthSecret = process.env.AUTH_SECRET;
+  let authToken = "";
 
-  beforeEach(() => {
+  beforeEach(async () => {
     clearAllDataForTesting();
     resetCommentRateLimitForTesting();
     process.env.OPENCLAW_AGENT_KEYS = "boti:key-boti,leo:key-leo";
+    process.env.AUTH_SECRET = "test-secret-123456789012345678901234567890";
     resetAgentKeysCache();
+    authToken = await sessionStore.generateToken();
   });
 
   afterEach(() => {
     clearAllDataForTesting();
     resetCommentRateLimitForTesting();
+    sessionStore.clearRevoked();
     if (previousAgentKeys === undefined) {
       delete process.env.OPENCLAW_AGENT_KEYS;
     } else {
       process.env.OPENCLAW_AGENT_KEYS = previousAgentKeys;
     }
+
+    if (previousAuthSecret === undefined) {
+      delete process.env.AUTH_SECRET;
+    } else {
+      process.env.AUTH_SECRET = previousAuthSecret;
+    }
+
     resetAgentKeysCache();
+  });
+
+  it("allows authenticated session to read comments", async () => {
+    const task = createTask({ title: "Task", createdBy: "memo" });
+    const request = createMockRequest(`/api/kanban/agent/tasks/${task.id}/comments`, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    const response = await GET(request, { params: createParams(task.id) });
+    expect(response).toBeDefined();
+    const data = await response!.json();
+
+    expect(response!.status).toBe(200);
+    expect(data.comments).toEqual([]);
   });
 
   it("returns 401 when auth headers are missing", async () => {
     const task = createTask({ title: "Task" });
     const request = createMockRequest(`/api/kanban/agent/tasks/${task.id}/comments`);
     const response = await GET(request, { params: createParams(task.id) });
+    expect(response).toBeDefined();
 
-    expect(response.status).toBe(401);
+    expect(response!.status).toBe(401);
   });
 
   it("returns 403 when agent is not creator, assignee, or claimer", async () => {
@@ -63,9 +93,10 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
     });
 
     const response = await GET(request, { params: createParams(task.id) });
-    const data = await response.json();
+    expect(response).toBeDefined();
+    const data = await response!.json();
 
-    expect(response.status).toBe(403);
+    expect(response!.status).toBe(403);
     expect(data.error).toContain("Not authorized");
   });
 
@@ -87,9 +118,10 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
     });
 
     const postResponse = await POST(postRequest, { params: createParams(task.id) });
-    const postData = await postResponse.json();
+    expect(postResponse).toBeDefined();
+    const postData = await postResponse!.json();
 
-    expect(postResponse.status).toBe(201);
+    expect(postResponse!.status).toBe(201);
     expect(postData.comment.authorType).toBe("agent");
     expect(postData.comment.authorId).toBe("boti");
     expect(postData.comment.metadata.commentType).toBe("progress");
@@ -102,9 +134,10 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
     });
 
     const getResponse = await GET(getRequest, { params: createParams(task.id) });
-    const getData = await getResponse.json();
+    expect(getResponse).toBeDefined();
+    const getData = await getResponse!.json();
 
-    expect(getResponse.status).toBe(200);
+    expect(getResponse!.status).toBe(200);
     expect(getData.comments.length).toBe(1);
     expect(getData.comments[0].body).toBe("Working on this");
   });
@@ -124,7 +157,8 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
     });
 
     const response = await POST(request, { params: createParams(task.id) });
-    expect(response.status).toBe(400);
+    expect(response).toBeDefined();
+    expect(response!.status).toBe(400);
   });
 
   it("enforces agent comment rate limit", async () => {
@@ -141,7 +175,8 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
       });
 
       const response = await POST(request, { params: createParams(task.id) });
-      expect(response.status).toBe(201);
+      expect(response).toBeDefined();
+      expect(response!.status).toBe(201);
     }
 
     const blockedRequest = createMockRequest(`/api/kanban/agent/tasks/${task.id}/comments`, {
@@ -154,6 +189,7 @@ describe("/api/kanban/agent/tasks/[id]/comments", () => {
     });
 
     const blockedResponse = await POST(blockedRequest, { params: createParams(task.id) });
-    expect(blockedResponse.status).toBe(429);
+    expect(blockedResponse).toBeDefined();
+    expect(blockedResponse!.status).toBe(429);
   });
 });

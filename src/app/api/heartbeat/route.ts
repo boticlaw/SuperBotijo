@@ -23,7 +23,6 @@ export interface HeartbeatStatus {
   target: string;
   activeHours: { start: string; end: string } | null;
   heartbeatMd: string;
-  heartbeatMdPath: string;
   configured: boolean;
   agentHeartbeats: AgentHeartbeat[];
 }
@@ -134,14 +133,11 @@ export async function GET(request: NextRequest) {
 
     // Determine which HEARTBEAT.md to read
     let heartbeatMd = "";
-    let heartbeatMdPath = "";
-
     if (agentId) {
       // Find the specific agent
       const agent = agentHeartbeats.find((a) => a.agentId === agentId);
       if (agent) {
         const path = getAgentHeartbeatPath(agent.workspace);
-        heartbeatMdPath = path;
         if (existsSync(path)) {
           heartbeatMd = readFileSync(path, "utf-8");
         }
@@ -157,7 +153,6 @@ export async function GET(request: NextRequest) {
       for (const p of paths) {
         if (existsSync(p)) {
           heartbeatMd = readFileSync(p, "utf-8");
-          heartbeatMdPath = p;
           break;
         }
       }
@@ -166,7 +161,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ...config,
       heartbeatMd,
-      heartbeatMdPath,
       configured: heartbeatMd.length > 0,
       agentHeartbeats,
     });
@@ -233,7 +227,6 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      path: targetPath,
       agentId: agentId || null,
       message: "HEARTBEAT.md saved successfully",
     });

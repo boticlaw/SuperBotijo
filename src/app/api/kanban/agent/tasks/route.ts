@@ -3,14 +3,14 @@
  * 
  * Endpoints for OpenClaw agents to create and list tasks in the Kanban board.
  * 
- * Authentication: Requires X-Agent-Id and X-Agent-Key headers
+ * Authentication: Requires X-Agent-Id + X-Agent-Key headers OR authenticated session
  * 
  * POST /api/kanban/agent/tasks - Create a new task
  * GET /api/kanban/agent/tasks - List tasks with filters
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createTask, listTasks } from "@/lib/kanban-db";
-import { requireAgentAuth, validateAgentAuth } from "@/lib/agent-auth";
+import { requireAgentOrSessionAuth } from "@/lib/auth-helpers";
 import { logActivity } from "@/lib/activities-db";
 
 export const dynamic = "force-dynamic";
@@ -30,9 +30,9 @@ const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
  * POST /api/kanban/agent/tasks
  * Create a new task as an authenticated agent
  * 
- * Headers:
- * - X-Agent-Id: Agent ID (e.g., "boti")
- * - X-Agent-Key: Agent API key
+ * Auth options:
+ * - Agent: X-Agent-Id + X-Agent-Key
+ * - Human: authenticated session
  * 
  * Body:
  * - title: string (required, max 200 chars)
@@ -45,11 +45,11 @@ const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
  */
 export async function POST(request: NextRequest) {
   // Authenticate agent
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
-  const { agentId } = authResult;
+  const actorId = authResult.authType === "agent" ? authResult.agentId : "session";
 
   try {
     const body = await request.json();
@@ -94,12 +94,12 @@ export async function POST(request: NextRequest) {
       assignee: body.assignee,
       labels: body.labels,
       projectId: body.projectId,
-      createdBy: agentId,
+      createdBy: actorId,
     });
 
     // Log activity
-    logActivity("task", `Agent ${agentId} created task: ${task.title}`, "success", {
-      agent: agentId,
+    logActivity("task", `${authResult.authType === "agent" ? `Agent ${actorId}` : "Authenticated user"} created task: ${task.title}`, "success", {
+      agent: actorId,
       metadata: {
         taskId: task.id,
         taskTitle: task.title,
@@ -135,13 +135,9 @@ export async function POST(request: NextRequest) {
  * - limit: Max results (default: 100)
  */
 export async function GET(request: NextRequest) {
-  // Authenticate agent
-  const agentId = validateAgentAuth(request);
-  if (!agentId) {
-    return NextResponse.json(
-      { error: "Unauthorized", message: "Valid X-Agent-Id and X-Agent-Key headers required" },
-      { status: 401 }
-    );
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
 
   try {

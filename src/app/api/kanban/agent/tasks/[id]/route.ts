@@ -3,7 +3,7 @@
  * 
  * Endpoints for OpenClaw agents to update and delete specific tasks.
  * 
- * Authentication: Requires X-Agent-Id and X-Agent-Key headers
+ * Authentication: Requires X-Agent-Id + X-Agent-Key headers OR authenticated session
  * 
  * PATCH /api/kanban/agent/tasks/[id] - Update a task
  * DELETE /api/kanban/agent/tasks/[id] - Delete a task
@@ -16,7 +16,7 @@ import {
   updateTask,
   deleteTask,
 } from "@/lib/kanban-db";
-import { requireAgentAuth } from "@/lib/agent-auth";
+import { requireAgentOrSessionAuth } from "@/lib/auth-helpers";
 import { logActivity } from "@/lib/activities-db";
 import {
   isRequireCommentOnStatusFeatureEnabled,
@@ -41,7 +41,9 @@ const VALID_PRIORITIES = ["low", "medium", "high", "critical"] as const;
  * PATCH /api/kanban/agent/tasks/[id]
  * Update a task (status, assignee, claim, etc.)
  * 
- * Authorization: Agent must be creator, assignee, or claimer of the task
+ * Authorization:
+ * - Agent auth: must be creator, assignee, or claimer of the task
+ * - Session auth: full access
  * 
  * Body:
  * - status: string (optional)
@@ -56,11 +58,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Authenticate agent
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
-  const { agentId } = authResult;
+  const actorId = authResult.authType === "agent" ? authResult.agentId ?? "agent" : "session";
   const { id } = await params;
 
   try {
@@ -74,11 +76,12 @@ export async function PATCH(
     }
 
     // Authorization check: agent must be creator, assignee, or claimer
-    const isCreator = task.createdBy === agentId;
-    const isAssignee = task.assignee === agentId;
-    const isClaimer = task.claimedBy === agentId;
+    const isSessionActor = authResult.authType === "session";
+    const isCreator = task.createdBy === actorId;
+    const isAssignee = task.assignee === actorId;
+    const isClaimer = task.claimedBy === actorId;
 
-    if (!isCreator && !isAssignee && !isClaimer) {
+    if (!isSessionActor && !isCreator && !isAssignee && !isClaimer) {
       return NextResponse.json(
         { error: "Not authorized to update this task" },
         { status: 403 }
@@ -169,13 +172,13 @@ export async function PATCH(
     // Handle claim/unclaim
     if (body.claim === true && !task.claimedBy) {
       // Claim the task
-      updates.claimedBy = agentId;
+      updates.claimedBy = actorId;
       updates.claimedAt = new Date().toISOString();
-    } else if (body.claim === false && task.claimedBy === agentId) {
+    } else if (body.claim === false && (task.claimedBy === actorId || isSessionActor)) {
       // Unclaim the task (only claimer can unclaim)
       updates.claimedBy = null;
       updates.claimedAt = null;
-    } else if (body.claim === true && task.claimedBy && task.claimedBy !== agentId) {
+    } else if (body.claim === true && task.claimedBy && task.claimedBy !== actorId) {
       return NextResponse.json(
         { error: `Task already claimed by ${task.claimedBy}` },
         { status: 409 }
@@ -195,8 +198,8 @@ export async function PATCH(
     if (transitionComment) {
       createTaskComment({
         taskId: id,
-        authorType: "agent",
-        authorId: agentId,
+        authorType: authResult.authType === "agent" ? "agent" : "human",
+        authorId: actorId,
         body: transitionComment,
         commentType: hasStatusTransition ? TASK_COMMENT_TYPE.STATUS_CHANGE : TASK_COMMENT_TYPE.COMMENT,
         statusFrom: hasStatusTransition ? task.status : null,
@@ -209,8 +212,8 @@ export async function PATCH(
 
     // Log activity
     const changeDesc = Object.keys(updates).join(", ");
-    logActivity("task", `Agent ${agentId} updated task "${task.title}" (${changeDesc})`, "success", {
-      agent: agentId,
+    logActivity("task", `${authResult.authType === "agent" ? `Agent ${actorId}` : "Authenticated user"} updated task "${task.title}" (${changeDesc})`, "success", {
+      agent: actorId,
       metadata: {
         taskId: id,
         changes: updates,
@@ -240,11 +243,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // Authenticate agent
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
-  const { agentId } = authResult;
+  const actorId = authResult.authType === "agent" ? authResult.agentId ?? "agent" : "session";
   const { id } = await params;
 
   try {
@@ -257,7 +260,7 @@ export async function DELETE(
     }
 
     // Only creator can delete
-    if (task.createdBy !== agentId) {
+    if (authResult.authType !== "session" && task.createdBy !== actorId) {
       return NextResponse.json(
         { error: "Only the creator can delete this task" },
         { status: 403 }
@@ -274,8 +277,8 @@ export async function DELETE(
     }
 
     // Log activity
-    logActivity("task", `Agent ${agentId} deleted task: ${task.title}`, "success", {
-      agent: agentId,
+    logActivity("task", `${authResult.authType === "agent" ? `Agent ${actorId}` : "Authenticated user"} deleted task: ${task.title}`, "success", {
+      agent: actorId,
       metadata: { taskId: id, taskTitle: task.title },
     });
 

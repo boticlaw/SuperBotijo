@@ -6,15 +6,18 @@ import { sessionStore } from "@/lib/session-store";
 // Routes that never require authentication
 const PUBLIC_ROUTES = new Set(["/login"]);
 
-// API routes that are always public
-const PUBLIC_API_PREFIXES = [
-  "/api/auth/",
+// API routes that are always public (minimal surface)
+const PUBLIC_API_ROUTES = new Set([
+  "/api/auth/login",
+  "/api/auth/logout",
   "/api/health",
-  "/api/debug/public",
+]);
+
+const AGENT_ONLY_API_PREFIXES = [
+  "/api/heartbeat/tasks",
 ];
 
-const AGENT_API_PREFIXES = [
-  "/api/heartbeat/tasks",
+const AGENT_OR_SESSION_API_PREFIXES = [
   "/api/kanban/agent/",
 ];
 
@@ -44,13 +47,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Always allow public API routes
-  if (PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  // Always allow explicit public API routes
+  if (PUBLIC_API_ROUTES.has(pathname)) {
     return NextResponse.next();
   }
 
-  // Agent API routes must use explicit agent credentials
-  if (AGENT_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  // Agent-only API routes must use explicit agent credentials
+  if (AGENT_ONLY_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     const agentId = validateAgentAuth(request);
 
     if (!agentId) {
@@ -58,6 +61,26 @@ export async function middleware(request: NextRequest) {
         {
           error: "Unauthorized",
           message: "Valid X-Agent-Id and X-Agent-Key headers required",
+        },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.next();
+  }
+
+  // Kanban agent endpoints allow either agent headers or authenticated session
+  if (AGENT_OR_SESSION_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    const agentId = validateAgentAuth(request);
+    if (agentId) {
+      return NextResponse.next();
+    }
+
+    if (!(await isAuthenticated(request))) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          message: "Valid X-Agent-Id and X-Agent-Key headers or authenticated session required",
         },
         { status: 401 }
       );

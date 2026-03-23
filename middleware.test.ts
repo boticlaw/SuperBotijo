@@ -43,6 +43,13 @@ describe("middleware auth policy", () => {
     expect(response.status).toBe(200);
   });
 
+  it("blocks non-whitelisted auth-like routes", async () => {
+    const request = new NextRequest(new URL("http://localhost/api/auth/internal"));
+    const response = await middleware(request);
+
+    expect(response.status).toBe(401);
+  });
+
   it("blocks protected API routes without session", async () => {
     const request = new NextRequest(new URL("http://localhost/api/git"));
     const response = await middleware(request);
@@ -74,6 +81,24 @@ describe("middleware auth policy", () => {
         "X-Agent-Id": "agent-a",
         "X-Agent-Key": "key-agent-a",
       },
+    });
+
+    const response = await middleware(request);
+    expect(response.status).toBe(200);
+  });
+
+  it("does not allow session-only access to heartbeat agent route", async () => {
+    const request = new NextRequest(new URL("http://localhost/api/heartbeat/tasks"), {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    const response = await middleware(request);
+    expect(response.status).toBe(401);
+  });
+
+  it("allows session access to kanban agent routes", async () => {
+    const request = new NextRequest(new URL("http://localhost/api/kanban/agent/tasks"), {
+      headers: { Authorization: `Bearer ${authToken}` },
     });
 
     const response = await middleware(request);

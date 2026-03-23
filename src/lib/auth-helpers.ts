@@ -3,39 +3,41 @@
  *
  * AUTHORIZATION MODEL:
  *
- * /api/heartbeat:
- * - GET /api/heartbeat → PUBLIC (agents poll for config)
- * - GET /api/heartbeat/tasks → PUBLIC (agents poll for assigned tasks)
- * - PUT /api/heartbeat → AUTH REQUIRED (writes HEARTBEAT.md)
- * - PATCH /api/heartbeat/agents/[id] → AUTH REQUIRED (modifies agent config)
+ * Public routes:
+ * - /api/auth/login
+ * - /api/auth/logout
+ * - /api/health
  *
- * /api/kanban/tasks (Human endpoints):
- * - GET /api/kanban/tasks → PUBLIC (dashboard needs to list tasks)
- * - GET /api/kanban/tasks/[id] → PUBLIC (dashboard needs to view tasks)
- * - GET /api/kanban/tasks/[id]/comments → PUBLIC (dashboard needs to view comments)
- * - POST /api/kanban/tasks → AUTH REQUIRED (create task)
- * - PUT /api/kanban/tasks/[id] → AUTH REQUIRED (update task)
- * - DELETE /api/kanban/tasks/[id] → AUTH REQUIRED (delete task)
- * - POST /api/kanban/tasks/[id]/claim → AUTH REQUIRED (claim task)
- * - DELETE /api/kanban/tasks/[id]/claim → AUTH REQUIRED (release claim)
- * - POST /api/kanban/tasks/[id]/move → AUTH REQUIRED (move task)
- * - POST /api/kanban/tasks/[id]/comments → AUTH REQUIRED (create comment)
+ * /api/heartbeat:
+ * - GET /api/heartbeat → SESSION REQUIRED
+ * - PUT /api/heartbeat → SESSION REQUIRED
+ * - PATCH /api/heartbeat/agents/[id] → SESSION REQUIRED
+ * - GET /api/heartbeat/tasks → AGENT KEY REQUIRED
  *
  * /api/kanban/agent (Agent endpoints):
- * - All endpoints require X-Agent-Id and X-Agent-Key headers
- * - Uses requireAgentAuth() from @/lib/agent-auth
+ * - All endpoints require either:
+ *   1) X-Agent-Id + X-Agent-Key headers, OR
+ *   2) Authenticated human session
+ * - Uses requireAgentOrSessionAuth()
  *
- * Rationale: 
- * - Agents need to poll heartbeat and view tasks without human sessions
- * - Human mutations require session authentication
- * - Agent mutations require agent API key authentication
+ * Rationale:
+ * - Minimize public surface area
+ * - Keep auth policy explicit and consistent in route handlers
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireAgentAuth } from "@/lib/agent-auth";
 import { sessionStore } from "@/lib/session-store";
 
 export interface AuthResult {
   authorized: boolean;
+  error?: NextResponse;
+}
+
+export interface AgentOrSessionAuthResult {
+  authorized: boolean;
+  authType?: "agent" | "session";
+  agentId?: string;
   error?: NextResponse;
 }
 
@@ -65,6 +67,38 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
   }
 
   return { authorized: true };
+}
+
+export async function requireAgentOrSessionAuth(
+  request: NextRequest
+): Promise<AgentOrSessionAuthResult> {
+  const agentAuth = requireAgentAuth(request);
+  if (!(agentAuth instanceof NextResponse)) {
+    return {
+      authorized: true,
+      authType: "agent",
+      agentId: agentAuth.agentId,
+    };
+  }
+
+  const sessionAuth = await requireAuth(request);
+  if (sessionAuth.authorized) {
+    return {
+      authorized: true,
+      authType: "session",
+    };
+  }
+
+  return {
+    authorized: false,
+    error: NextResponse.json(
+      {
+        error: "Unauthorized",
+        message: "Valid X-Agent-Id and X-Agent-Key headers or authenticated session required",
+      },
+      { status: 401 }
+    ),
+  };
 }
 
 function extractToken(request: NextRequest): string | null {

@@ -5,13 +5,13 @@ import {
   getTask,
   listTaskComments,
 } from "@/lib/kanban-db";
-import { requireAgentAuth } from "@/lib/agent-auth";
 import {
   COMMENT_RATE_LIMIT_SCOPE,
   hasPotentialSecret,
   isCommentRateLimited,
   normalizeStructuredCommentPayload,
 } from "@/lib/kanban-comments";
+import { requireAgentOrSessionAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -40,13 +40,19 @@ function isTaskAccessibleByAgent(task: ReturnType<typeof getTask>, agentId: stri
   return task.createdBy === agentId || task.assignee === agentId || task.claimedBy === agentId;
 }
 
+function getClientIp(request: NextRequest): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "unknown";
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
 
-  const { agentId } = authResult;
+  const actorId = authResult.authType === "agent" ? authResult.agentId ?? "agent" : "session";
 
   try {
     const { id } = await params;
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    if (!isTaskAccessibleByAgent(task, agentId)) {
+    if (authResult.authType !== "session" && !isTaskAccessibleByAgent(task, actorId)) {
       return NextResponse.json({ error: "Not authorized to access comments for this task" }, { status: 403 });
     }
 
@@ -78,12 +84,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  const authResult = requireAgentAuth(request);
-  if (authResult instanceof NextResponse) {
-    return authResult;
+  const authResult = await requireAgentOrSessionAuth(request);
+  if (!authResult.authorized) {
+    return authResult.error;
   }
 
-  const { agentId } = authResult;
+  const actorId = authResult.authType === "agent" ? authResult.agentId ?? "agent" : "session";
 
   try {
     const { id } = await params;
@@ -97,14 +103,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    if (!isTaskAccessibleByAgent(task, agentId)) {
+    if (authResult.authType !== "session" && !isTaskAccessibleByAgent(task, actorId)) {
       return NextResponse.json({ error: "Not authorized to comment on this task" }, { status: 403 });
     }
 
     const body = await request.json() as Record<string, unknown>;
     const payload = normalizeStructuredCommentPayload(body);
 
-    const rateLimit = isCommentRateLimited(COMMENT_RATE_LIMIT_SCOPE.AGENT, agentId);
+    const rateLimitScope = authResult.authType === "agent"
+      ? COMMENT_RATE_LIMIT_SCOPE.AGENT
+      : COMMENT_RATE_LIMIT_SCOPE.HUMAN;
+    const rateLimitActor = authResult.authType === "agent"
+      ? actorId
+      : getClientIp(request);
+    const rateLimit = isCommentRateLimited(rateLimitScope, rateLimitActor);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded for comments" },
@@ -125,8 +137,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const comment = createTaskComment({
       taskId: id,
-      authorType: "agent",
-      authorId: agentId,
+      authorType: authResult.authType === "agent" ? "agent" : "human",
+      authorId: actorId,
       body: payload.content,
       commentType: TASK_COMMENT_TYPE.COMMENT,
       metadata: {

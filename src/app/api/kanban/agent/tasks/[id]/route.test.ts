@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { PATCH } from "./route";
 import { clearAllDataForTesting, createTask, listTaskComments } from "@/lib/kanban-db";
 import { resetAgentKeysCache } from "@/lib/agent-auth";
+import { sessionStore } from "@/lib/session-store";
 
 function createMockRequest(
   url: string,
@@ -26,16 +27,21 @@ function createParams(id: string): Promise<{ id: string }> {
 describe("/api/kanban/agent/tasks/[id] PATCH", () => {
   const previousAgentKeys = process.env.OPENCLAW_AGENT_KEYS;
   const previousRequireCommentFlag = process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS;
+  const previousAuthSecret = process.env.AUTH_SECRET;
+  let authToken = "";
 
-  beforeEach(() => {
+  beforeEach(async () => {
     clearAllDataForTesting();
     process.env.OPENCLAW_AGENT_KEYS = "boti:key-boti";
     process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS = "true";
+    process.env.AUTH_SECRET = "test-secret-123456789012345678901234567890";
     resetAgentKeysCache();
+    authToken = await sessionStore.generateToken();
   });
 
   afterEach(() => {
     clearAllDataForTesting();
+    sessionStore.clearRevoked();
 
     if (previousAgentKeys === undefined) {
       delete process.env.OPENCLAW_AGENT_KEYS;
@@ -49,7 +55,40 @@ describe("/api/kanban/agent/tasks/[id] PATCH", () => {
       process.env.FEATURE_REQUIRE_COMMENT_ON_STATUS = previousRequireCommentFlag;
     }
 
+    if (previousAuthSecret === undefined) {
+      delete process.env.AUTH_SECRET;
+    } else {
+      process.env.AUTH_SECRET = previousAuthSecret;
+    }
+
     resetAgentKeysCache();
+  });
+
+  it("returns 401 when no auth method is provided", async () => {
+    const task = createTask({ title: "Agent task", status: "in_progress", createdBy: "boti" });
+    const request = createMockRequest(`/api/kanban/agent/tasks/${task.id}`, {
+      body: { status: "review", comment: "Ready" },
+    });
+
+    const response = await PATCH(request, { params: createParams(task.id) });
+    expect(response).toBeDefined();
+
+    expect(response!.status).toBe(401);
+  });
+
+  it("allows authenticated session to update tasks", async () => {
+    const task = createTask({ title: "Agent task", status: "in_progress", createdBy: "boti" });
+    const request = createMockRequest(`/api/kanban/agent/tasks/${task.id}`, {
+      body: { status: "review", comment: "Manager approved" },
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    const response = await PATCH(request, { params: createParams(task.id) });
+    expect(response).toBeDefined();
+
+    expect(response!.status).toBe(200);
   });
 
   it("requires comment on critical transition when feature flag is enabled", async () => {
@@ -63,9 +102,10 @@ describe("/api/kanban/agent/tasks/[id] PATCH", () => {
     });
 
     const response = await PATCH(request, { params: createParams(task.id) });
-    const data = await response.json();
+    expect(response).toBeDefined();
+    const data = await response!.json();
 
-    expect(response.status).toBe(400);
+    expect(response!.status).toBe(400);
     expect(data.error).toContain("comment is required");
   });
 
@@ -80,8 +120,9 @@ describe("/api/kanban/agent/tasks/[id] PATCH", () => {
     });
 
     const response = await PATCH(request, { params: createParams(task.id) });
+    expect(response).toBeDefined();
 
-    expect(response.status).toBe(200);
+    expect(response!.status).toBe(200);
 
     const comments = listTaskComments({ taskId: task.id, limit: 10 });
     expect(comments.length).toBe(1);
