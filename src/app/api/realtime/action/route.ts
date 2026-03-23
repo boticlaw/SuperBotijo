@@ -12,6 +12,9 @@ import {
   type ActionRejectPayload,
   type AgentControlPayload,
 } from '@/lib/realtime-events';
+
+export const dynamic = "force-dynamic";
+
 import { getActivities, updateActivityStatus } from '@/lib/activities-db';
 
 interface RealtimeAction {

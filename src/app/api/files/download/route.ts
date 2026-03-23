@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 
+export const dynamic = "force-dynamic";
+
 function getMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   const mimeMap: Record<string, string> = {

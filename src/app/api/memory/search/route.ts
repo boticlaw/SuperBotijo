@@ -9,6 +9,8 @@ import path from 'path';
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 const WORKSPACE = path.join(OPENCLAW_DIR, 'workspace');
 
+export const dynamic = "force-dynamic";
+
 interface SearchResult {
   file: string;
   title: string;

@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 
+export const dynamic = "force-dynamic";
+
 interface FileEntry {
   name: string;
   type: "file" | "folder";

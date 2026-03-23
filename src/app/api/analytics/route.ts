@@ -4,6 +4,8 @@ import Database from "better-sqlite3";
 import path from "path";
 import { promises as fs } from "fs";
 
+export const dynamic = "force-dynamic";
+
 const DB_PATH = path.join(process.cwd(), "data", "activities.db");
 
 interface AnalyticsData {

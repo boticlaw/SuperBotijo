@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

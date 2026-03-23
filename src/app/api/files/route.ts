@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveWorkspaceDirectory, resolveWorkspacePath } from "@/lib/files-workspaces";
 
+export const dynamic = "force-dynamic";
+
 // Files to show in the memory browser
 const ROOT_FILES = ["MEMORY.md", "SOUL.md", "USER.md", "AGENTS.md", "TOOLS.md", "IDENTITY.md"];
 const MEMORY_DIR = "memory";

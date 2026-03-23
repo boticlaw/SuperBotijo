@@ -3,6 +3,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { OPENCLAW_WORKSPACE } from "@/lib/paths";
 
+export const dynamic = "force-dynamic";
+
 const WORKSPACE = OPENCLAW_WORKSPACE;
 const MEMORY_DIR = "memory";
 

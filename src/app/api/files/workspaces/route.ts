@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { listAvailableWorkspaces } from "@/lib/files-workspaces";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const workspaces = await listAvailableWorkspaces();

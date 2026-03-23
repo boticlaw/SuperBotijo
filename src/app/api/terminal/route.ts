@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { validateTerminalCommand } from "@/lib/terminal-command";
 
+export const dynamic = "force-dynamic";
+
 const execFileAsync = promisify(execFile);
 
 export async function POST(request: NextRequest) {

@@ -8,6 +8,8 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { safeExecFile } from '@/lib/safe-exec';
 
+export const dynamic = "force-dynamic";
+
 const OPENCLAW_DIR = process.env.OPENCLAW_DIR || '/home/daniel/.openclaw';
 
 interface RawSession {

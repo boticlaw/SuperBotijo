@@ -12,6 +12,8 @@ import path from "path";
 import fs from "fs";
 import Database from "better-sqlite3";
 
+export const dynamic = "force-dynamic";
+
 const DB_PATH = path.join(process.cwd(), "data", "usage-tracking.db");
 const BUDGET_PATH = path.join(process.cwd(), "data", "budget-settings.json");
 const DEFAULT_BUDGET = 100.0;

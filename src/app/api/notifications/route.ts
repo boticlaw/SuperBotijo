@@ -4,6 +4,8 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { rateLimiter } from '@/lib/rate-limiter';
 
+export const dynamic = "force-dynamic";
+
 const DATA_PATH = path.join(process.cwd(), 'data', 'notifications.json');
 
 export interface Notification {

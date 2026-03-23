@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgentById, pauseAgent, resumeAgent, unregisterAgent } from '@/operations/agent-ops';
 
+export const dynamic = "force-dynamic";
+
 // GET /api/agents/[id] - Get agent by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

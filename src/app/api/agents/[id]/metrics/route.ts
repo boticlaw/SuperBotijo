@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getActivities } from '@/lib/activities-db';
 import { getAgentMood } from '@/operations/agent-ops';
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: agentId } = await params;

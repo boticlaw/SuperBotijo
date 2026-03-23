@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { sessionStore } from "@/lib/session-store";
 import { validateBody, LoginSchema } from "@/lib/api-validation";
 
+export const dynamic = "force-dynamic";
+
 // Simple in-memory rate limiter (per-IP, resets on server restart)
 // Sufficient for a personal dashboard — no external dependency needed
 const MAX_ATTEMPTS = 5;

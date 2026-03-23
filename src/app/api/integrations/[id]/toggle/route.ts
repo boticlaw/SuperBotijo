@@ -5,6 +5,8 @@ import os from 'os';
 
 const OPENCLAW_CONFIG_PATH = path.join(os.homedir(), '.openclaw', 'openclaw.json');
 
+export const dynamic = "force-dynamic";
+
 interface OpenClawConfig {
   channels?: Record<string, { enabled?: boolean; name?: string }>;
   plugins?: {

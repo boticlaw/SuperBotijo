@@ -5,6 +5,8 @@ import os from "os";
 
 const execAsync = promisify(exec);
 
+export const dynamic = "force-dynamic";
+
 // Services monitored per backend
 // Auto-detect OpenClaw-related services
 const SYSTEMD_SERVICES = ["openclaw-gateway", "superbotijo"];

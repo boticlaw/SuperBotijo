@@ -7,6 +7,8 @@ const ALLOWED_PREFIXES = [
   path.join(process.env.OPENCLAW_DIR || "/root/.openclaw", "public", "models"),
 ];
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_EXTENSIONS: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",

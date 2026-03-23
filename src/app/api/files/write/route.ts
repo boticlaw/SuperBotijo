@@ -7,6 +7,8 @@ import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 import { validateBody, FileWriteSchema } from "@/lib/api-validation";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.json();

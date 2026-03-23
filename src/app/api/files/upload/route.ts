@@ -7,6 +7,8 @@ import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 import { validateFileExtension } from "@/lib/magic-bytes";
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "pdf", "txt", "md"];
 
 export async function POST(request: NextRequest) {

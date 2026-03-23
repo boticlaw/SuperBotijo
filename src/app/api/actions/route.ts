@@ -8,6 +8,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logActivity } from '@/lib/activities-db';
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 const WORKSPACE = process.env.OPENCLAW_DIR ? `${process.env.OPENCLAW_DIR}/workspace` : '/home/daniel/.openclaw/workspace';

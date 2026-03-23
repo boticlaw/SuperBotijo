@@ -5,6 +5,8 @@ import path from 'path';
 const WORKSPACE = process.env.OPENCLAW_WORKSPACE || '/home/daniel/.openclaw/workspace';
 const MEMORY_DIR = path.join(WORKSPACE, 'memory');
 
+export const dynamic = "force-dynamic";
+
 interface SearchResult {
   type: 'memory' | 'activity' | 'task';
   title: string;

@@ -5,6 +5,8 @@
  */
 import { NextResponse } from 'next/server';
 
+export const dynamic = "force-dynamic";
+
 // Cache weather data for 10 minutes
 let cache: { data: unknown; ts: number } | null = null;
 const CACHE_DURATION = 10 * 60 * 1000;

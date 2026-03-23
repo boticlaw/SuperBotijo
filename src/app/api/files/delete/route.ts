@@ -7,6 +7,8 @@ import { logActivity } from "@/lib/activities-db";
 import { resolveWorkspacePath } from "@/lib/files-workspaces";
 import { validateBody, FileDeleteSchema } from "@/lib/api-validation";
 
+export const dynamic = "force-dynamic";
+
 const PROTECTED = [
   "MEMORY.md", "SOUL.md", "USER.md", "AGENTS.md", "TOOLS.md",
   "package.json", "tsconfig.json", ".env", ".env.local",

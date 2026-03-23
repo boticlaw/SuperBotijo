@@ -6,6 +6,8 @@ import { NextRequest } from "next/server";
 import { spawn } from "child_process";
 import { safeExecFile } from "@/lib/safe-exec";
 
+export const dynamic = "force-dynamic";
+
 interface Pm2Process {
   name: string;
 }
