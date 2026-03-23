@@ -541,7 +541,7 @@ export default function SettingsClient({ initialSystemData }: SettingsClientProp
             <div className="flex items-center gap-2 mb-3">
               <Brain className="w-4 h-4" style={{ color: "var(--info)" }} />
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {t("about.philosophy")}
+                {t("about.philosophyTitle")}
               </h3>
             </div>
             <div className="grid md:grid-cols-2 gap-2">

@@ -866,7 +866,7 @@ export default function CronClient({ initialData }: { initialData: CronPageData 
       <ConfirmDialog
         isOpen={jobToDelete !== null}
         title={t("cron.deleteJob")}
-        message={t("cron.deleteConfirm", { name: jobToDelete?.name || "" })}
+        message={t("cron.confirmDelete", { name: jobToDelete?.name || "" })}
         confirmLabel={t("cron.delete")}
         cancelLabel={t("common.cancel")}
         variant="danger"
