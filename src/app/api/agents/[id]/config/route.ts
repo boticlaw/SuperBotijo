@@ -1,44 +1,41 @@
 /**
  * Agent Config API - Get/Update config for a specific agent
+ * Backed by SQLite for persistence across restarts
  */
-import { NextRequest, NextResponse } from 'next/server';
-import { getAgentById } from '@/operations/agent-ops';
+import { NextRequest, NextResponse } from "next/server";
+import { getAgentById } from "@/operations/agent-ops";
+import {
+  getAgentConfig,
+  setAgentConfig,
+  DEFAULT_CONFIG,
+  type AgentConfig,
+  type AgentConfigInput,
+} from "@/lib/agent-config-store";
 
-// In-memory config store (would be DB in production)
-const agentConfigs = new Map<string, Record<string, unknown>>();
-
-// Default config
-const DEFAULT_CONFIG = {
-  model: 'claude-sonnet-4-20250514',
-  temperature: 0.7,
-  maxTokens: 4096,
-  heartbeatInterval: 30,
-  autoStart: true,
-  logLevel: 'info',
-  skills: [],
-};
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: agentId } = await params;
-    
-    // Verify agent exists
+
     const agentResult = await getAgentById(agentId);
     if (!agentResult.success) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Get config
-    const config = agentConfigs.get(agentId) || {
+    const config = getAgentConfig(agentId);
+    const response: AgentConfig = config || {
+      agentId,
       ...DEFAULT_CONFIG,
       model: agentResult.data?.model || DEFAULT_CONFIG.model,
+      updatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json({ config });
+    return NextResponse.json({ config: response });
   } catch (error) {
-    console.error('[api/agents/[id]/config] GET error:', error);
+    console.error("[api/agents/[id]/config] GET error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to get config' },
+      { error: error instanceof Error ? error.message : "Failed to get config" },
       { status: 500 }
     );
   }
@@ -48,48 +45,40 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id: agentId } = await params;
     const body = await request.json();
-    
-    // Verify agent exists
+
     const agentResult = await getAgentById(agentId);
     if (!agentResult.success) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Get current config
-    const currentConfig = agentConfigs.get(agentId) || {
-      ...DEFAULT_CONFIG,
-      model: agentResult.data?.model || DEFAULT_CONFIG.model,
-    };
+    const updates: AgentConfigInput = {};
 
-    // Validate updates
-    const updates: Record<string, unknown> = {};
-    
     if (body.temperature !== undefined) {
       const temp = parseFloat(body.temperature);
-      if (isNaN(temp) || temp < 0 || temp > 2) {
-        return NextResponse.json({ error: 'Invalid temperature (0-2)' }, { status: 400 });
+      if (Number.isNaN(temp) || temp < 0 || temp > 2) {
+        return NextResponse.json({ error: "Invalid temperature (0-2)" }, { status: 400 });
       }
       updates.temperature = temp;
     }
 
     if (body.maxTokens !== undefined) {
-      const tokens = parseInt(body.maxTokens);
-      if (isNaN(tokens) || tokens < 1 || tokens > 100000) {
-        return NextResponse.json({ error: 'Invalid maxTokens (1-100000)' }, { status: 400 });
+      const tokens = parseInt(body.maxTokens, 10);
+      if (Number.isNaN(tokens) || tokens < 1 || tokens > 100000) {
+        return NextResponse.json({ error: "Invalid maxTokens (1-100000)" }, { status: 400 });
       }
       updates.maxTokens = tokens;
     }
 
     if (body.heartbeatInterval !== undefined) {
-      const interval = parseInt(body.heartbeatInterval);
-      if (isNaN(interval) || interval < 5 || interval > 3600) {
-        return NextResponse.json({ error: 'Invalid heartbeatInterval (5-3600 seconds)' }, { status: 400 });
+      const interval = parseInt(body.heartbeatInterval, 10);
+      if (Number.isNaN(interval) || interval < 5 || interval > 3600) {
+        return NextResponse.json({ error: "Invalid heartbeatInterval (5-3600 seconds)" }, { status: 400 });
       }
       updates.heartbeatInterval = interval;
     }
 
     if (body.model !== undefined) {
-      updates.model = body.model;
+      updates.model = String(body.model);
     }
 
     if (body.autoStart !== undefined) {
@@ -97,8 +86,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (body.logLevel !== undefined) {
-      if (!['debug', 'info', 'warn', 'error'].includes(body.logLevel)) {
-        return NextResponse.json({ error: 'Invalid logLevel' }, { status: 400 });
+      if (!["debug", "info", "warn", "error"].includes(body.logLevel)) {
+        return NextResponse.json({ error: "Invalid logLevel" }, { status: 400 });
       }
       updates.logLevel = body.logLevel;
     }
@@ -107,19 +96,46 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       updates.skills = Array.isArray(body.skills) ? body.skills : [];
     }
 
-    // Merge and save
-    const newConfig = { ...currentConfig, ...updates };
-    agentConfigs.set(agentId, newConfig);
+    const newConfig = setAgentConfig(agentId, updates);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       config: newConfig,
-      message: 'Config updated successfully',
+      message: "Config updated successfully",
     });
   } catch (error) {
-    console.error('[api/agents/[id]/config] PATCH error:', error);
+    console.error("[api/agents/[id]/config] PATCH error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update config' },
+      { error: error instanceof Error ? error.message : "Failed to update config" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id: agentId } = await params;
+
+    const agentResult = await getAgentById(agentId);
+    if (!agentResult.success) {
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    const { deleteAgentConfig } = await import("@/lib/agent-config-store");
+    const deleted = deleteAgentConfig(agentId);
+
+    if (!deleted) {
+      return NextResponse.json({ message: "No config to delete" }, { status: 200 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Config reset to defaults",
+    });
+  } catch (error) {
+    console.error("[api/agents/[id]/config] DELETE error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to delete config" },
       { status: 500 }
     );
   }
