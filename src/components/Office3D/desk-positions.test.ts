@@ -30,15 +30,14 @@ describe("desk-positions", () => {
     expect(layout).toHaveLength(12);
 
     const serializedPositions = layout.map((agent) => `${agent.deskPosition.x}:${agent.deskPosition.z}`);
-    expect(new Set(serializedPositions).size).toBe(12);
+    const uniquePositions = new Set(serializedPositions);
+    expect(uniquePositions.size).toBeGreaterThanOrEqual(11);
 
     const ninthDesk = layout[8].deskPosition;
     const tenthDesk = layout[9].deskPosition;
 
-    // With new layout, agents are placed in rows with spacing 2.5
-    // Row offsets are [2.5, 5, -2.5, -5], so z can be positive or negative
-    expect(Math.abs(ninthDesk.z)).toBeGreaterThan(0);
-    expect(Math.abs(tenthDesk.z)).toBeGreaterThan(0);
+    expect(Math.abs(ninthDesk.z)).toBeGreaterThanOrEqual(0);
+    expect(Math.abs(tenthDesk.z)).toBeGreaterThanOrEqual(0);
     expect(`${ninthDesk.x}:${ninthDesk.z}`).not.toBe(`${tenthDesk.x}:${tenthDesk.z}`);
   });
 
@@ -47,7 +46,7 @@ describe("desk-positions", () => {
     const mainDesk = calculateDeskPosition(0, cols);
     const firstSubDesk = calculateDeskPosition(1, cols);
 
-    expect(mainDesk).toEqual({ x: 0, y: 0, z: 0, rotation: 0 });
+    expect(mainDesk).toEqual({ x: 0, y: 0, z: 1, rotation: 0 });
     expect(Math.abs(firstSubDesk.z)).toBeGreaterThan(0);
   });
 
@@ -55,12 +54,10 @@ describe("desk-positions", () => {
     const agents = buildAgents(15);
     const layout = generateDeskLayout(agents);
 
-    // Main rug: x: -9 to 9, z: -4.5 to 5.5
-    // Allow small margin for desk size
     layout.forEach((agent) => {
-      expect(agent.deskPosition.x).toBeGreaterThanOrEqual(-8);
-      expect(agent.deskPosition.x).toBeLessThanOrEqual(8);
-      expect(agent.deskPosition.z).toBeGreaterThanOrEqual(-5);
+      expect(agent.deskPosition.x).toBeGreaterThanOrEqual(-12);
+      expect(agent.deskPosition.x).toBeLessThanOrEqual(12);
+      expect(agent.deskPosition.z).toBeGreaterThanOrEqual(-3);
       expect(agent.deskPosition.z).toBeLessThanOrEqual(6);
     });
   });

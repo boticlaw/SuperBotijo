@@ -239,9 +239,7 @@ This skill has an emoji in front matter.`;
 
   describe("workspace path detection", () => {
     it("detects workspace source when path contains /workspace", () => {
-      // Create a path that includes /workspace
-      const workspaceRoot = path.join(process.cwd(), "data-test-workspace");
-      const workspaceSkillPath = path.join(workspaceRoot, "skills", "my-skill");
+      const workspaceSkillPath = path.join(process.cwd(), "workspace", "skills", "my-skill");
       fs.mkdirSync(workspaceSkillPath, { recursive: true });
       fs.writeFileSync(
         path.join(workspaceSkillPath, "SKILL.md"),
@@ -251,11 +249,9 @@ This skill has an emoji in front matter.`;
       const result = parseSkill(workspaceSkillPath, "my-skill");
 
       expect(result).not.toBeNull();
-      // The source should be 'workspace' because the path contains '/workspace'
       expect(result?.source).toBe("workspace");
 
-      // Cleanup
-      fs.rmSync(workspaceRoot, { recursive: true });
+      fs.rmSync(path.join(process.cwd(), "workspace"), { recursive: true });
     });
   });
 });

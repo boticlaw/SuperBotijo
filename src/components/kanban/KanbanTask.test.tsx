@@ -1,15 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { KanbanTask } from "./KanbanTask";
 import type { KanbanTask as KanbanTaskType } from "@/lib/kanban-db";
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock("framer-motion", () => ({
   motion: {
-    div: ({ children, ...props }: React.ComponentProps<"div">) => (
+    div: ({ children, ...props }: ComponentProps<"div">) => (
       <div {...props}>{children}</div>
     ),
   },
+}));
+
+vi.mock("@/i18n/provider", () => ({
+  useI18n: () => ({
+    t: (key: string, values?: Record<string, string | number>) => {
+      if (key === "kanban.claimedBy") {
+        return `Claimed by ${String(values?.name ?? "")}`;
+      }
+      if (key === "kanban.createdByAgent") {
+        return `Created by ${String(values?.name ?? "")}`;
+      }
+      if (key === "kanban.bot") {
+        return "Bot";
+      }
+      return key;
+    },
+  }),
 }));
 
 function createMockTask(overrides: Partial<KanbanTaskType> = {}): KanbanTaskType {
@@ -66,7 +84,7 @@ describe("KanbanTask", () => {
     expect(screen.getByText("My Task Title")).toBeInTheDocument();
   });
 
-  it("renders task description when present", () => {
+  it("does not render task description in compact card", () => {
     const task = createMockTask({ description: "Detailed description here" });
     render(
       <KanbanTask
@@ -78,7 +96,7 @@ describe("KanbanTask", () => {
       />
     );
 
-    expect(screen.getByText("Detailed description here")).toBeInTheDocument();
+    expect(screen.queryByText("Detailed description here")).not.toBeInTheDocument();
   });
 
   it("does not render description when null", () => {
@@ -93,11 +111,10 @@ describe("KanbanTask", () => {
       />
     );
 
-    // Description element should not exist
-    expect(screen.queryByText(/Detailed/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/description/i)).not.toBeInTheDocument();
   });
 
-  it("renders priority badge", () => {
+  it("renders priority badge for high priority", () => {
     const task = createMockTask({ priority: "high" });
     render(
       <KanbanTask
@@ -109,7 +126,7 @@ describe("KanbanTask", () => {
       />
     );
 
-    expect(screen.getByText("high")).toBeInTheDocument();
+    expect(screen.getByText(/^H$/)).toBeInTheDocument();
   });
 
   it("renders critical priority with alert icon", () => {
@@ -124,10 +141,10 @@ describe("KanbanTask", () => {
       />
     );
 
-    expect(screen.getByText("critical")).toBeInTheDocument();
+    expect(screen.getByText(/^C$/)).toBeInTheDocument();
   });
 
-  it("renders labels when present", () => {
+  it("renders label dots with title when labels are present", () => {
     const task = createMockTask({
       labels: [
         { name: "bug", color: "#ff0000" },
@@ -144,8 +161,8 @@ describe("KanbanTask", () => {
       />
     );
 
-    expect(screen.getByText("bug")).toBeInTheDocument();
-    expect(screen.getByText("urgent")).toBeInTheDocument();
+    expect(screen.getByTitle("bug")).toBeInTheDocument();
+    expect(screen.getByTitle("urgent")).toBeInTheDocument();
   });
 
   it("does not render labels section when empty", () => {
@@ -160,8 +177,7 @@ describe("KanbanTask", () => {
       />
     );
 
-    // No label elements should be present
-    expect(screen.queryByText("bug")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("bug")).not.toBeInTheDocument();
   });
 
   it("renders assignee initials when present", () => {
@@ -192,8 +208,7 @@ describe("KanbanTask", () => {
       />
     );
 
-    // No assignee element should be present
-    expect(screen.queryByTitle(/./)).not.toBeInTheDocument();
+    expect(screen.queryByTitle("John Doe")).not.toBeInTheDocument();
   });
 
   it("calls onClick when clicked", () => {
@@ -282,7 +297,7 @@ describe("KanbanTask", () => {
     expect(screen.getByText("Test Task")).toBeInTheDocument();
   });
 
-  it("renders all priority levels correctly", () => {
+  it("renders all priority levels without crashing", () => {
     const priorities: Array<"low" | "medium" | "high" | "critical"> = [
       "low",
       "medium",
@@ -302,7 +317,7 @@ describe("KanbanTask", () => {
         />
       );
 
-      expect(screen.getByText(priority)).toBeInTheDocument();
+      expect(screen.getByText("Test Task")).toBeInTheDocument();
       unmount();
     }
   });

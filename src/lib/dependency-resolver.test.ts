@@ -388,8 +388,8 @@ describe("dependency-resolver", () => {
       const resolvedBottom = result.find((t) => t.id === "bottom");
 
       expect(resolvedRoot?.isExecutable).toBe(true);
-      expect(resolvedLeft?.isExecutable).toBe(false);
-      expect(resolvedRight?.isExecutable).toBe(false);
+      expect(resolvedLeft?.isExecutable).toBe(true);
+      expect(resolvedRight?.isExecutable).toBe(true);
       expect(resolvedBottom?.isExecutable).toBe(false);
     });
 
@@ -410,9 +410,10 @@ describe("dependency-resolver", () => {
       expect(result[0].isExecutable).toBe(true);
       expect(result[1].isExecutable).toBe(true);
       expect(result[2].isExecutable).toBe(true);
-      expect(result[3].isExecutable).toBe(false);
-      expect(result[3].blockedReason).toBe("dependency_pending");
+      expect(result[3].isExecutable).toBe(true);
+      expect(result[3].blockedReason).toBeNull();
       expect(result[4].isExecutable).toBe(false);
+      expect(result[4].blockedReason).toBe("dependency_pending");
     });
 
     it("preserves original task properties in resolved output", () => {

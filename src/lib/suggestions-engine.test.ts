@@ -63,6 +63,10 @@ describe("suggestions-engine", () => {
         cronHealth: [],
         skillUsage: [],
         heartbeatFrequency: 60000,
+        memoryStats: { totalFiles: 2, totalSize: 10240, lastMemoryDate: new Date().toISOString(), memoryAgeDays: 0 },
+        fileStats: { totalFiles: 0, totalSize: 0, workspaceCount: 0, lastModified: null },
+        kanbanStats: { totalTasks: 0, tasksByStatus: {}, overdueTasks: 0, unassignedTasks: 0 },
+        agentStats: { totalAgents: 1, agentsWithHeartbeat: 1, agentsWithIdentity: 1, agentsWithoutIdentity: 0 },
       };
 
       const suggestions = generateSuggestions(data);

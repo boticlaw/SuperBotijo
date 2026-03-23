@@ -70,7 +70,13 @@ export function KanbanTask({ task, onClick, onDragStart, onDragEnd, isDragging }
   }
 
   // Build metadata indicators for the compact view
-  const hasMetadata = task.claimedBy || task.executionStatus || task.labels.length > 0 || task.domain;
+  const hasMetadata =
+    task.claimedBy ||
+    task.executionStatus ||
+    task.labels.length > 0 ||
+    task.domain ||
+    task.priority === "high" ||
+    task.priority === "critical";
 
   return (
     <div
