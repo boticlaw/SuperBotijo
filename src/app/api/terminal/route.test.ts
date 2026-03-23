@@ -27,6 +27,31 @@ describe("/api/terminal POST", () => {
     expect(response.status).toBe(400);
   });
 
+  it("rejects ampersand chaining payload", async () => {
+    const response = await POST(createRequest("ls & id"));
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects multiline payload", async () => {
+    const response = await POST(createRequest("ls\nid"));
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects pipe payload", async () => {
+    const response = await POST(createRequest("ls | wc -l"));
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects backtick payload", async () => {
+    const response = await POST(createRequest("echo `id`"));
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects redirect payload", async () => {
+    const response = await POST(createRequest("ls > /tmp/output"));
+    expect(response.status).toBe(400);
+  });
+
   it("rejects command substitution payloads", async () => {
     const response = await POST(createRequest("echo $(id)"));
     expect(response.status).toBe(400);
@@ -35,5 +60,15 @@ describe("/api/terminal POST", () => {
   it("rejects non-allowlisted base command", async () => {
     const response = await POST(createRequest("node -e \"console.log(1)\""));
     expect(response.status).toBe(403);
+  });
+
+  it("rejects non-allowlisted flag for allowed command", async () => {
+    const response = await POST(createRequest("ls --color=always"));
+    expect(response.status).toBe(403);
+  });
+
+  it("executes allowlisted command with allowlisted flags", async () => {
+    const response = await POST(createRequest("ls -la"));
+    expect(response.status).toBe(200);
   });
 });
