@@ -1,11 +1,6 @@
-import fs from "fs";
-import path from "path";
-
 import { NextResponse } from "next/server";
 
-import { getSystemData } from "@/operations/system-ops";
-
-const ENV_LOCAL_PATH = path.join(process.cwd(), ".env.local");
+import { changePassword, clearActivityLog, getSystemData } from "@/operations/system-ops";
 
 export const dynamic = "force-dynamic";
 
@@ -25,31 +20,18 @@ export async function POST(request: Request) {
 
     if (action === "change_password") {
       const { currentPassword, newPassword } = data;
+      const result = changePassword(currentPassword, newPassword);
 
-      let envContent = "";
-      try {
-        envContent = fs.readFileSync(ENV_LOCAL_PATH, "utf-8");
-      } catch {
-        return NextResponse.json({ error: "Could not read configuration" }, { status: 500 });
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 401 });
       }
 
-      const currentPassMatch = envContent.match(/ADMIN_PASSWORD=(.+)/);
-      const storedPassword = currentPassMatch?.[1]?.trim();
-
-      if (storedPassword !== currentPassword) {
-        return NextResponse.json({ error: "Current password is incorrect" }, { status: 401 });
-      }
-
-      const newEnvContent = envContent.replace(/ADMIN_PASSWORD=.*/, `ADMIN_PASSWORD=${newPassword}`);
-      fs.writeFileSync(ENV_LOCAL_PATH, newEnvContent);
-
-      return NextResponse.json({ success: true, message: "Password updated successfully" });
+      return NextResponse.json({ success: true, message: result.message });
     }
 
     if (action === "clear_activity_log") {
-      const activitiesPath = path.join(process.cwd(), "data", "activities.json");
-      fs.writeFileSync(activitiesPath, "[]");
-      return NextResponse.json({ success: true, message: "Activity log cleared" });
+      const result = clearActivityLog();
+      return NextResponse.json({ success: true, message: result.message });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

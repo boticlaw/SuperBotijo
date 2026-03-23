@@ -6,6 +6,8 @@ import os from "os";
 
 import { OPENCLAW_WORKSPACE, WORKSPACE_IDENTITY } from "@/lib/paths";
 
+const ENV_LOCAL_PATH = path.join(process.cwd(), ".env.local");
+
 const WORKSPACE_PATH = OPENCLAW_WORKSPACE;
 const IDENTITY_PATH = WORKSPACE_IDENTITY;
 
@@ -194,6 +196,44 @@ function formatUptime(seconds: number): string {
   if (parts.length === 0) parts.push(`${Math.floor(seconds)}s`);
 
   return parts.join(" ");
+}
+
+export interface ChangePasswordResult {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+export interface ClearActivityLogResult {
+  success: boolean;
+  message: string;
+}
+
+export function changePassword(currentPassword: string, newPassword: string): ChangePasswordResult {
+  let envContent: string;
+  try {
+    envContent = fs.readFileSync(ENV_LOCAL_PATH, "utf-8");
+  } catch {
+    return { success: false, message: "", error: "Could not read configuration" };
+  }
+
+  const currentPassMatch = envContent.match(/ADMIN_PASSWORD=(.+)/);
+  const storedPassword = currentPassMatch?.[1]?.trim();
+
+  if (storedPassword !== currentPassword) {
+    return { success: false, message: "", error: "Current password is incorrect" };
+  }
+
+  const newEnvContent = envContent.replace(/ADMIN_PASSWORD=.*/, `ADMIN_PASSWORD=${newPassword}`);
+  fs.writeFileSync(ENV_LOCAL_PATH, newEnvContent);
+
+  return { success: true, message: "Password updated successfully" };
+}
+
+export function clearActivityLog(): ClearActivityLogResult {
+  const activitiesPath = path.join(process.cwd(), "data", "activities.json");
+  fs.writeFileSync(activitiesPath, "[]");
+  return { success: true, message: "Activity log cleared" };
 }
 
 export async function getSystemData(): Promise<SystemData> {
