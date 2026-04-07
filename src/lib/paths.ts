@@ -10,6 +10,8 @@ export const OPENCLAW_WORKSPACE = process.env.OPENCLAW_WORKSPACE || path.join(OP
 export const OPENCLAW_CONFIG = path.join(OPENCLAW_DIR, 'openclaw.json');
 export const OPENCLAW_MEDIA = path.join(OPENCLAW_DIR, 'media');
 
+export const LCM_DB_PATH = process.env.LCM_DATABASE_PATH || path.join(OPENCLAW_DIR, 'lcm.db');
+
 export const WORKSPACE_IDENTITY = path.join(OPENCLAW_WORKSPACE, 'IDENTITY.md');
 export const WORKSPACE_TOOLS = path.join(OPENCLAW_WORKSPACE, 'TOOLS.md');
 export const WORKSPACE_MEMORY = path.join(OPENCLAW_WORKSPACE, 'memory');

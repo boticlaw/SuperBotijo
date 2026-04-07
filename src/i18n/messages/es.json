@@ -420,7 +420,45 @@
     "selectFile": "Seleccioná un archivo",
     "selectWorkspace": "Seleccioná un workspace",
     "noEntities": "No se encontraron entidades en memoria",
-    "runAgentToPopulate": "Ejecutá el agente para poblar la memoria"
+    "runAgentToPopulate": "Ejecutá el agente para poblar la memoria",
+    "lcm": {
+      "tabLabel": "Memoria LCM",
+      "conversations": {
+        "title": "Conversaciones",
+        "empty": "No se encontraron conversaciones",
+        "messageCount": "{count} mensajes",
+        "active": "Activa",
+        "archived": "Archivada"
+      },
+      "messages": {
+        "loadMore": "Cargar más mensajes",
+        "loading": "Cargando mensajes...",
+        "empty": "No hay mensajes en esta conversación",
+        "role": {
+          "system": "Sistema",
+          "user": "Usuario",
+          "assistant": "Asistente",
+          "tool": "Herramienta"
+        }
+      },
+      "summaries": {
+        "title": "Resúmenes",
+        "empty": "No hay resúmenes disponibles",
+        "depth": "Profundidad {depth}",
+        "descendants": "{count} descendientes"
+      },
+      "search": {
+        "placeholder": "Buscar conversaciones...",
+        "noResults": "No se encontraron resultados",
+        "resultsCount": "{count} resultados",
+        "messageResult": "Mensaje en {conversation}",
+        "summaryResult": "Resumen en {conversation}"
+      },
+      "status": {
+        "unavailable": "Memoria LCM no disponible",
+        "loading": "Cargando..."
+      }
+    }
   },
   "terminal": {
     "title": "Terminal del Navegador",

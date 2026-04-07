@@ -40,7 +40,7 @@ A real-time dashboard and control center for [OpenClaw](https://openclaw.ai) AI 
 
 | Feature | Description |
 |---------|-------------|
-| **Memory Browser** | Edit MEMORY.md with live preview, word cloud |
+| **Memory Browser** | Edit MEMORY.md with live preview, word cloud, LCM Memory tab (lossless-claw) |
 | **File Browser** | Navigate workspaces with 2D/3D visualization, PDF viewer with fullscreen |
 | **Global Search** | Full-text search across memory and workspace files |
 | **Git Dashboard** | Repository status, branch info, quick actions |
@@ -374,7 +374,7 @@ superbotijo/
 | `/sessions` | Sessions | Session history & transcripts |
 | `/chat` | Chat | Direct chat with agents via gateway streaming |
 | `/analytics` | Analytics | Charts, costs, efficiency metrics |
-| `/memory` | Memory | Knowledge base editor |
+| `/memory` | Memory | Knowledge base editor + LCM Memory (lossless-claw) |
 | `/files` | Files | File browser (2D/3D) |
 | `/system` | System | Hardware & services monitor |
 | `/cron` | Cron | Job scheduler |
@@ -524,6 +524,7 @@ Compared to the original TenecitOS:
 | **Cron Redesign** | Modern cron view with scheduled tasks timeline |
 | **OpenClaw Agents API** | Auto-detect and sync agents to projects |
 | **Agent Kanban Integration** | Full REST API for agents to create/claim/update tasks |
+| **LCM Memory** | lossless-claw conversation browser with DAG view and FTS5 search |
 
 ---
 
@@ -632,6 +633,38 @@ If no tasks: respond with HEARTBEAT_OK
 
 ---
 
+## 🧠 lossless-claw LCM Memory
+
+[lossless-claw](https://github.com/martian-engineering/lossless-claw) is a plugin that adds Lossless Context Management (LCM) to OpenClaw. SuperBotijo detects it automatically and adds an **LCM Memory** tab to the Memory Browser alongside the existing Editor and Word Cloud tabs.
+
+### What You See
+
+- **Conversations** — browsable list of all LCM-tracked sessions
+- **Messages** — conversation threads with role-based styling (user, assistant, system)
+- **Summary DAG** — directed acyclic graph showing how summaries chain together
+- **FTS5 Search** — full-text search across all LCM messages and summaries
+
+### Requirements
+
+- [lossless-claw](https://github.com/martian-engineering/lossless-claw) plugin installed
+- Plugin enabled in `openclaw.json`
+- `lcm.db` SQLite database present in the agent workspace
+
+### Setup
+
+No configuration needed in SuperBotijo. Just install and enable lossless-claw:
+
+```bash
+# Install lossless-claw (see their repo for details)
+# https://github.com/martian-engineering/lossless-claw
+```
+
+Then enable it in `openclaw.json`. SuperBotijo auto-detects the plugin and database on next page load.
+
+LCM Memory is fully compatible with the standard MEMORY.md editor — both work side by side without conflicts.
+
+---
+
 ---
 
 ## Documentation i18n Sync
@@ -717,5 +750,6 @@ MIT — see [LICENSE](./LICENSE)
 - [TenecitOS](https://github.com/carlosazaustre/tenecitOS) — Original project
 - [OpenClaw](https://openclaw.ai) — AI agent runtime
 - [OpenClaw Docs](https://docs.openclaw.ai)
+- [lossless-claw](https://github.com/martian-engineering/lossless-claw) — LCM plugin for OpenClaw
 - [Discord Community](https://discord.com/invite/clawd)
 - [GitHub Issues](../../issues)

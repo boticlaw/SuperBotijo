@@ -420,7 +420,45 @@
     "selectFile": "Select a file",
     "selectWorkspace": "Select a workspace",
     "noEntities": "No entities found in memory",
-    "runAgentToPopulate": "Run the agent to populate memory"
+    "runAgentToPopulate": "Run the agent to populate memory",
+    "lcm": {
+      "tabLabel": "LCM Memory",
+      "conversations": {
+        "title": "Conversations",
+        "empty": "No conversations found",
+        "messageCount": "{count} messages",
+        "active": "Active",
+        "archived": "Archived"
+      },
+      "messages": {
+        "loadMore": "Load more messages",
+        "loading": "Loading messages...",
+        "empty": "No messages in this conversation",
+        "role": {
+          "system": "System",
+          "user": "User",
+          "assistant": "Assistant",
+          "tool": "Tool"
+        }
+      },
+      "summaries": {
+        "title": "Summaries",
+        "empty": "No summaries available",
+        "depth": "Depth {depth}",
+        "descendants": "{count} descendants"
+      },
+      "search": {
+        "placeholder": "Search conversations...",
+        "noResults": "No results found",
+        "resultsCount": "{count} results",
+        "messageResult": "Message in {conversation}",
+        "summaryResult": "Summary in {conversation}"
+      },
+      "status": {
+        "unavailable": "LCM Memory is not available",
+        "loading": "Loading..."
+      }
+    }
   },
   "terminal": {
     "title": "Browser Terminal",

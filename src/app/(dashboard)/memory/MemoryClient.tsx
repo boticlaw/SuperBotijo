@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Eye, Edit3, RefreshCw, Brain, Cloud } from "lucide-react";
+import { Eye, Edit3, RefreshCw, Brain, Cloud, Layers } from "lucide-react";
 import { FileTree, FileNode } from "@/components/FileTree";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
 import { MemoryWordCloud } from "@/components/MemoryWordCloud";
+import { LcmMemoryTab } from "@/components/LcmMemoryTab";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useI18n } from "@/i18n/provider";
 import type { WordFrequency } from "@/app/api/memories/word-cloud/route";
 
-type MainTab = "editor" | "wordcloud";
+type MainTab = "editor" | "wordcloud" | "lcm";
 type ViewMode = "edit" | "preview";
 
 export interface Workspace {
@@ -23,8 +24,10 @@ export interface Workspace {
 
 export default function MemoryClient({
   initialWorkspaces,
+  lcmAvailable,
 }: {
   initialWorkspaces: Workspace[];
+  lcmAvailable?: boolean;
 }) {
   const { t } = useI18n();
   const [mainTab, setMainTab] = useState<MainTab>("editor");
@@ -228,12 +231,35 @@ export default function MemoryClient({
               <Cloud size={14} />
               Word Cloud
             </button>
+            {lcmAvailable && (
+              <button
+                onClick={() => setMainTab("lcm")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 14px",
+                  borderRadius: "6px",
+                  backgroundColor: mainTab === "lcm" ? "var(--accent)" : "transparent",
+                  color: mainTab === "lcm" ? "var(--bg)" : "var(--text-secondary)",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                }}
+              >
+                <Layers size={14} />
+                {t("memory.lcm.tabLabel")}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, borderTop: "1px solid var(--border)" }}>
-        {mainTab === "editor" ? (
+        {mainTab === "lcm" ? (
+          <LcmMemoryTab lcmAvailable={lcmAvailable ?? false} />
+        ) : mainTab === "editor" ? (
           <div style={{ display: "flex", height: "100%" }}>
             <aside
               style={{
