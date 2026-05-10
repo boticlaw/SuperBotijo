@@ -106,13 +106,13 @@ function validateSnapshot(snapshot: DashboardTelemetryResponse): void {
   }
 }
 
-function buildDashboardTelemetrySnapshot(
+async function buildDashboardTelemetrySnapshot(
   deps: DashboardSnapshotDependencies,
-): DashboardTelemetryResponse {
+): Promise<DashboardTelemetryResponse> {
   const snapshotAt = deps.now();
   const agentSource = deps.getAgentsConfigTelemetry();
   const activitySource = deps.getActivitiesTelemetrySummary();
-  const sessionsSource = deps.getOpenClawSessionsTelemetry();
+  const sessionsSource = await deps.getOpenClawSessionsTelemetry();
 
   const dedupedAgents = dedupeAgentIdentities(agentSource.agents);
   const sessionsByAgent = createSessionLookup(sessionsSource.sessions);
@@ -153,10 +153,10 @@ function buildDashboardTelemetrySnapshot(
   return snapshot;
 }
 
-export function getDashboardTelemetrySnapshot(
+export async function getDashboardTelemetrySnapshot(
   overrides: Partial<DashboardSnapshotDependencies> = {},
-): DashboardTelemetryResponse {
-  const snapshot = buildDashboardTelemetrySnapshot({
+): Promise<DashboardTelemetryResponse> {
+  const snapshot = await buildDashboardTelemetrySnapshot({
     now: () => new Date(),
     stalenessThresholdSec: DEFAULT_STALENESS_THRESHOLD_SEC,
     getAgentsConfigTelemetry,

@@ -23,8 +23,8 @@ interface StatusResponse {
  * normalized telemetry snapshot to keep status semantics aligned.
  * If the snapshot fails, fallback to legacy status computation.
  */
-function getStatusEntriesFromTelemetry(): AgentStatusEntry[] {
-  const snapshot = getDashboardTelemetrySnapshot();
+async function getStatusEntriesFromTelemetry(): Promise<AgentStatusEntry[]> {
+  const snapshot = await getDashboardTelemetrySnapshot();
 
   return snapshot.agents.map((agent) => ({
     id: agent.id,
@@ -43,7 +43,7 @@ async function computeAgentStatus(): Promise<StatusResponse> {
     try {
       statusResult = {
         success: true,
-        data: getStatusEntriesFromTelemetry(),
+        data: await getStatusEntriesFromTelemetry(),
       };
     } catch (telemetryError) {
       console.warn("[api/agents/status] telemetry proxy failed, falling back to legacy status", {

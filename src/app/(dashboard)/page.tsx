@@ -83,7 +83,7 @@ async function getLegacyTelemetry(): Promise<DashboardTelemetryResponse> {
 async function getInitialTelemetry(): Promise<DashboardTelemetryResponse> {
   if (isRealTelemetryEnabled()) {
     try {
-      return getDashboardTelemetrySnapshot();
+      return await getDashboardTelemetrySnapshot();
     } catch (error) {
       console.error("[Dashboard] Failed to get telemetry snapshot, falling back to legacy:", error);
       return getLegacyTelemetry();

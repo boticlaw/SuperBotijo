@@ -12,7 +12,7 @@ function encodeSSE(data: SSEMessage): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const encoder = new TextEncoder();
   let lastCheck = Date.now();
   let closed = false;
@@ -74,18 +74,34 @@ export async function GET() {
         try {
           controller.enqueue(encoder.encode(encodeSSE({ type: "ping" })));
         } catch {
-          // Stream closed
+          closed = true;
+          clearInterval(keepalive);
+          clearInterval(interval);
         }
       }, 15000);
 
-      // Cleanup on close
+      const maxDuration = setTimeout(() => {
+        closed = true;
+        clearInterval(interval);
+        clearInterval(keepalive);
+        try { controller.close(); } catch {}
+      }, 30 * 60 * 1000);
+
       const cleanup = () => {
         closed = true;
         clearInterval(interval);
         clearInterval(keepalive);
+        clearTimeout(maxDuration);
       };
 
-      // Handle abort signal
+      request.signal?.addEventListener("abort", () => {
+        closed = true;
+        clearInterval(interval);
+        clearInterval(keepalive);
+        clearTimeout(maxDuration);
+        try { controller.close(); } catch {}
+      });
+
       return cleanup;
     },
 

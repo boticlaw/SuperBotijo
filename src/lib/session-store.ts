@@ -23,6 +23,7 @@ interface SessionPayload {
 }
 
 const revokedTokens = new Set<string>();
+const revocationTimestamps = new Map<string, number>();
 
 function base64UrlEncode(str: string): string {
   if (typeof globalThis !== "undefined" && globalThis.Buffer) {
@@ -206,6 +207,7 @@ class SessionStore {
       const payload: SessionPayload = JSON.parse(base64UrlDecode(parts[0]));
       if (payload.jti) {
         revokedTokens.add(payload.jti);
+        revocationTimestamps.set(payload.jti, Date.now());
       }
     } catch {
       // Invalid token format — nothing to revoke
@@ -220,8 +222,13 @@ class SessionStore {
    * based on max TTL.
    */
   cleanup(): void {
-    // No-op for in-memory revocation without expiration tracking
-    // In production, implement periodic cleanup of old JTIs
+    const now = Date.now();
+    for (const [jti, timestamp] of revocationTimestamps.entries()) {
+      if (now - timestamp >= DEFAULT_TTL_MS) {
+        revokedTokens.delete(jti);
+        revocationTimestamps.delete(jti);
+      }
+    }
   }
 
   /**
@@ -236,6 +243,7 @@ class SessionStore {
    */
   clearRevoked(): void {
     revokedTokens.clear();
+    revocationTimestamps.clear();
   }
 }
 

@@ -109,20 +109,7 @@ export function useActivityStream(options: UseActivityStreamOptions = {}): UseAc
 
       reconnectTimeoutRef.current = setTimeout(() => {
         setError("Reconnecting...");
-        // Reconnect by triggering a new connection
-        if (enabled && !eventSourceRef.current) {
-          const newEventSource = new EventSource("/api/activities/stream");
-          eventSourceRef.current = newEventSource;
-          
-          newEventSource.onopen = () => {
-            setIsConnected(true);
-            setError(null);
-            onConnectRef.current?.();
-          };
-          
-          newEventSource.onmessage = eventSource.onmessage;
-          newEventSource.onerror = eventSource.onerror;
-        }
+        connect();
       }, 3000);
     };
   }, [enabled]);

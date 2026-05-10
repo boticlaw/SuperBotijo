@@ -229,6 +229,11 @@ export async function runCronJob(id: string): Promise<OperationResult<CronRun>> 
     }
     cronRuns.get(id)!.unshift(run);
 
+    const runs = cronRuns.get(id)!;
+    if (runs.length > 50) {
+      runs.splice(50);
+    }
+
     try {
       // Execute the command
       const { stdout, stderr } = await execAsync(job.command, {

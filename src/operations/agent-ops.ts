@@ -17,7 +17,7 @@ import {
   setPersistedStatusOverride,
 } from "@/lib/agent-state-store";
 import { getOpenClawSessionsTelemetry } from "@/lib/telemetry/sources/openclaw-sessions";
-import { createCache } from "@/lib/cache";
+import { createAsyncCache } from "@/lib/cache";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -114,11 +114,11 @@ interface SessionFreshness {
   freshSessions: number;
 }
 
-function loadSessionFreshnessByAgent(): Map<string, SessionFreshness> {
+async function loadSessionFreshnessByAgent(): Promise<Map<string, SessionFreshness>> {
   const freshnessByAgent = new Map<string, SessionFreshness>();
 
   try {
-    const sessionsSource = getOpenClawSessionsTelemetry();
+    const sessionsSource = await getOpenClawSessionsTelemetry();
 
     if (sessionsSource.degraded.length > 0) {
       console.warn(
@@ -144,7 +144,7 @@ function loadSessionFreshnessByAgent(): Map<string, SessionFreshness> {
  * Cached session freshness with 10-second TTL.
  * Avoids spawning the `openclaw sessions` CLI subprocess on every request.
  */
-const cachedSessionFreshness = createCache<Map<string, SessionFreshness>>({
+const cachedSessionFreshness = createAsyncCache<Map<string, SessionFreshness>>({
   ttlMs: 10_000,
   compute: loadSessionFreshnessByAgent,
 });
@@ -404,7 +404,7 @@ export async function getAgentStatusList(): Promise<OperationResult<AgentStatusE
     const allAgents = Array.from(agentsById.values());
     const activitiesResult = getActivities({ limit: 1000, sort: "newest" });
     const recentActivities = activitiesResult.activities;
-    const sessionFreshnessByAgent = cachedSessionFreshness.get();
+    const sessionFreshnessByAgent = await cachedSessionFreshness.get();
 
     console.log(`[agent-ops] getAgentStatusList: ${allAgents.length} agents loaded, ${recentActivities.length} activities found`);
     console.log(`[agent-ops] Agent IDs from config:`, allAgents.map(a => a.id));

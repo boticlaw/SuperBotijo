@@ -83,7 +83,7 @@ describe("getOpenClawSessionsTelemetry", () => {
     );
 
     let cliCalled = false;
-    const result = getOpenClawSessionsTelemetry(() => {
+    const result = await getOpenClawSessionsTelemetry(async () => {
       cliCalled = true;
       return JSON.stringify({ sessions: [] });
     });
@@ -105,7 +105,7 @@ describe("getOpenClawSessionsTelemetry", () => {
     });
 
     const now = Date.now();
-    const result = getOpenClawSessionsTelemetry(() => {
+    const result = await getOpenClawSessionsTelemetry(async () => {
       return JSON.stringify({
         sessions: [
           { key: "agent:main:cron:heartbeat", updatedAt: now - 5000, ageMs: 5000 },
@@ -120,7 +120,7 @@ describe("getOpenClawSessionsTelemetry", () => {
   it("returns timeout degradation when CLI times out", () => {
     mockFs.existsSync.mockReturnValue(false);
 
-    const result = getOpenClawSessionsTelemetry(() => {
+    const result = await getOpenClawSessionsTelemetry(async () => {
       throw new Error("Command timed out after 10000ms");
     });
 

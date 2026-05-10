@@ -1,4 +1,5 @@
-import { execFileSync } from "child_process";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 
@@ -14,6 +15,8 @@ const OPENCLAW_EXECUTABLE = "openclaw";
 const OPENCLAW_SESSIONS_ARGS = ["sessions", "--all-agents", "--json"] as const;
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const OPENCLAW_SESSIONS_TIMEOUT_MS = Number(process.env.OPENCLAW_SESSIONS_TIMEOUT_MS ?? "20000");
+
+const execFileAsync = promisify(execFile);
 
 interface OpenClawSession {
   key: string;
@@ -34,7 +37,7 @@ type SessionRunner = (
   file: string,
   args: readonly string[],
   options: SessionRunnerOptions,
-) => string;
+) => Promise<string>;
 
 export interface OpenClawSessionsSourceResult {
   sessions: AgentSessionTelemetry[];
@@ -134,9 +137,9 @@ export function parseOpenClawSessionsOutput(rawOutput: string): AgentSessionTele
   return aggregateSessionsByAgent(normalized);
 }
 
-function getOpenClawSessionsCliTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
+async function getOpenClawSessionsCliTelemetry(runCommand: SessionRunner = async (...a) => (await execFileAsync(...a)).stdout): Promise<OpenClawSessionsSourceResult> {
   try {
-    const output = runCommand(OPENCLAW_EXECUTABLE, OPENCLAW_SESSIONS_ARGS, {
+    const output = await runCommand(OPENCLAW_EXECUTABLE, OPENCLAW_SESSIONS_ARGS, {
       timeout: OPENCLAW_SESSIONS_TIMEOUT_MS,
       encoding: "utf-8",
     });
@@ -259,7 +262,7 @@ function getStoreSourceTelemetry(): OpenClawSessionsSourceResult {
   };
 }
 
-export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFileSync): OpenClawSessionsSourceResult {
+export async function getOpenClawSessionsTelemetry(runCommand: SessionRunner = async (...a) => (await execFileAsync(...a)).stdout): Promise<OpenClawSessionsSourceResult> {
   const storeResult = getStoreSourceTelemetry();
 
   const hasUsableData = storeResult.sessions.length > 0 || storeResult.degraded.length === 0;
@@ -268,7 +271,7 @@ export function getOpenClawSessionsTelemetry(runCommand: SessionRunner = execFil
     return storeResult;
   }
 
-  const cliResult = getOpenClawSessionsCliTelemetry(runCommand);
+  const cliResult = await getOpenClawSessionsCliTelemetry(runCommand);
 
   const allDegradations: TelemetryDegradation[] = [
     ...storeResult.degraded,

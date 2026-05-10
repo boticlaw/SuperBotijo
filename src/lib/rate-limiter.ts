@@ -20,6 +20,9 @@ class SlidingWindowRateLimiter {
 
     if (!entry) {
       this.store.set(identifier, { count: 1, windowStart: now });
+      if (this.store.size > 1000) {
+        this.cleanup();
+      }
       return {
         allowed: true,
         remaining: this.maxRequests - 1,

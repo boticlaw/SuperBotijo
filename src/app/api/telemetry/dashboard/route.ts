@@ -52,7 +52,7 @@ async function getCachedDashboardSnapshot(): Promise<DashboardTelemetryResponse>
     return snapshotCache.inFlight;
   }
 
-  snapshotCache.inFlight = Promise.resolve().then(() => getDashboardTelemetrySnapshot());
+  snapshotCache.inFlight = getDashboardTelemetrySnapshot();
 
   try {
     const snapshot = await snapshotCache.inFlight;

@@ -119,6 +119,14 @@ export async function createNotification(
 
     notifications.set(id, notification);
 
+    if (notifications.size > 200) {
+      const entries = [...notifications.entries()].sort((a, b) =>
+        new Date(a[1].timestamp).getTime() - new Date(b[1].timestamp).getTime()
+      );
+      const toDelete = entries.slice(0, Math.floor(entries.length / 2));
+      toDelete.forEach(([key]) => notifications.delete(key));
+    }
+
     return { success: true, data: notification };
   } catch (error) {
     return {

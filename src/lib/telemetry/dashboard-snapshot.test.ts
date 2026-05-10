@@ -8,10 +8,10 @@ import {
 } from "@/lib/telemetry/types";
 
 describe("getDashboardTelemetrySnapshot", () => {
-  it("deduplicates agents and merges source degradation details", () => {
+  it("deduplicates agents and merges source degradation details", async () => {
     const now = new Date("2026-03-14T02:00:00.000Z");
 
-    const snapshot = getDashboardTelemetrySnapshot({
+    const snapshot = await getDashboardTelemetrySnapshot({
       now: () => now,
       stalenessThresholdSec: 30,
       getAgentsConfigTelemetry: () => ({
@@ -49,7 +49,7 @@ describe("getDashboardTelemetrySnapshot", () => {
           },
         ],
       }),
-      getOpenClawSessionsTelemetry: () => ({
+      getOpenClawSessionsTelemetry: async () => ({
         sessions: [
           {
             id: "main",
@@ -69,12 +69,12 @@ describe("getDashboardTelemetrySnapshot", () => {
     expect(snapshot.freshness.status).toBe(TELEMETRY_FRESHNESS_STATUS.FRESH);
   });
 
-  it("classifies stale snapshots when threshold is exceeded", () => {
+  it("classifies stale snapshots when threshold is exceeded", async () => {
     const snapshotAt = new Date("2026-03-14T02:00:00.000Z");
     const now = new Date("2026-03-14T02:01:10.000Z");
     let tick = 0;
 
-    const snapshot = getDashboardTelemetrySnapshot({
+    const snapshot = await getDashboardTelemetrySnapshot({
       now: () => {
         tick += 1;
         return tick === 1 ? snapshotAt : now;
@@ -93,7 +93,7 @@ describe("getDashboardTelemetrySnapshot", () => {
         },
         degraded: [],
       }),
-      getOpenClawSessionsTelemetry: () => ({
+      getOpenClawSessionsTelemetry: async () => ({
         sessions: [],
         degraded: [],
       }),
@@ -103,8 +103,8 @@ describe("getDashboardTelemetrySnapshot", () => {
     expect(snapshot.freshness.snapshotAgeSec).toBeGreaterThan(30);
   });
 
-  it("excludes unknown session identities and emits validation degradation", () => {
-    const snapshot = getDashboardTelemetrySnapshot({
+  it("excludes unknown session identities and emits validation degradation", async () => {
+    const snapshot = await getDashboardTelemetrySnapshot({
       now: () => new Date("2026-03-14T02:00:00.000Z"),
       getAgentsConfigTelemetry: () => ({
         agents: [
@@ -127,7 +127,7 @@ describe("getDashboardTelemetrySnapshot", () => {
         },
         degraded: [],
       }),
-      getOpenClawSessionsTelemetry: () => ({
+      getOpenClawSessionsTelemetry: async () => ({
         sessions: [
           {
             id: "unknown-agent",
